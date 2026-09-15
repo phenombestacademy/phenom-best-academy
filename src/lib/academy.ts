@@ -7,8 +7,8 @@ export const academy = {
   tin: "2622434760319",
   emails: ["phenombestacademy@gmail.com", "phenombesta@gmail.com"],
   phones: [
-    { display: "+234 916 787 2339", href: "tel:+2349167872339", wa: "https://wa.me/2349167872339" },
-    { display: "+234 804 486 8964", href: "tel:+2348044868964", wa: "https://wa.me/2348044868964" },
+    { display: "+234 916 787 2339", href: "tel:+2349167872339", wa: "https://wa.me/message/WN7IL67RAVZTM1", label: "Official Academy WhatsApp" },
+    { display: "+234 806 486 8964", href: "tel:+2348064868964", wa: "https://wa.me/2348064868964", label: "Personal / secondary contact" },
   ],
   location: "Lagos, Nigeria",
   registeredAddress: "4 Zamba St, Ikate, Lagos 101283, Lagos, Nigeria",
@@ -858,7 +858,7 @@ export const founder = {
   location: "Lagos, Nigeria",
   emails: ["mrbestoce@gmail.com", "bestoce22@gmail.com"],
   phones: [
-    { display: "+234 903 628 0221", href: "tel:+2349036280221" },
+    
     { display: "+234 806 486 8964", href: "tel:+2348064868964" },
   ],
   linkedin: "https://linkedin.com/in/bestoce-mrbestoce",
