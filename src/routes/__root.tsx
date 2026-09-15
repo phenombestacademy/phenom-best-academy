@@ -1,6 +1,8 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { SiteShell } from "@/components/site-shell";
 import appCss from "../styles.css?url";
+import { applySettings, getLocalSettings } from "@/lib/cms";
 
 const APP_NAME = "Phenom Best Academy";
 
@@ -46,6 +48,7 @@ export const Route = createRootRoute({
 });
 
 function RootDocument() {
+  useEffect(() => { applySettings(getLocalSettings()); }, []);
   return (
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
