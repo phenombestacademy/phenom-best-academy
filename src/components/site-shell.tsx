@@ -20,6 +20,9 @@ const desktopNav = [
   { to: "/leadership", label: "Leadership" },
   { to: "/contact", label: "Contact" },
   { to: "/careers", label: "Careers" },
+  { to: "/media", label: "Media & Resources" },
+  { to: "/tools", label: "Smart Tools" },
+  { to: "/platform", label: "Platform" },
 ] as const;
 
 const moreLinks = [
@@ -28,6 +31,9 @@ const moreLinks = [
   { to: "/leadership", label: "Leadership" },
   { to: "/contact", label: "Contact" },
   { to: "/careers", label: "Careers" },
+  { to: "/media", label: "Media & Resources" },
+  { to: "/tools", label: "Smart Tools" },
+  { to: "/platform", label: "Platform" },
 ] as const;
 
 function useActivePath() {
@@ -84,9 +90,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link to="/enquire">Make an enquiry</Link>
-            </Button>
+            <div className="hidden gap-2 sm:flex"><Button asChild size="sm" variant="cream"><Link to="/account">Account</Link></Button><Button asChild size="sm"><Link to="/enquire">Make an enquiry</Link></Button></div>
             <Button asChild size="sm" variant="cream" className="sm:hidden">
               <Link to="/enquire">Enquire</Link>
             </Button>
@@ -156,7 +160,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="border-t border-navy-mid">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-ivory/50 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p>{academy.copyright}</p>
-            <p>A multidisciplinary education and professional services academy.</p>
+            <div className="flex items-center gap-3"><p>A multidisciplinary education and professional services academy.</p><Link to="/admin" className="text-ivory/40 hover:text-cream">Admin</Link></div>
           </div>
         </div>
       </footer>
