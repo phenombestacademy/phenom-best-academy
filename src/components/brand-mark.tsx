@@ -25,3 +25,13 @@ export function BrandWordmark({ className }: { className?: string }) {
     />
   );
 }
+
+export function BrandFull({ className }: { className?: string }) {
+  return (
+    <img
+      src="/brand/logo-clear.png"
+      alt="Phenom Best Academy — Tranquil Excellence for Global Impact"
+      className={cn("h-auto w-full max-w-[26rem] object-contain object-left", className)}
+    />
+  );
+}

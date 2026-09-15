@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { BrandMark, BrandWordmark } from "@/components/brand-mark";
+import { BrandFull, BrandWordmark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
 import { cn } from "@/lib/utils";
@@ -65,11 +65,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-navy-mid/40 bg-navy-deep text-cream">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label="Phenom Best Academy home">
-            <BrandMark className="h-9 sm:hidden" />
-            <BrandWordmark className="hidden h-9 sm:block lg:h-10" />
-            <span className="min-w-0 truncate font-display text-lg font-semibold tracking-tight text-cream sm:hidden">
-              Phenom Best
-            </span>
+            <BrandWordmark className="h-10 max-w-[12rem] sm:h-11 sm:max-w-[15rem] lg:h-12" />
           </Link>
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
             {desktopNav.map((item) => (
@@ -103,13 +99,21 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <footer className="mt-auto border-t border-navy-mid bg-navy-deep text-ivory">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-12">
           <div className="md:col-span-5">
-            <BrandWordmark className="h-12" />
+            <div className="w-fit rounded-xl bg-cream p-2"><BrandFull className="h-auto w-full max-w-[22rem]" /></div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-ivory/75">
               {academy.motto}. {academy.tagline}
             </p>
             <p className="mt-4 text-xs tracking-wide text-ivory/55">
               RC {academy.rc} · TIN {academy.tin}
             </p>
+            <div className="mt-6 space-y-3 border-t border-navy-mid pt-5">
+              {academy.brands.map((brand) => (
+                <div key={brand.name}>
+                  <p className="text-sm font-semibold text-cream">{brand.name}</p>
+                  <p className="text-xs text-ivory/60">{brand.descriptor}</p>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="md:col-span-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">Explore</p>
@@ -145,7 +149,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   </a>
                 </li>
               ))}
-              <li>{academy.location}</li>
+              <li>{academy.location}</li><li>{academy.registeredAddress}</li>
             </ul>
           </div>
         </div>
