@@ -11,6 +11,24 @@ export const academy = {
     { display: "+234 804 486 8964", href: "tel:+2348044868964", wa: "https://wa.me/2348044868964" },
   ],
   location: "Lagos, Nigeria",
+  registeredAddress: "4 Zamba St, Ikate, Lagos 101283, Lagos, Nigeria",
+  mapsUrl: "https://maps.app.goo.gl/ZVHN85Urfkeiraob6?g_st=ac",
+  serviceDeliveryNote:
+    "The Academy operates primarily online and can also provide in-person services by arrangement, including at a client’s location, an agreed venue, or an available office arrangement.",
+  brands: [
+    {
+      name: "Phenom Sound Press",
+      descriptor: "The Library Service of Phenom Best Academy",
+      description:
+        "The Academy’s library and publishing service for books, e-books, manuscripts, research and learning resources, professional guides, and related knowledge products.",
+    },
+    {
+      name: "Phenom Sound Lab",
+      descriptor: "The Creative Division of Phenom Best Academy",
+      description:
+        "The creative arm for music, songwriting, production, vocal and creative development, and purpose-driven music projects.",
+    },
+  ],
   copyright: "© 2026 Phenom Best Academy Limited. All Rights Reserved.",
 } as const;
 
@@ -21,7 +39,7 @@ export const vision =
   "To be a globally respected academy recognised for developing exceptional minds, strengthening institutions, and inspiring visionary leaders who drive sustainable and transformative impact across societies.";
 
 export const executiveSummary =
-  "Phenom Best Academy is a multidisciplinary institution committed to delivering high-quality education, research, consultancy, and professional development. Through innovative teaching, strategic guidance, and capacity-building, we promote intellectual excellence, ethical leadership, and global competence for learners, professionals, and organisations across local and international contexts.";
+  "Phenom Best Academy is a multidisciplinary, knowledge-driven and human-centred institution providing education, professional development, research, consultancy, leadership, language, mentorship, and related knowledge-based services. We help individuals and organisations build capability, strengthen performance, and create meaningful impact through practical expertise, strategic guidance, and purposeful learning.";
 
 export const values = [
   {
@@ -105,7 +123,8 @@ export type ServiceId =
   | "educational-consultancy"
   | "research-knowledge"
   | "digital-learning"
-  | "music-creative-development";
+  | "music-creative-development"
+  | "faith-based-content";
 
 export type Service = {
   id: ServiceId;
@@ -196,7 +215,6 @@ export const services: Service[] = [
   "Project / thesis / dissertation guidance",
   "SIWES / industrial training report guidance",
   "Academic writing, editing and referencing support",
-  "National Open University of Nigeria (NOUN) academic/research support",
   "ICT / Computer Science / data-literacy support",
   "Study skills and academic coaching",
   "Holiday / intensive learning programme",
@@ -214,18 +232,20 @@ export const services: Service[] = [
   },
   {
     id: "mentorship",
-    title: "Mentorship & Transformational Music",
+    title: "Mentorship & Personal Development",
     kicker: "Purpose, voice, and leadership",
     summary:
-      "Structured mentorship and leadership development, with music used as a catalyst for identity, discipline, confidence, and influence.",
+      "Structured mentorship and personal development that strengthen self-awareness, confidence, leadership capacity, communication, and purposeful growth.",
     audience:
-      "Students, professionals, educators, entrepreneurs, and organisational leaders seeking personal development and leadership enhancement.",
+      "Teenagers, young adults, students, professionals, educators, entrepreneurs, and organisational leaders seeking personal development, mentoring, and leadership enhancement.",
     offerings: [
       "Personal growth, self-awareness, and values-based leadership",
       "Academic and career insight aligned to strengths",
       "Confidence, communication, goal setting, and life planning",
-      "Leadership anthems, guided songwriting, and vocal confidence",
-      "Rhythm-based team-building and inspirational music production",
+      "Purpose, identity, values, confidence, and personal effectiveness",
+      "Leadership, academic, career, and professional development guidance",
+      "Youth leadership, career awareness, and life-skills seminars",
+      "Teen and young-adult mentoring and personal development",
     ],
     enquiryOptions: [
   "Personal development",
@@ -238,15 +258,16 @@ export const services: Service[] = [
   "Confidence and communication development",
   "Productivity and personal effectiveness",
   "Student mentorship",
+  "Youth and teen mentorship",
+  "Youth leadership and life-skills seminars",
   "Structured one-to-one mentorship",
   "Group / cohort mentorship",
   "Other customised mentorship programme"
 ],
     delivery: [
-      "One-on-one mentoring",
+      "One-on-one and group mentoring",
       "Group coaching and leadership workshops",
-      "Music-integrated mentoring sessions",
-      "Leadership and expression masterclasses",
+      "Leadership, career, and personal-development workshops",
     ],
     outcome:
       "Participants cultivate self-awareness, resilience, expressive confidence, and the capacity to inspire others and create change.",
@@ -386,14 +407,16 @@ export const services: Service[] = [
     summary:
       "Professional guidance and counselling for emotional wellbeing, personal growth, healthy relationships, and life decisions.",
     audience:
-      "Children, adolescents, students, professionals, families, and organisational members.",
+      "Children, teenagers, young adults, students, professionals, families, and organisational members.",
     offerings: [
       "Emotional and psychological support",
       "Career exploration and educational counselling",
       "Child and adolescent development",
+      "Youth and teen development, mentoring, and life guidance",
+      "Teen confidence, identity, decision-making, and life-skills support",
       "Character education and values formation",
       "Conflict resolution and peacebuilding",
-      "Marriage, family, and relationship counselling",
+      "Marriage preparation, family, and relationship counselling",
       "Talent discovery, life coaching, and personal empowerment",
     ],
     enquiryOptions: [
@@ -405,8 +428,11 @@ export const services: Service[] = [
   "Transition / life-stage support",
   "Decision-making and goal setting",
   "Child and adolescent development support",
+  "Youth and teen development support",
+  "Teen confidence, identity, and life-skills support",
   "Character and values development",
   "Conflict resolution / peacebuilding",
+  "Marriage preparation / relationship guidance",
   "Family / relationship counselling",
   "Life coaching and personal empowerment",
   "Other customised guidance request"
@@ -430,7 +456,7 @@ export const services: Service[] = [
       "Students, educators, professionals, and institutions seeking recognised growth and workforce excellence.",
     offerings: [
       "Workshops, seminars, executive education, and specialised training",
-      "Guidance toward recognised professional certifications",
+      "Guidance towards recognised professional certifications",
       "Educator CPD, instructional improvement, and classroom leadership",
       "Professional examination registration and preparation support",
       "Organisational workforce development and coaching",
@@ -559,7 +585,7 @@ export const services: Service[] = [
     title: "Digital Learning & Educational Resources",
     kicker: "Learning beyond the classroom",
     summary:
-      "Digital courses, e-books, manuals, workbooks, recorded lessons, professional guides, assessment resources, and downloadable learning materials.",
+      "Digital courses, e-books, manuals, workbooks, recorded lessons, professional guides, assessment resources, and downloadable learning materials, including knowledge products developed through Phenom Sound Press — The Library Service of Phenom Best Academy.",
     audience:
       "Learners, educators, professionals, organisations, institutions, and anyone seeking flexible, high-quality digital learning resources.",
     offerings: [
@@ -595,11 +621,54 @@ export const services: Service[] = [
     icon: "digital",
   },
   {
+    id: "faith-based-content",
+    title: "Faith-Based & Inspirational Content",
+    kicker: "Purposeful content for faith and growth",
+    summary:
+      "Thoughtfully developed Christian, devotional, inspirational, and motivational content for churches, ministries, Christian organisations, leaders, and individuals.",
+    audience:
+      "Churches, ministries, Christian organisations, pastors and ministry leaders, schools, fellowship groups, and individuals seeking well-structured faith-based or inspirational resources.",
+    offerings: [
+      "Bible study and Sunday school outlines developed around clear themes, learning objectives, scripture, discussion, and practical application",
+      "Devotional materials, inspirational messages, motivational content, and faith-centred educational resources",
+      "Church and ministry seminar papers, workshop materials, leadership-development resources, and training content",
+      "Christian leadership, character, values, personal development, and human-development materials",
+      "Inspirational books, booklets, study guides, manuscripts, and other faith-based publications",
+      "Purpose-driven songs, motivational songs, worship-related creative concepts, and supporting written content",
+      "Proofreading, editing, restructuring, and refinement of existing faith-based and inspirational materials",
+      "Custom content development for conferences, retreats, fellowships, special programmes, and ministry initiatives",
+    ],
+    enquiryOptions: [
+      "Bible study outline",
+      "Sunday school outline / teaching material",
+      "Devotional development",
+      "Church / ministry seminar paper",
+      "Leadership training material",
+      "Christian leadership / character-development resource",
+      "Inspirational book / booklet",
+      "Motivational content",
+      "Faith-based educational material",
+      "Proofreading / editing of church or Christian materials",
+      "Faith-based song / motivational song concept",
+      "Conference / retreat / fellowship resource",
+      "Other customised faith-based content",
+    ],
+    delivery: [
+      "Research-informed content development",
+      "Custom writing, editing, and proofreading engagements",
+      "One-off resources or structured content series",
+      "Digital and print-ready manuscript preparation",
+    ],
+    outcome:
+      "Clients receive clear, engaging, purposeful resources that communicate ideas effectively, support learning and reflection, and serve the needs of their intended audience.",
+    icon: "heart",
+  },
+  {
     id: "music-creative-development",
     title: "Music & Creative Development",
     kicker: "Create, express, and produce",
     summary:
-      "A dedicated creative-development pathway for music, songwriting, vocal expression, custom songs, music production, and purpose-driven creative projects.",
+      "A dedicated creative-development pathway delivered through Phenom Sound Lab — The Creative Division of Phenom Best Academy, covering music, songwriting, vocal expression, custom songs, music production, and purpose-driven creative projects.",
     audience:
       "Aspiring and developing musicians, singers, songwriters, students, schools, organisations, brands, churches, and clients seeking customised music solutions.",
     offerings: [
@@ -699,6 +768,7 @@ export const subjectAreas = [
 
 export const audiences = [
   { id: "learner", label: "Learner / student" },
+  { id: "youth", label: "Teenager / young adult" },
   { id: "parent", label: "Parent or guardian" },
   { id: "professional", label: "Professional" },
   { id: "educator", label: "Educator" },
@@ -711,6 +781,8 @@ export const needs = [
   { id: "language", label: "Learn a language", service: "language-education" as ServiceId },
   { id: "abroad", label: "Study abroad or scholarships", service: "study-abroad" as ServiceId },
   { id: "mentorship", label: "Mentorship or leadership growth", service: "mentorship" as ServiceId },
+  { id: "youth-development", label: "Youth / teen development, mentoring, or life skills", service: "guidance-counselling" as ServiceId },
+  { id: "relationships", label: "Marriage, family, or relationship guidance", service: "guidance-counselling" as ServiceId },
   { id: "counselling", label: "Guidance or counselling", service: "guidance-counselling" as ServiceId },
   { id: "training", label: "Staff or organisational training", service: "organisational-services" as ServiceId },
   { id: "leadership", label: "Leadership or human-capital development", service: "leadership-human-capital" as ServiceId },
@@ -719,12 +791,71 @@ export const needs = [
   { id: "research", label: "Research, knowledge, or report support", service: "research-knowledge" as ServiceId },
   { id: "digital-learning", label: "Digital courses or educational resources", service: "digital-learning" as ServiceId },
   { id: "music", label: "Music, songwriting, production, or a custom music project", service: "music-creative-development" as ServiceId },
+  { id: "faith-content", label: "Faith-based, devotional, inspirational, or church content", service: "faith-based-content" as ServiceId },
+] as const;
+
+export const faqs = [
+  {
+    question: "What is Phenom Best Academy Limited?",
+    answer:
+      "Phenom Best Academy Limited is a multidisciplinary, knowledge-driven and human-centred academy based in Lagos, Nigeria. We provide education, professional development, leadership and human-capital development, research, consultancy, language education, mentorship, digital learning, creative development, and related services for individuals and organisations.",
+  },
+  {
+    question: "Who can use the Academy's services?",
+    answer:
+      "Our services are designed for learners, parents and families, educators, professionals, researchers, entrepreneurs, leaders, schools, companies, NGOs, faith-based organisations, and other institutions. Services can be tailored to the needs and goals of the client.",
+  },
+  {
+    question: "Does the Academy work with organisations as well as individuals?",
+    answer:
+      "Yes. We support both individuals and organisations through training, consultancy, leadership development, staff development, onboarding, research, educational advisory, content development, and other customised engagements.",
+  },
+  {
+    question: "Can you provide staff training and onboarding programmes?",
+    answer:
+      "Yes. Staff training, onboarding, workplace skills, leadership development, performance development, communication, professional development, and team-focused programmes can be designed around an organisation's needs.",
+  },
+  {
+    question: "Do you prepare seminars, workshops and leadership materials?",
+    answer:
+      "Yes. We develop seminar papers, workshop materials, training resources, leadership-development content, presentations, manuals, and related knowledge products for educational, professional, organisational, and faith-based settings.",
+  },
+  {
+    question: "Do you provide proofreading and editing services?",
+    answer:
+      "Yes. We provide proofreading, editing, restructuring, language refinement, formatting guidance, and content-development support for academic, professional, educational, organisational, inspirational, and faith-based materials.",
+  },
+  {
+    question: "Do you develop Bible study, Sunday school and devotional materials?",
+    answer:
+      "Yes. Through our faith-based and inspirational content service, we can develop Bible study outlines, Sunday school materials, devotionals, church seminar resources, Christian leadership materials, motivational content, and other customised ministry resources.",
+  },
+  {
+    question: "Can you create books, e-books and other learning resources?",
+    answer:
+      "Yes. We develop and refine books, e-books, manuals, workbooks, study guides, professional resources, inspirational publications, and other educational or knowledge-based materials, subject to the nature and scope of the project.",
+  },
+  {
+    question: "Do you offer music and songwriting services?",
+    answer:
+      "Yes. Our Music & Creative Development service covers songwriting, custom songs, music production, arrangement, vocal development, creative direction, motivational and educational songs, and other purpose-driven music projects.",
+  },
+  {
+    question: "Can you design a customised programme for my organisation or project?",
+    answer:
+      "Yes. Where an existing service does not fully match your need, we can discuss the objective, audience, scope, delivery format, and expected outcome and develop an appropriate customised engagement.",
+  },
+  {
+    question: "How do I start an enquiry?",
+    answer:
+      "Use the enquiry page, select the service that best matches your need, and tell us what you are trying to achieve. If you are unsure which service fits, use the Academy's guided path or contact us directly for direction.",
+  },
 ] as const;
 
 export const founder = {
-  name: "Best Orji Chijioke",
+  name: "Best O.C.E, popularly known as Bestoce and Mrbestoce.",
   role: "Founder & Chief Executive",
-  location: "Surulere, Lagos, Nigeria",
+  location: "Lagos, Nigeria",
   emails: ["mrbestoce@gmail.com", "bestoce22@gmail.com"],
   phones: [
     { display: "+234 903 628 0221", href: "tel:+2349036280221" },
@@ -733,62 +864,61 @@ export const founder = {
   linkedin: "https://linkedin.com/in/bestoce-mrbestoce",
   photo: "/brand/founder.jpg",
   profile:
-    "Visionary, results-driven Operations Executive, Educational Leader, School Administrator, Human Capital Management Professional, and Quality Assurance Specialist with over twenty years of progressive leadership experience across British and Nigerian educational environments. Expertise spans organisational transformation, operational excellence, governance, regulatory compliance, people management, institutional growth, strategic planning, project management, process optimisation, technology integration, digital transformation, and data-informed decision-making.",
-  education: [
-    {
-      title: "Master of Education (M.Ed.) in Guidance and Counselling",
-      place: "National Open University of Nigeria — in progress",
-    },
-    {
-      title: "Bachelor of Science in Education (B.Sc. Ed.) — Mathematics",
-      place: "University of Nigeria, Nsukka · 2008",
-    },
+    "Best O.C.E is an educational leader, operations executive, school administrator, human-capital professional, and quality-assurance specialist with over two decades of progressive experience across British and Nigerian educational environments. His work has brought together school leadership, academic administration, organisational development, quality assurance, strategic planning, human-capital management, curriculum and instructional leadership, process improvement, technology integration, and stakeholder engagement.",
+  profileParagraphs: [
+    "Best O.C.E is an educational leader, operations executive, school administrator, human-capital professional, and quality-assurance specialist with over two decades of progressive experience across British and Nigerian educational environments. His work has brought together school leadership, academic administration, organisational development, quality assurance, strategic planning, human-capital management, curriculum and instructional leadership, process improvement, technology integration, and stakeholder engagement.",
+    "His professional journey includes leadership as Head of School in Surulere, Lagos; College Principal in Ago Palace, Okota, Lagos; Quality Assurance Manager in Maryland, Ikeja, Lagos; and Head Teacher across Alimosho and Ikeja, Lagos. He has also served as a Boarding House Parent, Mathematics Teacher, Class Teacher, Science Laboratory Technician, Curriculum Coordinator, Private Tutor, and in other educational and professional capacities across Lagos and Imo State, Nigeria.",
+    "These experiences have shaped a practical leadership philosophy centred on excellence, people development, continuous improvement, purposeful learning, and the responsible use of knowledge and technology to strengthen individuals and institutions."
   ],
+  educationSummary:
+    "A graduate of Mathematics Education from the University of Nigeria, Nsukka, who is currently pursuing a Master of Education (M.Ed.) in Guidance and Counselling to deepen his expertise in learner development, human behaviour, and educational guidance, and has undertaken a range of professional certifications, continuing professional development programmes, and specialised training.",
   highlights: [
     {
       role: "Head of School",
-      org: "Jason's Tendercare School, Surulere",
-      years: "2022 – 2026",
+      org: "Surulere, Lagos",
       point:
-        "Strategic leadership of academic, operational, financial, and human-capital functions; British and Nigerian curricula; digital transformation and quality assurance.",
+        "Provided strategic leadership across academic, operational, financial, people, quality-assurance, and stakeholder functions, with experience spanning British and Nigerian curricula and technology-enabled school management.",
     },
     {
-      role: "Principal",
-      org: "Studyhabit College, Lagos",
-      years: "2019 – 2022",
+      role: "College Principal",
+      org: "Ago Palace, Okota, Lagos",
       point:
-        "Established the college from inception — regulatory approvals, workforce, academic programmes, and a fully operational institution.",
+        "Led the establishment and development of a college from inception, including regulatory processes, recruitment, academic programmes, operational systems, and institutional growth.",
     },
     {
       role: "Quality Assurance Manager",
-      org: "Silverwood Schools, Lagos",
-      years: "2018 – 2019",
+      org: "Maryland, Ikeja, Lagos",
       point:
-        "Designed and ran the institutional QA framework — instructional audits, KPIs, and evidence-based improvement.",
+        "Led quality-assurance activities, instructional review, performance monitoring, evidence-based improvement, and continuous development across educational operations.",
     },
     {
-      role: "Mathematics Instructor, Lab Technologist & House Parent",
-      org: "Legacy High School, Lagos",
-      years: "2015 – 2018",
+      role: "Mathematics Instructor, Science Laboratory Technician & Boarding House Parent",
+      org: "Ikeja, Lagos",
       point:
-        "IGCSE and national-examination mathematics, STEM laboratories, curriculum coordination, and student pastoral care.",
+        "Combined mathematics instruction with laboratory operations, curriculum support, STEM learning, student supervision, pastoral care, and residential student support.",
+    },
+    {
+      role: "Head Teacher & Class Teacher",
+      org: "Alimosho and Ikeja, Lagos",
+      point:
+        "Provided classroom and school leadership, supported curriculum delivery, mentored learners and teachers, and contributed to effective day-to-day educational management.",
+    },
+    {
+      role: "Mathematics Educator and Teacher",
+      org: "Owerri and Ngor-Okpala, Imo State",
+      point:
+        "Built early teaching experience through mathematics education, teaching practice, learner support, lesson delivery, assessment, and classroom management.",
     },
   ],
   competencies: [
     "Executive leadership, strategic planning, and decision-making",
     "Operations, project management, and business-process optimisation",
-    "Human capital management, talent acquisition, and workforce planning",
-    "Learning & development, coaching, mentoring, and employee performance",
+    "Human capital management, talent development, and workforce planning",
+    "Learning and development, coaching, mentoring, and performance improvement",
     "Quality assurance, KPI reporting, risk management, and continuous improvement",
     "Policy development, governance, regulatory compliance, and internal controls",
     "British and Nigerian curriculum leadership, safeguarding, and student welfare",
-    "Digital transformation, Microsoft 365, Google Workspace, SIMS, and data analytics",
-  ],
-  professionalDevelopment: [
-    "Safety and Health Professional Certification — OHS Academy, USA (In Progress)",
-    "Teaching Adult Learning Frameworks — Open University of Austria (In Progress)",
-    "Technology-Blended Learning & Creative Problem Solving — AISEN CPD Programme",
-    "Jolly Phonics Instruction — Chalis Education Consult Limited",
+    "Digital transformation, technology integration, Microsoft 365, Google Workspace, and data-informed decision-making",
   ],
 };
 
