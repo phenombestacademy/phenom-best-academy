@@ -12,7 +12,7 @@ function Leadership() {
       <PageHero
         kicker="Leadership"
         title="The Academy is built by a practitioner of educational leadership."
-        lede="Phenom Best Academy is led from lived experience — twenty years of school leadership, quality assurance, human capital, and operations across British and Nigerian environments."
+        lede="Phenom Best Academy is led from lived experience — over two decades of school leadership, quality assurance, human capital, and operations across British and Nigerian educational environments."
       />
 
       <Section>
@@ -62,36 +62,30 @@ function Leadership() {
             </p>
             <h2 className="mt-2 font-display text-4xl font-semibold">{founder.name}</h2>
             <p className="mt-1 text-sm text-muted">{founder.location}</p>
-            <p className="mt-5 leading-relaxed text-muted">{founder.profile}</p>
-            <p className="mt-4 leading-relaxed text-muted">
-              Currently pursuing a Master of Education in Guidance and Counselling to deepen
-              expertise in educational leadership, safeguarding, employee wellbeing, student
-              support, and whole-person growth — the same terrain the Academy serves.
-            </p>
+            <div className="mt-5 space-y-5 text-muted">
+              {founder.profileParagraphs.map((paragraph) => (
+                <p key={paragraph} className="leading-relaxed">{paragraph}</p>
+              ))}
+              <p className="leading-relaxed">{founder.educationSummary}</p>
+            </div>
 
-            <h3 className="mt-10 font-display text-2xl font-semibold">Selected experience</h3>
-            <ol className="mt-4 space-y-5">
+            <h3 className="mt-10 font-display text-2xl font-semibold">Professional experience</h3>
+            <p className="mt-3 leading-relaxed text-muted">
+              His professional journey reflects a broad progression through teaching, school leadership,
+              quality assurance, administration, human-capital development, and educational consultancy.
+              Selected roles and areas of responsibility include:
+            </p>
+            <ol className="mt-5 space-y-5">
               {founder.highlights.map((h) => (
                 <li key={h.role + h.org} className="border-l-2 border-line pl-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-orange">{h.years}</p>
                   <p className="font-display text-xl font-semibold">
                     {h.role}
                     <span className="text-ink-soft"> · {h.org}</span>
                   </p>
-                  <p className="mt-1 text-sm text-muted">{h.point}</p>
+                  <p className="mt-1 leading-relaxed text-muted">{h.point}</p>
                 </li>
               ))}
             </ol>
-
-            <h3 className="mt-10 font-display text-2xl font-semibold">Education</h3>
-            <ul className="mt-4 space-y-3">
-              {founder.education.map((e) => (
-                <li key={e.title}>
-                  <p className="font-medium">{e.title}</p>
-                  <p className="text-sm text-muted">{e.place}</p>
-                </li>
-              ))}
-            </ul>
 
             <h3 className="mt-10 font-display text-2xl font-semibold">Core competencies</h3>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -102,17 +96,10 @@ function Leadership() {
               ))}
             </ul>
 
-            <h3 className="mt-10 font-display text-2xl font-semibold">Professional development</h3>
-            <ul className="mt-4 space-y-2">
-              {founder.professionalDevelopment.map((item) => (
-                <li key={item} className="border-l-2 border-line pl-4 text-sm text-muted">{item}</li>
-              ))}
-            </ul>
-
             <p className="mt-10 text-sm italic text-muted">
               Professional interests include strategic leadership, human capital, educational
               research, music composition and songwriting — the foundation of the Academy’s
-              transformational music programme — chess, and lifelong learning.
+              music and creative development through Phenom Sound Lab — chess, and lifelong learning.
             </p>
 
             <Button asChild className="mt-8">

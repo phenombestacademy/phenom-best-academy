@@ -40,6 +40,30 @@ function About() {
       </Section>
 
       <Section className="pt-0">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">Brand architecture</p>
+        <h2 className="mt-2 max-w-3xl font-display text-3xl font-semibold sm:text-4xl">
+          Knowledge and creativity, connected.
+        </h2>
+        <p className="mt-3 max-w-3xl leading-relaxed text-muted">
+          Phenom Sound Press and Phenom Sound Lab extend the Academy&apos;s work into publishing,
+          knowledge resources, music, and creative development while remaining part of the wider
+          Phenom Best Academy identity.
+        </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {academy.brands.map((brand, index) => (
+            <div
+              key={brand.name}
+              className={`rounded-2xl border-l-4 bg-cream p-6 shadow-card service-accent-${index === 0 ? "gold" : "purple"}`}
+            >
+              <h3 className="font-display text-2xl font-semibold">{brand.name}</h3>
+              <p className="mt-1 font-medium text-blue">{brand.descriptor}</p>
+              <p className="mt-3 leading-relaxed text-muted">{brand.description}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="pt-0">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">Core values</p>
         <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">The character of the Academy</h2>
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -70,7 +94,7 @@ function About() {
           </p>
           <p>
             The name <em>Phenom</em> reflects a belief in exceptional human potential — that people
-            possess capacities which can be discovered, refined, and directed toward meaningful
+            possess capacities which can be discovered, refined, and directed towards meaningful
             achievement.
           </p>
         </div>
@@ -79,12 +103,12 @@ function About() {
       <Section className="pt-0">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">How we deliver</p>
         <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Flexible by design</h2>
-        <p className="mt-3 max-w-3xl leading-relaxed text-muted">
-          The Academy can combine people, technology, physical presence, digital resources, and collaborative delivery according to the needs of each learner, client, organisation, or project.
-        </p>
+        <p className="mt-3 max-w-3xl leading-relaxed text-muted">{academy.serviceDeliveryNote}</p>
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {deliveryModes.map((item) => (
-            <div key={item} className="rounded-xl bg-cream p-4 shadow-card text-sm text-muted">{item}</div>
+            <div key={item} className="rounded-xl bg-cream p-4 text-sm text-muted shadow-card">
+              {item}
+            </div>
           ))}
         </div>
       </Section>
@@ -120,18 +144,14 @@ function About() {
 
       <section className="bg-paper-deep">
         <Section>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">
-            Legal identity
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">Legal identity</p>
           <h2 className="mt-2 font-display text-3xl font-semibold">Registered in Nigeria</h2>
           <dl className="mt-6 grid gap-4 sm:grid-cols-2">
             <Info label="Registered company name" value={academy.legalName} />
             <Info label="Registration number (RC)" value={academy.rc} />
             <Info label="Tax identification number" value={academy.tin} />
-            <Info
-              label="Legal form"
-              value="Private company limited by shares, incorporated under CAMA"
-            />
+            <Info label="Registered business address" value={academy.registeredAddress} />
+            <Info label="Legal form" value="Private company limited by shares, incorporated under CAMA" />
           </dl>
           <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted">
             The Company is established to provide multidisciplinary educational, research,
@@ -148,9 +168,7 @@ function About() {
         <h2 className="mt-2 font-display text-3xl font-semibold">What you can hold us to</h2>
         <ul className="mt-6 space-y-3">
           {commitments.map((c) => (
-            <li key={c} className="border-l-2 border-orange pl-4 text-muted">
-              {c}
-            </li>
+            <li key={c} className="border-l-2 border-orange pl-4 text-muted">{c}</li>
           ))}
         </ul>
         <Button asChild className="mt-8" variant="navy">

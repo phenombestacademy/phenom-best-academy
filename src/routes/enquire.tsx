@@ -134,7 +134,7 @@ function Enquire() {
       <PageHero
         kicker="Enquire"
         title="Tell us what you need."
-        lede="Share a few details. We will match you with the right conversation — including education, professional development, consultancy, research, digital learning, counselling, study abroad, and music/creative development."
+        lede="Share a few details. We will match you with the right conversation — including education, professional development, consultancy, research, digital learning, counselling, study abroad, faith-based content, and music/creative development."
       />
       <Section>
         <form onSubmit={onSubmit} className="mx-auto grid max-w-xl gap-4">

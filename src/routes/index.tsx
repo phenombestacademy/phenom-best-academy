@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check } from "lucide-react";
-import { BrandWordmark } from "@/components/brand-mark";
+import { BrandFull, BrandWordmark } from "@/components/brand-mark";
 import { ServiceIcon } from "@/components/service-icon";
 import { Button } from "@/components/ui/button";
 import { Section } from "@/components/page-hero";
-import { academy, founder, mission, services, values, whyChoose } from "@/lib/academy";
+import { academy, faqs, founder, mission, services, values, whyChoose } from "@/lib/academy";
+
+const serviceAccents = ["blue", "green", "orange", "purple", "gold"] as const;
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -19,16 +21,17 @@ function Home() {
           <img src="/brand/mark-clear.png" alt="" className="h-full w-full object-contain" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-20">
-          <BrandWordmark className="h-16 sm:h-[4.5rem]" />
+          <div className="w-fit max-w-full rounded-xl bg-cream p-2 shadow-card"><BrandFull className="max-w-[25rem] sm:max-w-[31rem]" /></div>
           <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-            Multidisciplinary academy · Lagos, Nigeria
+            Multidisciplinary academy, based in Lagos, Nigeria
           </p>
           <h1 className="mt-4 max-w-3xl font-display text-[2.35rem] font-semibold leading-[1.08] text-cream sm:text-6xl">
             {academy.motto}
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-ivory/80">
-            {academy.tagline} Education, languages, leadership, research, digital learning, consultancy, and professional
-            services for people and institutions who intend to matter.
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ivory/90 sm:text-xl">
+            Phenom Best Academy is a multidisciplinary, knowledge-driven and human-centred institution providing education,
+            professional development, research, consultancy, leadership, language, mentorship, and related knowledge-based
+            services. We help individuals and organisations build capability, strengthen performance, and create meaningful impact.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -62,14 +65,14 @@ function Home() {
           lede="One academy. The person as learner, professional, leader, and developing human being — and the organisations that need them to grow."
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((s) => (
+          {services.map((s, index) => (
             <Link
               key={s.id}
               to="/services/$slug"
               params={{ slug: s.id }}
-              className="group flex flex-col rounded-2xl bg-cream p-5 shadow-card transition-[box-shadow,transform] duration-200 hover:shadow-card-hover"
+              className={`group flex flex-col rounded-2xl border-t-4 bg-cream p-5 shadow-card transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-card-hover service-accent-${serviceAccents[index % serviceAccents.length]}`}
             >
-              <span className="flex size-11 items-center justify-center rounded-lg bg-paper-deep text-blue">
+              <span className={`flex size-11 items-center justify-center rounded-lg bg-paper-deep service-icon-${serviceAccents[index % serviceAccents.length]}`}>
                 <ServiceIcon name={s.icon} />
               </span>
               <h3 className="mt-4 font-display text-2xl font-semibold leading-snug">{s.title}</h3>
@@ -79,6 +82,24 @@ function Home() {
                 <ArrowRight className="size-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
               </span>
             </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="pt-0">
+        <HeaderBlock
+          kicker="Our knowledge and creative arms"
+          title="Two specialist identities under the Academy"
+          lede="Phenom Best Academy brings its wider knowledge and creative work together through two complementary service identities."
+        />
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {academy.brands.map((brand, index) => (
+            <div key={brand.name} className={`rounded-2xl border-l-4 bg-cream p-6 shadow-card service-accent-${index === 0 ? "gold" : "purple"}`}>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">Phenom Best Academy</p>
+              <h3 className="mt-2 font-display text-2xl font-semibold">{brand.name}</h3>
+              <p className="mt-1 font-medium text-blue">{brand.descriptor}</p>
+              <p className="mt-3 leading-relaxed text-muted">{brand.description}</p>
+            </div>
           ))}
         </div>
       </Section>
@@ -137,6 +158,25 @@ function Home() {
         </div>
       </Section>
 
+      <Section className="pt-0">
+        <HeaderBlock
+          kicker="Questions & answers"
+          title="A few things visitors often ask"
+          lede="Clear answers to common questions about the Academy, its services, and how we can work with individuals and organisations."
+        />
+        <div className="mt-8 grid gap-3">
+          {faqs.map((item) => (
+            <details key={item.question} className="group rounded-2xl border border-line bg-cream px-5 py-4 shadow-card">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-xl font-semibold">
+                <span>{item.question}</span>
+                <span aria-hidden className="text-orange transition-transform group-open:rotate-45 text-2xl leading-none">+</span>
+              </summary>
+              <p className="mt-3 max-w-3xl leading-relaxed text-muted">{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </Section>
+
       <section className="border-t border-line bg-cream">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12">
           <div className="lg:col-span-5">
@@ -148,7 +188,7 @@ function Home() {
           </div>
           <div className="lg:col-span-7">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange">Leadership</p>
-            <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">{founder.name}</h2>
+            <h2 className="mt-3 max-w-2xl font-display text-3xl font-semibold sm:text-4xl">{founder.name}</h2>
             <p className="mt-1 text-sm font-medium text-blue">{founder.role}</p>
             <p className="mt-4 max-w-prose leading-relaxed text-muted">{founder.profile}</p>
             <Button asChild className="mt-6" variant="navy">

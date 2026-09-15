@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Phenom Best Academy — Tranquil Excellence for Global Impact. Multidisciplinary education, languages, mentorship, counselling, study abroad, and professional development.",
+          "Phenom Best Academy — Tranquil Excellence for Global Impact. Multidisciplinary education, professional development, research, consultancy, leadership, languages, mentorship, guidance, study abroad, digital learning, faith-based content, and creative development.",
       },
       { property: "og:type", content: "website" },
       { property: "og:title", content: APP_NAME },

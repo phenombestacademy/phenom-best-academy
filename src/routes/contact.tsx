@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { ExternalLink, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { PageHero, Section } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
@@ -50,18 +50,23 @@ function Contact() {
               </span>
             </a>
           ))}
-          <div className="flex items-start gap-4 rounded-2xl bg-cream p-5 shadow-card">
-            <span className="flex size-11 items-center justify-center rounded-lg bg-paper-deep text-blue">
+          <a
+            href={academy.mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-start gap-4 rounded-2xl bg-cream p-5 shadow-card transition-colors hover:border-blue/40 hover:bg-white"
+          >
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-paper-deep text-blue">
               <MapPin className="size-5" />
             </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Location</p>
-              <p className="mt-1 font-medium">{academy.location}</p>
-              <p className="mt-1 text-sm text-muted">
-                Services are delivered online, virtually, and on-site as the engagement requires.
-              </p>
-            </div>
-          </div>
+            <span>
+              <span className="block text-xs font-semibold uppercase tracking-wider text-muted">Registered business address</span>
+              <span className="mt-1 block font-medium">{academy.registeredAddress}</span>
+              <span className="mt-2 flex items-center gap-1 text-sm font-medium text-orange">
+                View on Google Maps <ExternalLink className="size-3.5" />
+              </span>
+            </span>
+          </a>
           <a
             href={academy.phones[0].wa}
             target="_blank"
@@ -78,6 +83,11 @@ function Contact() {
               <span className="mt-1 block font-medium">Message {academy.phones[0].display}</span>
             </span>
           </a>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-line bg-cream p-5 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">How we operate</p>
+          <p className="mt-2 max-w-3xl leading-relaxed text-muted">{academy.serviceDeliveryNote}</p>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
