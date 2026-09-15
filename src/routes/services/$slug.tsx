@@ -33,13 +33,32 @@ function ServiceDetail() {
             <Block title="Who it is for" body={service.audience} />
             <div>
               <h2 className="font-display text-2xl font-semibold">What is included</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                A focused overview is shown below. Open the full scope when you want to see the complete range of support available in this service area.
+              </p>
               <ul className="mt-4 space-y-2">
-                {service.offerings.map((item) => (
+                {service.offerings.slice(0, 5).map((item) => (
                   <li key={item} className="border-l-2 border-orange/70 pl-4 text-muted">
                     {item}
                   </li>
                 ))}
               </ul>
+              {service.offerings.length > 5 ? (
+                <details className="mt-4 rounded-xl border border-line bg-cream px-4 py-3 shadow-card">
+                  <summary className="cursor-pointer list-none font-medium text-blue">
+                    <span className="flex items-center justify-between gap-4">
+                      See the full service scope <span aria-hidden className="text-orange">+</span>
+                    </span>
+                  </summary>
+                  <ul className="mt-4 space-y-2">
+                    {service.offerings.slice(5).map((item) => (
+                      <li key={item} className="border-l-2 border-orange/50 pl-4 text-sm leading-relaxed text-muted">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </div>
             <div>
               <h2 className="font-display text-2xl font-semibold">How it is delivered</h2>
@@ -50,6 +69,35 @@ function ServiceDetail() {
                   </li>
                 ))}
               </ul>
+            </div>
+            <div>
+              <h2 className="font-display text-2xl font-semibold">Enquiry options</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                Select the specific area you need when you make an enquiry. These options help us understand your request and respond more accurately.
+              </p>
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {service.enquiryOptions.slice(0, 8).map((item) => (
+                  <li key={item} className="rounded-xl border border-line bg-cream px-4 py-3 text-sm leading-relaxed text-ink-soft">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              {service.enquiryOptions.length > 8 ? (
+                <details className="mt-3 rounded-xl border border-line bg-cream px-4 py-3 shadow-card">
+                  <summary className="cursor-pointer list-none font-medium text-blue">
+                    <span className="flex items-center justify-between gap-4">
+                      View all enquiry options <span aria-hidden className="text-orange">+</span>
+                    </span>
+                  </summary>
+                  <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {service.enquiryOptions.slice(8).map((item) => (
+                      <li key={item} className="rounded-lg bg-paper px-3 py-2 text-sm leading-relaxed text-muted">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </div>
             <Block title="Outcome" body={service.outcome} />
           </div>
