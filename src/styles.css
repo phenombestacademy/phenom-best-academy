@@ -10,7 +10,7 @@
   --color-paper: #f4efe6;
   --color-paper-deep: #e8e0d2;
   --color-cream: #fbf8f2;
-  --color-muted: #5c6b80;
+  --color-muted: #4c5d73;
   --color-line: #d4cbb9;
   --color-navy: #152238;
   --color-navy-deep: #0d1522;
@@ -21,6 +21,7 @@
   --color-orange-deep: #a63c10;
   --color-green: #2a6a38;
   --color-gold: #c4a035;
+  --color-purple: #6b4aa1;
   --color-ivory: #f7f1e6;
 
   --color-bg: #f4efe6;
@@ -62,7 +63,7 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 1.0625rem;
+    font-size: 1.1rem;
     line-height: 1.55;
   }
 
@@ -111,4 +112,32 @@
 
 .shadow-card-hover {
   box-shadow: var(--shadow-border-hover);
+}
+
+
+@layer utilities {
+  .text-readable { color: var(--color-muted); }
+  .service-accent-blue { border-top-color: var(--color-blue); border-left-color: var(--color-blue); }
+  .service-accent-green { border-top-color: var(--color-green); border-left-color: var(--color-green); }
+  .service-accent-orange { border-top-color: var(--color-orange); border-left-color: var(--color-orange); }
+  .service-accent-purple { border-top-color: var(--color-purple); border-left-color: var(--color-purple); }
+  .service-accent-gold { border-top-color: var(--color-gold); border-left-color: var(--color-gold); }
+  .service-icon-blue { color: var(--color-blue); }
+  .service-icon-green { color: var(--color-green); }
+  .service-icon-orange { color: var(--color-orange); }
+  .service-icon-purple { color: var(--color-purple); }
+  .service-icon-gold { color: #9b7b16; }
+}
+
+@media (max-width: 639px) {
+  body { font-size: 1.075rem; }
+  .font-display { letter-spacing: -0.015em; }
+}
+
+@layer base {
+  summary::-webkit-details-marker { display: none; }
+}
+
+@media (max-width: 639px) {
+  .prose-mobile-readable { font-size: 1.05rem; line-height: 1.7; }
 }
