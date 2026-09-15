@@ -27,6 +27,8 @@ function Programmes() {
         lede="Browse what we teach. Then enquire — or use Find your path if you would rather be guided."
       />
 
+      <Section className="pb-4"><div className="rounded-2xl border border-purple/20 bg-purple/5 p-5"><h2 className="font-display text-xl font-semibold">Online programmes</h2><p className="mt-2 text-sm text-muted">Explore structured free and premium learning programmes, including CPD, language pathways, faith-based learning, professional development, youth development and other Academy learning products.</p><Button asChild className="mt-4"><Link to="/learning">Open the learning catalogue</Link></Button></div></Section>
+
       <Section className="pb-4">
         <div className="flex flex-wrap gap-2">
           {(
