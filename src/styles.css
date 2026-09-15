@@ -141,3 +141,15 @@
 @media (max-width: 639px) {
   .prose-mobile-readable { font-size: 1.05rem; line-height: 1.7; }
 }
+
+/* CMS-controlled visual layer: safe defaults preserve the approved brand. */
+:root {
+  --cms-background: #f4efe6;
+  --cms-surface: #fbf8f2;
+  --cms-accent: #c94b16;
+}
+body { background-color: var(--cms-background); }
+.bg-paper { background-color: var(--cms-background) !important; }
+.bg-cream { background-color: var(--cms-surface) !important; }
+[data-cms-animation="minimal"] * { animation-duration: 0.12s !important; transition-duration: 0.12s !important; }
+[data-cms-animation="off"] * { animation: none !important; transition: none !important; }

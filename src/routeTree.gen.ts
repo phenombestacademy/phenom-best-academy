@@ -17,6 +17,23 @@ import { Route as EnquireRouteImport } from './routes/enquire'
 import { Route as LeadershipRouteImport } from './routes/leadership'
 import { Route as PathRouteImport } from './routes/path'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as MediaRouteImport } from './routes/media'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as ToolsRouteImport } from './routes/tools'
+import { Route as PlatformRouteImport } from './routes/platform'
+import { Route as LegalRouteImport } from './routes/legal'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as PaymentsRouteImport } from './routes/payments'
+import { Route as AdminControlRouteImport } from './routes/admin-control'
+import { Route as ChatRouteImport } from './routes/chat'
+import { Route as ParentRouteImport } from './routes/parent'
+import { Route as SchoolsRouteImport } from './routes/schools'
+import { Route as SchoolResultsRouteImport } from './routes/school-results'
+import { Route as CpdRouteImport } from './routes/cpd'
+import { Route as SubscriptionsRouteImport } from './routes/subscriptions'
+import { Route as AdminLearningRouteImport } from './routes/admin-learning'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesSlugRouteImport } from './routes/services/$slug'
 
@@ -60,6 +77,31 @@ const ProgrammesRoute = ProgrammesRouteImport.update({
   path: '/programmes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediaRoute = MediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({ id: '/account', path: '/account', getParentRoute: () => rootRouteImport } as any)
+const ToolsRoute = ToolsRouteImport.update({ id: '/tools', path: '/tools', getParentRoute: () => rootRouteImport } as any)
+const PlatformRoute = PlatformRouteImport.update({ id: '/platform', path: '/platform', getParentRoute: () => rootRouteImport } as any)
+const LegalRoute = LegalRouteImport.update({ id: '/legal', path: '/legal', getParentRoute: () => rootRouteImport } as any)
+const SupportRoute = SupportRouteImport.update({ id: '/support', path: '/support', getParentRoute: () => rootRouteImport } as any)
+const CommunityRoute = CommunityRouteImport.update({ id: '/community', path: '/community', getParentRoute: () => rootRouteImport } as any)
+const PaymentsRoute = PaymentsRouteImport.update({ id: '/payments', path: '/payments', getParentRoute: () => rootRouteImport } as any)
+const AdminControlRoute = AdminControlRouteImport.update({ id: '/admin-control', path: '/admin-control', getParentRoute: () => rootRouteImport } as any)
+const ChatRoute = ChatRouteImport.update({ id: '/chat', path: '/chat', getParentRoute: () => rootRouteImport } as any)
+const ParentRoute = ParentRouteImport.update({ id: '/parent', path: '/parent', getParentRoute: () => rootRouteImport } as any)
+const SchoolsRoute = SchoolsRouteImport.update({ id: '/schools', path: '/schools', getParentRoute: () => rootRouteImport } as any)
+const SchoolResultsRoute = SchoolResultsRouteImport.update({ id: '/school-results', path: '/school-results', getParentRoute: () => rootRouteImport } as any)
+const CpdRoute = CpdRouteImport.update({ id: '/cpd', path: '/cpd', getParentRoute: () => rootRouteImport } as any)
+const SubscriptionsRoute = SubscriptionsRouteImport.update({ id: '/subscriptions', path: '/subscriptions', getParentRoute: () => rootRouteImport } as any)
+const AdminLearningRoute = AdminLearningRouteImport.update({ id: '/admin-learning', path: '/admin-learning', getParentRoute: () => rootRouteImport } as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
@@ -80,6 +122,23 @@ export interface FileRoutesByFullPath {
   '/leadership': typeof LeadershipRoute
   '/path': typeof PathRoute
   '/programmes': typeof ProgrammesRoute
+  '/admin': typeof AdminRoute
+  '/media': typeof MediaRoute
+  '/account': typeof AccountRoute
+  '/tools': typeof ToolsRoute
+  '/platform': typeof PlatformRoute
+  '/legal': typeof LegalRoute
+  '/support': typeof SupportRoute
+  '/community': typeof CommunityRoute
+  '/payments': typeof PaymentsRoute
+  '/admin-control': typeof AdminControlRoute
+  '/chat': typeof ChatRoute
+  '/parent': typeof ParentRoute
+  '/schools': typeof SchoolsRoute
+  '/school-results': typeof SchoolResultsRoute
+  '/cpd': typeof CpdRoute
+  '/subscriptions': typeof SubscriptionsRoute
+  '/admin-learning': typeof AdminLearningRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services/': typeof ServicesIndexRoute
 }
@@ -92,6 +151,23 @@ export interface FileRoutesByTo {
   '/leadership': typeof LeadershipRoute
   '/path': typeof PathRoute
   '/programmes': typeof ProgrammesRoute
+  '/admin': typeof AdminRoute
+  '/media': typeof MediaRoute
+  '/account': typeof AccountRoute
+  '/tools': typeof ToolsRoute
+  '/platform': typeof PlatformRoute
+  '/legal': typeof LegalRoute
+  '/support': typeof SupportRoute
+  '/community': typeof CommunityRoute
+  '/payments': typeof PaymentsRoute
+  '/admin-control': typeof AdminControlRoute
+  '/chat': typeof ChatRoute
+  '/parent': typeof ParentRoute
+  '/schools': typeof SchoolsRoute
+  '/school-results': typeof SchoolResultsRoute
+  '/cpd': typeof CpdRoute
+  '/subscriptions': typeof SubscriptionsRoute
+  '/admin-learning': typeof AdminLearningRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services': typeof ServicesIndexRoute
 }
@@ -105,6 +181,23 @@ export interface FileRoutesById {
   '/leadership': typeof LeadershipRoute
   '/path': typeof PathRoute
   '/programmes': typeof ProgrammesRoute
+  '/admin': typeof AdminRoute
+  '/media': typeof MediaRoute
+  '/account': typeof AccountRoute
+  '/tools': typeof ToolsRoute
+  '/platform': typeof PlatformRoute
+  '/legal': typeof LegalRoute
+  '/support': typeof SupportRoute
+  '/community': typeof CommunityRoute
+  '/payments': typeof PaymentsRoute
+  '/admin-control': typeof AdminControlRoute
+  '/chat': typeof ChatRoute
+  '/parent': typeof ParentRoute
+  '/schools': typeof SchoolsRoute
+  '/school-results': typeof SchoolResultsRoute
+  '/cpd': typeof CpdRoute
+  '/subscriptions': typeof SubscriptionsRoute
+  '/admin-learning': typeof AdminLearningRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services/': typeof ServicesIndexRoute
 }
@@ -119,6 +212,18 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/path'
     | '/programmes'
+    | '/admin'
+    | '/media'
+    | '/account'
+    | '/tools'
+    | '/platform'
+    | '/legal'
+    | '/support'
+    | '/community'
+    | '/payments'
+    | '/admin-control'
+    | '/chat'
+    | '/parent'
     | '/services/$slug'
     | '/services/'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +236,18 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/path'
     | '/programmes'
+    | '/admin'
+    | '/media'
+    | '/account'
+    | '/tools'
+    | '/platform'
+    | '/legal'
+    | '/support'
+    | '/community'
+    | '/payments'
+    | '/admin-control'
+    | '/chat'
+    | '/parent'
     | '/services/$slug'
     | '/services'
   id:
@@ -143,6 +260,18 @@ export interface FileRouteTypes {
     | '/leadership'
     | '/path'
     | '/programmes'
+    | '/admin'
+    | '/media'
+    | '/account'
+    | '/tools'
+    | '/platform'
+    | '/legal'
+    | '/support'
+    | '/community'
+    | '/payments'
+    | '/admin-control'
+    | '/chat'
+    | '/parent'
     | '/services/$slug'
     | '/services/'
   fileRoutesById: FileRoutesById
@@ -156,6 +285,17 @@ export interface RootRouteChildren {
   LeadershipRoute: typeof LeadershipRoute
   PathRoute: typeof PathRoute
   ProgrammesRoute: typeof ProgrammesRoute
+  AdminRoute: typeof AdminRoute
+  MediaRoute: typeof MediaRoute
+  AccountRoute: typeof AccountRoute
+  ToolsRoute: typeof ToolsRoute
+  PlatformRoute: typeof PlatformRoute
+  LegalRoute: typeof LegalRoute
+  SupportRoute: typeof SupportRoute
+  CommunityRoute: typeof CommunityRoute
+  PaymentsRoute: typeof PaymentsRoute
+  AdminControlRoute: typeof AdminControlRoute
+  ChatRoute: typeof ChatRoute
   ServicesSlugRoute: typeof ServicesSlugRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
 }
@@ -218,6 +358,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProgrammesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/media': {
+      id: '/media'
+      path: '/media'
+      fullPath: '/media'
+      preLoaderRoute: typeof MediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/': {
       id: '/services/'
       path: '/services'
@@ -225,6 +379,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': { id: '/account'; path: '/account'; fullPath: '/account'; preLoaderRoute: typeof AccountRouteImport; parentRoute: typeof rootRouteImport }
+    '/tools': { id: '/tools'; path: '/tools'; fullPath: '/tools'; preLoaderRoute: typeof ToolsRouteImport; parentRoute: typeof rootRouteImport }
+    '/platform': { id: '/platform'; path: '/platform'; fullPath: '/platform'; preLoaderRoute: typeof PlatformRouteImport; parentRoute: typeof rootRouteImport }
+    '/legal': { id: '/legal'; path: '/legal'; fullPath: '/legal'; preLoaderRoute: typeof LegalRouteImport; parentRoute: typeof rootRouteImport }
+    '/support': { id: '/support'; path: '/support'; fullPath: '/support'; preLoaderRoute: typeof SupportRouteImport; parentRoute: typeof rootRouteImport }
+    '/community': { id: '/community'; path: '/community'; fullPath: '/community'; preLoaderRoute: typeof CommunityRouteImport; parentRoute: typeof rootRouteImport }
+    '/payments': { id: '/payments'; path: '/payments'; fullPath: '/payments'; preLoaderRoute: typeof PaymentsRouteImport; parentRoute: typeof rootRouteImport }
+    '/admin-control': { id: '/admin-control'; path: '/admin-control'; fullPath: '/admin-control'; preLoaderRoute: typeof AdminControlRouteImport; parentRoute: typeof rootRouteImport }
+    '/chat': { id: '/chat'; path: '/chat'; fullPath: '/chat'; preLoaderRoute: typeof ChatRouteImport; parentRoute: typeof rootRouteImport }
+    '/parent': { id: '/parent'; path: '/parent'; fullPath: '/parent'; preLoaderRoute: typeof ParentRouteImport; parentRoute: typeof rootRouteImport }
+    '/schools': { id: '/schools'; path: '/schools'; fullPath: '/schools'; preLoaderRoute: typeof SchoolsRouteImport; parentRoute: typeof rootRouteImport }
+    '/school-results': { id: '/school-results'; path: '/school-results'; fullPath: '/school-results'; preLoaderRoute: typeof SchoolResultsRouteImport; parentRoute: typeof rootRouteImport }
+    '/cpd': { id: '/cpd'; path: '/cpd'; fullPath: '/cpd'; preLoaderRoute: typeof CpdRouteImport; parentRoute: typeof rootRouteImport }
+    '/subscriptions': { id: '/subscriptions'; path: '/subscriptions'; fullPath: '/subscriptions'; preLoaderRoute: typeof SubscriptionsRouteImport; parentRoute: typeof rootRouteImport }
+    '/admin-learning': { id: '/admin-learning'; path: '/admin-learning'; fullPath: '/admin-learning'; preLoaderRoute: typeof AdminLearningRouteImport; parentRoute: typeof rootRouteImport }
     '/services/$slug': {
       id: '/services/$slug'
       path: '/services/$slug'
@@ -244,6 +413,19 @@ const rootRouteChildren: RootRouteChildren = {
   LeadershipRoute: LeadershipRoute,
   PathRoute: PathRoute,
   ProgrammesRoute: ProgrammesRoute,
+  AdminRoute: AdminRoute,
+  MediaRoute: MediaRoute,
+  AccountRoute: AccountRoute,
+  ToolsRoute: ToolsRoute,
+  PlatformRoute: PlatformRoute,
+  LegalRoute: LegalRoute,
+  SupportRoute: SupportRoute,
+  CommunityRoute: CommunityRoute,
+  PaymentsRoute: PaymentsRoute,
+  AdminControlRoute: AdminControlRoute,
+  ChatRoute: ChatRoute,
+  ParentRoute: ParentRoute,
+  SchoolsRoute: SchoolsRoute,
   ServicesSlugRoute: ServicesSlugRoute,
   ServicesIndexRoute: ServicesIndexRoute,
 }
