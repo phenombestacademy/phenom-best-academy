@@ -1,170 +1,43 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ImagePlus, Link2, LogIn, Music2, Palette, Plus, Save, Trash2, Upload, Video, FileText, ExternalLink } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { defaultSettings, deleteMedia, getLocalSettings, getSupabase, listAllMedia, makeMediaId, saveLocalSettings, saveMedia, uploadMediaFile, type MediaItem, type MediaKind, type SiteSettings } from "@/lib/cms";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { Bell, ImagePlus, Mail, Palette, Plus, Save, Trash2, Upload, Users, Landmark } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { defaultSettings, deleteMedia, getLocalSettings, getSiteSettings, getSupabase, listAllMedia, makeMediaId, saveMedia, saveSiteSettings, uploadMediaFile, listAllPaymentProviders, savePaymentProvider, type MediaItem, type MediaKind, type SiteSettings, type PaymentProviderPublic } from '@/lib/cms';
+import { getMyProfile, type Profile } from '@/lib/platform';
+import { deleteAnnouncement, listAllAnnouncements, saveAnnouncement, type Announcement } from '@/lib/notifications';
 
-export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex,nofollow" }] }),
-  component: AdminStudio,
-});
+export const Route = createFileRoute('/admin')({ head:()=>({meta:[{name:'robots',content:'noindex,nofollow'}]}), component:AdminStudio });
+const kindLabels:Record<MediaKind,string>={picture:'Pictures & gallery',video:'Videos',song:'Songs & music',sound:'Free sounds / samples',resource:'Resources & downloads',learning:'Learning materials',news:'News & updates',link:'Useful links'};
 
-const kindLabels: Record<MediaKind, string> = {
-  picture: "Pictures & gallery",
-  video: "Videos",
-  song: "Songs & music",
-  sound: "Free sounds / samples",
-  resource: "Resources & downloads",
-  learning: "Learning materials",
-  news: "News & updates",
-  link: "Useful links",
-};
+type UserRow={id:string;email:string;full_name?:string;role?:string};
+function AdminStudio(){
+ const [profile,setProfile]=useState<Profile|null>(null); const [media,setMedia]=useState<MediaItem[]>([]); const [announcements,setAnnouncements]=useState<Announcement[]>([]); const [settings,setSettings]=useState<SiteSettings>(getLocalSettings()); const [status,setStatus]=useState(''); const [uploading,setUploading]=useState(false); const [editing,setEditing]=useState<MediaItem|null>(null); const [users,setUsers]=useState<UserRow[]>([]); const [paymentSettings,setPaymentSettings]=useState<PaymentProviderPublic[]>([]); const [email,setEmail]=useState({subject:'',body:'',recipient:'all'});
+ const [form,setForm]=useState({title:'',description:'',kind:'picture' as MediaKind,url:'',thumbnailUrl:'',downloadUrl:'',source:'external' as 'external'|'upload',published:true,featured:false});
+ const [notice,setNotice]=useState({id:'',title:'',body:'',linkUrl:'',published:true,floating:true,startsAt:'',endsAt:''});
+ useEffect(()=>{void (async()=>{const p=await getMyProfile();setProfile(p);if(p?.role==='super_admin'){await refresh();try{setSettings(await getSiteSettings()); try{setPaymentSettings(await listAllPaymentProviders())}catch{}}catch{}})()},[]);
+ async function refresh(){try{setMedia(await listAllMedia());setAnnouncements(await listAllAnnouncements())}catch(e){setStatus(e instanceof Error?e.message:'Could not load the control centre.')}}
+ const counts=useMemo(()=>Object.keys(kindLabels).map(k=>({kind:k as MediaKind,count:media.filter(x=>x.kind===k).length})),[media]);
+ if(!profile)return <section className="mx-auto max-w-3xl px-4 py-16"><div className="rounded-3xl border border-line bg-cream p-8"><h1 className="font-display text-3xl font-bold">Administrator access</h1><p className="mt-3 text-muted">Sign in with the designated Super Admin account.</p><Button asChild className="mt-5"><Link to="/account">Go to account</Link></Button></div></section>;
+ if(profile.role!=='super_admin')return <section className="mx-auto max-w-3xl px-4 py-16"><div className="rounded-3xl border border-orange/30 bg-orange/5 p-8"><h1 className="font-display text-3xl font-bold">Access restricted</h1><p className="mt-3 text-muted">Only the designated Super Admin account can use this studio.</p></div></section>;
+ async function upload(file:File){setUploading(true);setStatus('Uploading… Please wait…');try{const url=await uploadMediaFile(file);setForm(x=>({...x,url,source:'upload'}));setStatus('Upload complete.')}catch(e){setStatus(e instanceof Error?e.message:'Upload failed.')}finally{setUploading(false)}}
+ async function saveContent(){if(!form.title.trim()||!form.url.trim())return setStatus('Add a title and URL or upload a file first.');try{await saveMedia({id:editing?.id||makeMediaId(),title:form.title.trim(),description:form.description.trim(),kind:form.kind,source:form.source,url:form.url.trim(),thumbnailUrl:form.thumbnailUrl.trim()||undefined,downloadUrl:form.downloadUrl.trim()||undefined,published:form.published,featured:form.featured,createdAt:editing?.createdAt||new Date().toISOString()});setEditing(null);setForm({title:'',description:'',kind:'picture',url:'',thumbnailUrl:'',downloadUrl:'',source:'external',published:true,featured:false});setStatus('Content saved.');await refresh()}catch(e){setStatus(e instanceof Error?e.message:'Could not save content.')}}
+ function edit(item:MediaItem){setEditing(item);setForm({title:item.title,description:item.description,kind:item.kind,url:item.url,thumbnailUrl:item.thumbnailUrl||'',downloadUrl:item.downloadUrl||'',source:item.source,published:item.published,featured:item.featured})}
+ async function sendEmail(){try{setStatus('Sending email… Please wait…');const s=getSupabase();if(!s)throw new Error('Connect Supabase first.');const {data,error}=await s.functions.invoke('send-admin-email',{body:{subject:email.subject,body:email.body,recipient:email.recipient}});if(error)throw error;setStatus(data?.message||'Email request accepted.');setEmail({subject:'',body:'',recipient:'all'})}catch(e){setStatus(e instanceof Error?e.message:'Email could not be sent.')}}
+ async function loadUsers(){try{const s=getSupabase();if(!s)throw new Error('Connect Supabase first.');const {data,error}=await s.functions.invoke('admin-directory',{body:{}});if(error)throw error;setUsers(data?.users||[])}catch(e){setStatus(e instanceof Error?e.message:'Could not load user directory.')}}
+ async function saveNotice(){try{await saveAnnouncement({id:notice.id||crypto.randomUUID(),title:notice.title,body:notice.body,linkUrl:notice.linkUrl||null,published:notice.published,floating:notice.floating,startsAt:notice.startsAt?new Date(notice.startsAt).toISOString():null,endsAt:notice.endsAt?new Date(notice.endsAt).toISOString():null});setNotice({id:'',title:'',body:'',linkUrl:'',published:true,floating:true,startsAt:'',endsAt:''});setStatus('Announcement published. It can appear in the floating banner and notification bar.');await refresh()}catch(e){setStatus(e instanceof Error?e.message:'Could not save announcement.')}}
+ return <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6"><div className="rounded-3xl bg-navy-deep p-7 text-cream sm:p-10"><p className="text-xs font-semibold uppercase tracking-[.18em] text-gold">Super Admin Studio</p><h1 className="mt-2 font-display text-3xl font-bold sm:text-5xl">Control content, branding, announcements and client communication.</h1><p className="mt-3 max-w-4xl text-cream/75">All customer-facing integrations stay in the background. Customers see only Phenom Best Academy, secure checkout screens when needed, and simple “Working… Please wait…” states.</p></div>
+ {status&&<p className="mt-4 rounded-xl border border-line bg-cream p-4 text-sm" role="status">{status}</p>}
+ <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{counts.slice(0,4).map(x=><div key={x.kind} className="rounded-2xl border border-line bg-cream p-5"><p className="text-xs uppercase tracking-wide text-muted">{kindLabels[x.kind]}</p><p className="mt-2 text-3xl font-bold">{x.count}</p></div>)}</div>
+ <div className="mt-8 grid gap-8 lg:grid-cols-2">
+  <section className="rounded-2xl border border-line bg-cream p-6"><div className="flex items-center gap-2"><ImagePlus className="text-orange"/><h2 className="font-display text-2xl font-semibold">Content & news</h2></div><p className="mt-2 text-sm text-muted">Create or edit news, resources, videos, audio, PDFs and links. Nothing is public until you publish it.</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="sm:col-span-2"><Label>Title</Label><Input value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></div><div><Label>Type</Label><select className="mt-1 h-11 w-full rounded-md border border-line bg-white px-3" value={form.kind} onChange={e=>setForm({...form,kind:e.target.value as MediaKind})}>{Object.entries(kindLabels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></div><div><Label>Source</Label><select className="mt-1 h-11 w-full rounded-md border border-line bg-white px-3" value={form.source} onChange={e=>setForm({...form,source:e.target.value as 'external'|'upload'})}><option value="external">URL / hosted</option><option value="upload">Upload</option></select></div><div className="sm:col-span-2"><Label>URL</Label><Input value={form.url} onChange={e=>setForm({...form,url:e.target.value})} placeholder="Internal/approved URL or uploaded file URL"/></div>{form.source==='upload'&&<label className="sm:col-span-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line p-5 text-sm font-semibold"><Upload className="size-5"/>{uploading?'Uploading… Please wait…':'Choose file'}<input className="sr-only" type="file" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.rtf,.epub,.txt,.csv,.zip" disabled={uploading} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f)}}/></label>}<div className="sm:col-span-2"><Label>Description / write-up</Label><Textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></div><div><Label>Thumbnail URL</Label><Input value={form.thumbnailUrl} onChange={e=>setForm({...form,thumbnailUrl:e.target.value})}/></div><div><Label>Download URL</Label><Input value={form.downloadUrl} onChange={e=>setForm({...form,downloadUrl:e.target.value})}/></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={e=>setForm({...form,published:e.target.checked})}/> Published</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={e=>setForm({...form,featured:e.target.checked})}/> Featured</label></div><div className="mt-4 flex gap-2"><Button onClick={saveContent}><Save className="mr-2 size-4"/>{editing?'Update content':'Publish content'}</Button>{editing?<Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>:null}</div><div className="mt-6 max-h-80 space-y-2 overflow-auto">{media.map(item=><div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-white p-3"><div className="min-w-0"><p className="truncate font-semibold">{item.title}</p><p className="text-xs text-muted">{kindLabels[item.kind]} · {item.published?'Published':'Draft'}</p></div><div className="flex gap-1"><Button size="sm" variant="outline" onClick={()=>edit(item)}>Edit</Button><Button size="sm" variant="outline" onClick={async()=>{await deleteMedia(item.id);await refresh()}}><Trash2 className="size-4"/></Button></div></div>)}</div></section>
+  <section className="rounded-2xl border border-line bg-cream p-6"><div className="flex items-center gap-2"><Bell className="text-gold"/><h2 className="font-display text-2xl font-semibold">Floating announcements & news alerts</h2></div><div className="mt-4 grid gap-3"><Input placeholder="Announcement title" value={notice.title} onChange={e=>setNotice({...notice,title:e.target.value})}/><Textarea placeholder="Message to clients" value={notice.body} onChange={e=>setNotice({...notice,body:e.target.value})}/><Input placeholder="Optional link" value={notice.linkUrl} onChange={e=>setNotice({...notice,linkUrl:e.target.value})}/><div className="grid gap-3 sm:grid-cols-2"><Input type="datetime-local" value={notice.startsAt} onChange={e=>setNotice({...notice,startsAt:e.target.value})}/><Input type="datetime-local" value={notice.endsAt} onChange={e=>setNotice({...notice,endsAt:e.target.value})}/></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={notice.floating} onChange={e=>setNotice({...notice,floating:e.target.checked})}/> Show as floating announcement</label><Button onClick={saveNotice}><Bell className="mr-2 size-4"/>Publish announcement</Button></div><div className="mt-6 space-y-2">{announcements.map(a=><div key={a.id} className="rounded-xl border border-line bg-white p-3"><div className="flex justify-between gap-2"><strong>{a.title}</strong><Button size="sm" variant="outline" onClick={async()=>{await deleteAnnouncement(a.id);await refresh()}}>Delete</Button></div><p className="mt-1 text-sm text-muted">{a.body}</p></div>)}</div></section>
+  <section className="rounded-2xl border border-line bg-cream p-6 lg:col-span-2"><div className="flex items-center gap-2"><Palette className="text-purple"/><h2 className="font-display text-2xl font-semibold">Branding, colours & backgrounds</h2></div><p className="mt-2 text-sm text-muted">Change colours directly, use gradients, upload/use a background image, choose a pattern, change logo URL and adjust text scale. The original Academy identity remains the default.</p><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{(['background','surface','accent','accent2','text','muted','gradientStart','gradientEnd'] as const).map(key=><label key={key} className="text-sm font-semibold">{key}<input type="color" value={settings[key] as string} onChange={e=>setSettings({...settings,[key]:e.target.value})} className="mt-1 h-11 w-full rounded-md border border-line bg-white p-1"/></label>)}<label className="text-sm font-semibold">Background mode<select className="mt-1 h-11 w-full rounded-md border border-line bg-white px-3" value={settings.backgroundMode} onChange={e=>setSettings({...settings,backgroundMode:e.target.value as SiteSettings['backgroundMode']})}><option value="solid">Solid</option><option value="gradient">Gradient</option><option value="image">Image</option><option value="pattern">Pattern</option></select></label><label className="text-sm font-semibold">Background image URL<Input value={settings.backgroundImageUrl} onChange={e=>setSettings({...settings,backgroundImageUrl:e.target.value})}/></label><label className="text-sm font-semibold">Upload background image<input className="mt-1 block w-full text-sm" type="file" accept="image/*" onChange={async e=>{const f=e.target.files?.[0];if(!f)return;try{setStatus('Uploading background… Please wait…');const url=await uploadMediaFile(f);setSettings({...settings,backgroundImageUrl:url,backgroundMode:'image'});setStatus('Background uploaded. Save global appearance.')}catch(err){setStatus(err instanceof Error?err.message:'Background upload failed.')}}}/></label><label className="text-sm font-semibold">Logo URL<Input value={settings.logoUrl} onChange={e=>setSettings({...settings,logoUrl:e.target.value})}/></label><label className="text-sm font-semibold">Gradient angle<input type="range" min="0" max="360" value={settings.gradientAngle} onChange={e=>setSettings({...settings,gradientAngle:Number(e.target.value)})} className="mt-3 w-full"/></label><label className="text-sm font-semibold">Text scale<select className="mt-1 h-11 w-full rounded-md border border-line bg-white px-3" value={settings.fontScale} onChange={e=>setSettings({...settings,fontScale:Number(e.target.value)})}><option value="0.95">95%</option><option value="1">100%</option><option value="1.075">108%</option><option value="1.15">115%</option><option value="1.25">125%</option></select></label></div><Button className="mt-5" onClick={async()=>{try{await saveSiteSettings(settings);setStatus('Global appearance settings saved.')}catch(e){setStatus(e instanceof Error?e.message:'Could not save settings.')}}}><Save className="mr-2 size-4"/>Save global appearance</Button></section>
+  <section className="rounded-2xl border border-line bg-cream p-6 lg:col-span-2"><div className="flex items-center gap-2"><Landmark className="text-green"/><h2 className="font-display text-2xl font-semibold">Payment provider controls</h2></div><p className="mt-2 text-sm text-muted">Enable only merchant accounts you have actually configured. Direct bank details are public payment instructions, so verify them carefully before publishing.</p><div className="mt-4 grid gap-4 md:grid-cols-2">{paymentSettings.map(p=><div key={p.provider} className="rounded-xl border border-line bg-white p-4"><div className="flex items-center justify-between gap-3"><strong className="capitalize">{p.publicLabel}</strong><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={p.enabled} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,enabled:e.target.checked}:x))}/> Enabled</label></div><Input className="mt-3" value={p.publicNote||''} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,publicNote:e.target.value}:x))} placeholder="Public payment note"/>{p.provider==='direct'?<div className="mt-3 grid gap-2"><Input value={p.directBankName||''} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,directBankName:e.target.value}:x))} placeholder="Bank name"/><Input value={p.directAccountName||''} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,directAccountName:e.target.value}:x))} placeholder="Account name"/><Input value={p.directAccountNumber||''} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,directAccountNumber:e.target.value}:x))} placeholder="Account number"/><Textarea value={p.directInstructions||''} onChange={e=>setPaymentSettings(prev=>prev.map(x=>x.provider===p.provider?{...x,directInstructions:e.target.value}:x))} placeholder="Transfer instructions"/></div>:null}<Button size="sm" className="mt-3" onClick={async()=>{try{await savePaymentProvider(p);setStatus(`${p.publicLabel} settings saved.`)}catch(e){setStatus(e instanceof Error?e.message:'Could not save payment settings.')}}}>Save</Button></div>)}</div></section>
 
-function AdminStudio() {
-  const connected = Boolean(getSupabase());
-  const [media, setMedia] = useState<MediaItem[]>([]);
-  const [settings, setSettings] = useState<SiteSettings>(getLocalSettings());
-  const [status, setStatus] = useState("");
-  const [form, setForm] = useState({ title: "", description: "", kind: "picture" as MediaKind, url: "", thumbnailUrl: "", downloadUrl: "", source: "external" as "external" | "upload", published: true, featured: false });
-  const [uploading, setUploading] = useState(false);
-
-  async function refresh() {
-    try {
-      setMedia(await listAllMedia());
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not load content.");
-    }
-  }
-
-  useEffect(() => { void refresh(); }, []);
-  useEffect(() => { document.title = "Admin Studio — Phenom Best Academy"; }, []);
-
-  const counts = useMemo(() => Object.keys(kindLabels).map((kind) => ({ kind: kind as MediaKind, count: media.filter((item) => item.kind === kind).length })), [media]);
-
-  async function addItem() {
-    if (!form.title.trim() || !form.url.trim()) {
-      setStatus("Please provide a title and a media/link URL, or upload a file first.");
-      return;
-    }
-    try {
-      await saveMedia({ id: makeMediaId(), title: form.title.trim(), description: form.description.trim(), kind: form.kind, source: form.source, url: form.url.trim(), thumbnailUrl: form.thumbnailUrl.trim() || undefined, downloadUrl: form.downloadUrl.trim() || undefined, published: form.published, featured: form.featured, createdAt: new Date().toISOString() });
-      setForm({ title: "", description: "", kind: "picture", url: "", thumbnailUrl: "", downloadUrl: "", source: "external", published: true, featured: false });
-      setStatus(connected ? "Content saved to the connected CMS." : "Saved locally on this device. Connect the CMS to publish across devices.");
-      await refresh();
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not save content.");
-    }
-  }
-
-  async function handleFile(file: File) {
-    setUploading(true);
-    setStatus("Uploading media…");
-    try {
-      const url = await uploadMediaFile(file);
-      setForm((current) => ({ ...current, url, source: "upload" }));
-      setStatus("Upload complete. Add the title and publish when ready.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function remove(id: string) {
-    if (!window.confirm("Remove this item from the content library?")) return;
-    await deleteMedia(id);
-    await refresh();
-    setStatus("Content removed.");
-  }
-
-  function updateSettings(next: Partial<SiteSettings>) {
-    const merged = { ...settings, ...next };
-    setSettings(merged);
-    saveLocalSettings(merged);
-    setStatus("Appearance settings saved on this device. Connected settings can be made global in the next CMS connection step.");
-  }
-
-  return (
-    <div className="min-h-dvh bg-paper pb-16">
-      <header className="border-b border-line bg-navy-deep text-cream">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Phenom Best Academy</p>
-            <h1 className="mt-1 font-display text-3xl font-semibold text-cream">Admin Studio</h1>
-            <p className="text-sm text-ivory/70">Content, media, publishing and visual control</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="cream"><Link to="/">View website</Link></Button>
-            {!connected ? <span className="inline-flex items-center rounded-md border border-gold/40 px-3 py-2 text-xs text-gold">Preview / local mode</span> : <span className="inline-flex items-center rounded-md border border-green/50 px-3 py-2 text-xs text-green">CMS connected</span>}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        {!connected ? (
-          <section className="rounded-2xl border border-gold/50 bg-cream p-5 shadow-card">
-            <div className="flex gap-3"><LogIn className="mt-0.5 size-5 text-gold" /><div><h2 className="font-display text-xl font-semibold">Connect the real CMS</h2><p className="mt-1 text-sm leading-relaxed text-muted">This studio is already structured for the full content-management system. It is currently in local mode because the secure database, authentication and media-storage credentials have not been connected yet. Local changes stay on this Android device; once Supabase is connected, the same controls can manage the live site from anywhere.</p></div></div>
-          </section>
-        ) : null}
-
-        {status ? <div className="rounded-xl border border-line bg-cream px-4 py-3 text-sm text-ink" role="status">{status}</div> : null}
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {counts.slice(0, 4).map((item) => <div key={item.kind} className="rounded-2xl border border-line bg-cream p-5 shadow-card"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{kindLabels[item.kind]}</p><p className="mt-2 font-display text-3xl font-semibold">{item.count}</p></div>)}
-        </section>
-
-        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="rounded-2xl border border-line bg-cream p-5 shadow-card sm:p-6">
-            <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange">Content manager</p><h2 className="mt-1 font-display text-2xl font-semibold">Add media, resources or updates</h2><p className="mt-1 text-sm text-muted">Use an external link for most media, or upload a real file when the connected storage is ready.</p></div><Plus className="size-6 text-orange" /></div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="title">Title</Label><Input id="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Phenom Best Academy launch video" /></div>
-              <div className="grid gap-1.5"><Label htmlFor="kind">Content type</Label><select id="kind" className="h-11 rounded-md border border-line bg-cream px-3.5 text-[0.9375rem]" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value as MediaKind })}>{Object.entries(kindLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></div>
-              <div className="grid gap-1.5"><Label htmlFor="source">Source</Label><select id="source" className="h-11 rounded-md border border-line bg-cream px-3.5 text-[0.9375rem]" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value as "external" | "upload" })}><option value="external">External link / hosted media</option><option value="upload">Direct upload</option></select></div>
-              <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="url">Media / page URL</Label><Input id="url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="YouTube, Audiomack, cloud file, image, MP3, M4A, WAV, PDF, etc." /></div>
-              {form.source === "upload" ? <div className="sm:col-span-2"><label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-paper px-4 py-5 text-sm font-semibold hover:border-blue"><Upload className="size-5" />{uploading ? "Uploading…" : "Choose a real media file"}<input type="file" className="sr-only" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.ppt,.pptx,.zip" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleFile(file); }} /></label></div> : null}
-              <div className="grid gap-1.5 sm:col-span-2"><Label htmlFor="description">Description</Label><Textarea id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="A short, useful description for visitors." /></div>
-              <div className="grid gap-1.5"><Label htmlFor="thumb">Thumbnail URL (optional)</Label><Input id="thumb" value={form.thumbnailUrl} onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="Image URL for video/audio/resource card" /></div>
-              <div className="grid gap-1.5"><Label htmlFor="download">Download URL (optional)</Label><Input id="download" value={form.downloadUrl} onChange={(e) => setForm({ ...form, downloadUrl: e.target.value })} placeholder="Only where downloads are permitted" /></div>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} /> Publish immediately</label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} /> Feature this item</label>
-            </div>
-            <Button className="mt-5" size="lg" onClick={() => void addItem()}><Save className="size-4" />Save content</Button>
-          </section>
-
-          <section className="rounded-2xl border border-line bg-cream p-5 shadow-card sm:p-6">
-            <div className="flex items-start gap-3"><Palette className="size-6 text-purple" /><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple">Appearance control</p><h2 className="mt-1 font-display text-2xl font-semibold">Keep the beauty, control the feel</h2><p className="mt-1 text-sm text-muted">These settings establish a safe visual control layer without allowing the brand to become chaotic.</p></div></div>
-            <div className="mt-6 grid gap-4">
-              <div className="grid gap-1.5"><Label htmlFor="background">Background colour</Label><div className="flex gap-2"><input id="background" type="color" className="h-11 w-14 rounded border border-line bg-cream p-1" value={settings.background} onChange={(e) => updateSettings({ background: e.target.value })} /><Input value={settings.background} onChange={(e) => updateSettings({ background: e.target.value })} /></div></div>
-              <div className="grid gap-1.5"><Label htmlFor="surface">Surface colour</Label><div className="flex gap-2"><input id="surface" type="color" className="h-11 w-14 rounded border border-line bg-cream p-1" value={settings.surface} onChange={(e) => updateSettings({ surface: e.target.value })} /><Input value={settings.surface} onChange={(e) => updateSettings({ surface: e.target.value })} /></div></div>
-              <div className="grid gap-1.5"><Label htmlFor="accent">Accent colour</Label><div className="flex gap-2"><input id="accent" type="color" className="h-11 w-14 rounded border border-line bg-cream p-1" value={settings.accent} onChange={(e) => updateSettings({ accent: e.target.value })} /><Input value={settings.accent} onChange={(e) => updateSettings({ accent: e.target.value })} /></div></div>
-              <div className="grid gap-1.5"><Label htmlFor="animation">Animation level</Label><select id="animation" className="h-11 rounded-md border border-line bg-cream px-3.5" value={settings.animation} onChange={(e) => updateSettings({ animation: e.target.value as SiteSettings["animation"] })}><option value="refined">Refined professional</option><option value="minimal">Minimal</option><option value="off">Off</option></select></div>
-              <div className="rounded-xl border border-line bg-paper p-4 text-sm leading-relaxed text-muted"><strong className="text-ink">Logo control:</strong> the official Phenom Best Academy logo remains the default. The full connected CMS will let you replace the logo by uploading a new approved asset rather than editing the site code.</div>
-              <Button variant="outline" onClick={() => { setSettings(defaultSettings); saveLocalSettings(defaultSettings); setStatus("Appearance restored to the approved Phenom Best defaults."); }}><Palette className="size-4" />Restore brand defaults</Button>
-            </div>
-          </section>
-        </div>
-
-        <section className="rounded-2xl border border-line bg-cream p-5 shadow-card sm:p-6">
-          <div className="flex items-center justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue">Content library</p><h2 className="mt-1 font-display text-2xl font-semibold">Everything you publish</h2></div><Link2 className="size-6 text-blue" /></div>
-          <div className="mt-5 grid gap-3">
-            {media.length === 0 ? <p className="rounded-xl bg-paper p-5 text-sm text-muted">Your library is ready. Add your first picture, video, song, sound, resource, learning material, news item or useful link above.</p> : media.map((item) => <article key={item.id} className="flex flex-col gap-4 rounded-xl border border-line bg-paper p-4 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-cream px-2.5 py-1 text-xs font-semibold text-blue">{kindLabels[item.kind]}</span>{item.published ? <span className="text-xs font-semibold text-green">Published</span> : <span className="text-xs font-semibold text-muted">Draft</span>}{item.featured ? <span className="text-xs font-semibold text-gold">Featured</span> : null}</div><h3 className="mt-2 font-display text-xl font-semibold">{item.title}</h3>{item.description ? <p className="mt-1 text-sm text-muted">{item.description}</p> : null}<p className="mt-2 truncate text-xs text-muted">{item.url}</p></div><div className="flex shrink-0 gap-2"><a href={item.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-md border border-line px-3 text-sm font-semibold"><ExternalLink className="size-4" />Open</a><Button variant="outline" onClick={() => void remove(item.id)}><Trash2 className="size-4" />Remove</Button></div></article>)}
-          </div>
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <AdminFeature icon={ImagePlus} title="Pictures" body="Direct uploads or external image hosting, with gallery-ready records." />
-          <AdminFeature icon={Video} title="Video" body="YouTube/external embeds plus direct video uploads when appropriate." />
-          <AdminFeature icon={Music2} title="Music & sound" body="MP3, M4A, WAV and other supported audio sources with lightweight external hosting." />
-          <AdminFeature icon={FileText} title="Resources" body="PDFs, documents, learning materials, downloads, news and useful links." />
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function AdminFeature({ icon: Icon, title, body }: { icon: typeof ImagePlus; title: string; body: string }) {
-  return <div className="rounded-2xl border border-line bg-cream p-5 shadow-card"><Icon className="size-6 text-orange" /><h3 className="mt-3 font-display text-xl font-semibold">{title}</h3><p className="mt-1 text-sm leading-relaxed text-muted">{body}</p></div>;
+  <section className="rounded-2xl border border-line bg-cream p-6"><div className="flex items-center gap-2"><Mail className="text-blue"/><h2 className="font-display text-2xl font-semibold">Direct email</h2></div><p className="mt-2 text-sm text-muted">Customer passwords are never shown. This control can send email to subscribed users after the Academy connects a server-side email provider such as Resend.</p><div className="mt-4 grid gap-3"><Input placeholder="Subject" value={email.subject} onChange={e=>setEmail({...email,subject:e.target.value})}/><Textarea placeholder="Message" value={email.body} onChange={e=>setEmail({...email,body:e.target.value})}/><select className="h-11 rounded-md border border-line bg-white px-3" value={email.recipient} onChange={e=>setEmail({...email,recipient:e.target.value})}><option value="all">All active email subscribers</option><option value="admins">Administrators</option><option value="users">All registered users</option></select><Button onClick={sendEmail}><Mail className="mr-2 size-4"/>Send email</Button></div></section>
+  <section className="rounded-2xl border border-line bg-cream p-6"><div className="flex items-center gap-2"><Users className="text-green"/><h2 className="font-display text-2xl font-semibold">Client email directory</h2></div><p className="mt-2 text-sm text-muted">You can see email addresses needed for Academy communication, but passwords are never exposed. Load the directory only when you need it.</p><Button className="mt-4" variant="outline" onClick={loadUsers}>Load email directory</Button><div className="mt-4 max-h-64 space-y-2 overflow-auto">{users.map(u=><div key={u.id} className="rounded-lg bg-white p-3"><strong>{u.full_name||'User'}</strong><p className="text-sm text-muted">{u.email} · {u.role||'user'}</p></div>)}</div></section>
+ </div></section>
 }
