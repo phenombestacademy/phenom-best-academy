@@ -25,3 +25,6 @@ V5 is the complete World-Class Academy project with the V4 production activation
 7. Set the production Site URL and redirect URLs.
 
 See DEPLOYMENT-ACTIVATION-GUIDE-V4.md for the detailed provider checklist.
+
+## Subscription activation note
+Flutterwave's verified webhook now converts successful qualifying premium payment orders into active subscription records. Paystack, Stripe and Interswitch still require their respective production webhook/verification endpoints to be configured before they can automatically grant subscription entitlements.
