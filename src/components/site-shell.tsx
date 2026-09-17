@@ -114,9 +114,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
               {(notifications.some(n=>!n.readAt)||announcements.length>0) ? <span className="absolute right-1 top-1 flex size-2.5 rounded-full bg-orange" /> : null}
             </button>
             <div className="hidden gap-2 sm:flex"><Button asChild size="sm" variant="cream"><Link to="/account">Account</Link></Button><Button asChild size="sm"><Link to="/enquire">Make an enquiry</Link></Button></div>
-            <Button asChild size="sm" variant="cream" className="sm:hidden">
-              <Link to="/enquire">Enquire</Link>
-            </Button>
+            <div className="flex gap-1.5 sm:hidden">
+              <Button asChild size="sm" variant="cream">
+                <Link to="/account">Account</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to="/enquire">Enquire</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
