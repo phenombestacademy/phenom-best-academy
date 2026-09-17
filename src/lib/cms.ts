@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import * as tus from "tus-js-client";
 
 export type MediaKind =
   | "picture"
@@ -73,13 +74,11 @@ export function getSupabase(): SupabaseClient | null {
   ) as string | undefined;
 
   if (!url || !key) return null;
-
   return createClient(url, key);
 }
 
 export function getLocalMedia(): MediaItem[] {
   if (typeof window === "undefined") return [];
-
   try {
     return JSON.parse(
       localStorage.getItem(MEDIA_KEY) || "[]",
@@ -117,7 +116,6 @@ export function applySettings(settings: SiteSettings) {
   if (typeof document === "undefined") return;
 
   const root = document.documentElement;
-
   root.style.setProperty("--cms-background", settings.background);
   root.style.setProperty("--cms-surface", settings.surface);
   root.style.setProperty("--cms-accent", settings.accent);
@@ -135,30 +133,22 @@ export function applySettings(settings: SiteSettings) {
     settings.backgroundMode === "image" &&
     settings.backgroundImageUrl
   ) {
-    body.style.background = `linear-gradient(rgb(13 21 34 / .12),rgb(13 21 34 / .12)),url(${settings.backgroundImageUrl}) center/cover fixed`;
+    body.style.background =
+      `linear-gradient(rgb(13 21 34 / .12),rgb(13 21 34 / .12)),url(${settings.backgroundImageUrl}) center/cover fixed`;
   } else if (settings.backgroundMode === "pattern") {
     body.style.backgroundColor = settings.background;
 
     const patterns: Record<string, string> = {
       none: "",
       dots:
-        "radial-gradient(circle, color-mix(in srgb, " +
-        settings.accent +
-        " 22%, transparent) 1.2px, transparent 1.2px)",
+        `radial-gradient(circle, color-mix(in srgb, ${settings.accent} 22%, transparent) 1.2px, transparent 1.2px)`,
       grid:
-        "linear-gradient(color-mix(in srgb, " +
-        settings.accent2 +
-        " 12%, transparent) 1px, transparent 1px),linear-gradient(90deg,color-mix(in srgb," +
-        settings.accent2 +
-        " 12%, transparent) 1px,transparent 1px)",
+        `linear-gradient(color-mix(in srgb, ${settings.accent2} 12%, transparent) 1px, transparent 1px),linear-gradient(90deg,color-mix(in srgb, ${settings.accent2} 12%, transparent) 1px,transparent 1px)`,
       diagonal:
-        "repeating-linear-gradient(135deg,color-mix(in srgb, " +
-        settings.accent +
-        " 9%, transparent) 0 2px,transparent 2px 14px)",
+        `repeating-linear-gradient(135deg,color-mix(in srgb, ${settings.accent} 9%, transparent) 0 2px,transparent 2px 14px)`,
     };
 
     body.style.backgroundImage = patterns[settings.pattern] || "";
-
     body.style.backgroundSize =
       settings.pattern === "dots"
         ? "18px 18px"
@@ -173,7 +163,6 @@ export function applySettings(settings: SiteSettings) {
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const supabase = getSupabase();
-
   if (!supabase) return getLocalSettings();
 
   const { data, error } = await supabase
@@ -183,14 +172,11 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     .maybeSingle();
 
   if (error) throw error;
-
   if (!data) return getLocalSettings();
 
   const settings: SiteSettings = {
     ...defaultSettings,
-    background: String(
-      data.background || defaultSettings.background,
-    ),
+    background: String(data.background || defaultSettings.background),
     surface: String(data.surface || defaultSettings.surface),
     accent: String(data.accent || defaultSettings.accent),
     accent2: String(data.accent2 || defaultSettings.accent2),
@@ -199,62 +185,48 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     animation:
       (data.animation as SiteSettings["animation"]) ||
       defaultSettings.animation,
-    logoUrl: String(
-      data.logo_url || defaultSettings.logoUrl,
-    ),
+    logoUrl: String(data.logo_url || defaultSettings.logoUrl),
     backgroundMode:
       (data.background_mode as BackgroundMode) ||
       defaultSettings.backgroundMode,
-    backgroundImageUrl: String(
-      data.background_image_url || "",
-    ),
+    backgroundImageUrl: String(data.background_image_url || ""),
     gradientStart: String(
       data.gradient_start || defaultSettings.gradientStart,
     ),
-    gradientEnd: String(
-      data.gradient_end || defaultSettings.gradientEnd,
-    ),
+    gradientEnd: String(data.gradient_end || defaultSettings.gradientEnd),
     gradientAngle: Number(data.gradient_angle || 135),
     pattern: String(data.pattern || "none"),
     fontScale: Number(data.font_scale || 1),
   };
 
   saveLocalSettings(settings);
-
   return settings;
 }
 
-export async function saveSiteSettings(
-  settings: SiteSettings,
-) {
+export async function saveSiteSettings(settings: SiteSettings) {
   saveLocalSettings(settings);
-
   const supabase = getSupabase();
-
   if (!supabase) return;
 
-  const { error } = await supabase
-    .from("site_settings")
-    .upsert({
-      id: 1,
-      background: settings.background,
-      surface: settings.surface,
-      accent: settings.accent,
-      accent2: settings.accent2,
-      text: settings.text,
-      muted: settings.muted,
-      animation: settings.animation,
-      logo_url: settings.logoUrl,
-      background_mode: settings.backgroundMode,
-      background_image_url:
-        settings.backgroundImageUrl || null,
-      gradient_start: settings.gradientStart,
-      gradient_end: settings.gradientEnd,
-      gradient_angle: settings.gradientAngle,
-      pattern: settings.pattern,
-      font_scale: settings.fontScale,
-      updated_at: new Date().toISOString(),
-    });
+  const { error } = await supabase.from("site_settings").upsert({
+    id: 1,
+    background: settings.background,
+    surface: settings.surface,
+    accent: settings.accent,
+    accent2: settings.accent2,
+    text: settings.text,
+    muted: settings.muted,
+    animation: settings.animation,
+    logo_url: settings.logoUrl,
+    background_mode: settings.backgroundMode,
+    background_image_url: settings.backgroundImageUrl || null,
+    gradient_start: settings.gradientStart,
+    gradient_end: settings.gradientEnd,
+    gradient_angle: settings.gradientAngle,
+    pattern: settings.pattern,
+    font_scale: settings.fontScale,
+    updated_at: new Date().toISOString(),
+  });
 
   if (error) throw error;
 }
@@ -270,21 +242,13 @@ export type PaymentProviderPublic = {
   directInstructions?: string | null;
 };
 
-function mapPaymentProvider(
-  r: Record<string, unknown>,
-): PaymentProviderPublic {
+function mapPaymentProvider(r: Record<string, unknown>): PaymentProviderPublic {
   return {
     provider: String(r.provider),
     enabled: Boolean(r.enabled),
-    publicLabel: String(
-      r.public_label || r.provider,
-    ),
-    publicNote: r.public_note
-      ? String(r.public_note)
-      : null,
-    directBankName: r.direct_bank_name
-      ? String(r.direct_bank_name)
-      : null,
+    publicLabel: String(r.public_label || r.provider),
+    publicNote: r.public_note ? String(r.public_note) : null,
+    directBankName: r.direct_bank_name ? String(r.direct_bank_name) : null,
     directAccountName: r.direct_account_name
       ? String(r.direct_account_name)
       : null,
@@ -301,7 +265,6 @@ export async function listAllPaymentProviders(): Promise<
   PaymentProviderPublic[]
 > {
   const supabase = getSupabase();
-
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -310,21 +273,14 @@ export async function listAllPaymentProviders(): Promise<
     .order("provider");
 
   if (error) throw error;
-
-  return (data ?? []).map(
-    (r: Record<string, unknown>) =>
-      mapPaymentProvider(r),
+  return (data ?? []).map((row) =>
+    mapPaymentProvider(row as Record<string, unknown>),
   );
 }
 
-export async function savePaymentProvider(
-  input: PaymentProviderPublic,
-) {
+export async function savePaymentProvider(input: PaymentProviderPublic) {
   const supabase = getSupabase();
-
-  if (!supabase) {
-    throw new Error("Connect Supabase first.");
-  }
+  if (!supabase) throw new Error("Connect Supabase first.");
 
   const { error } = await supabase
     .from("payment_provider_settings")
@@ -332,14 +288,10 @@ export async function savePaymentProvider(
       enabled: input.enabled,
       public_label: input.publicLabel,
       public_note: input.publicNote || null,
-      direct_bank_name:
-        input.directBankName || null,
-      direct_account_name:
-        input.directAccountName || null,
-      direct_account_number:
-        input.directAccountNumber || null,
-      direct_instructions:
-        input.directInstructions || null,
+      direct_bank_name: input.directBankName || null,
+      direct_account_name: input.directAccountName || null,
+      direct_account_number: input.directAccountNumber || null,
+      direct_instructions: input.directInstructions || null,
       updated_at: new Date().toISOString(),
     })
     .eq("provider", input.provider);
@@ -347,11 +299,8 @@ export async function savePaymentProvider(
   if (error) throw error;
 }
 
-export async function listPaymentProviders(): Promise<
-  PaymentProviderPublic[]
-> {
+export async function listPaymentProviders(): Promise<PaymentProviderPublic[]> {
   const supabase = getSupabase();
-
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -361,95 +310,96 @@ export async function listPaymentProviders(): Promise<
     .order("provider");
 
   if (error) throw error;
-
-  return (data ?? []).map(
-    (r: Record<string, unknown>) =>
-      mapPaymentProvider(r),
+  return (data ?? []).map((row) =>
+    mapPaymentProvider(row as Record<string, unknown>),
   );
 }
 
 export function makeMediaId() {
-  return `media-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  return `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function listPublishedMedia(): Promise<
-  MediaItem[]
-> {
-  const supabase = getSupabase();
+function toRow(item: MediaItem) {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    kind: item.kind,
+    source: item.source,
+    url: item.url,
+    thumbnail_url: item.thumbnailUrl ?? null,
+    download_url: item.downloadUrl ?? null,
+    published: item.published,
+    featured: item.featured,
+    created_at: item.createdAt,
+  };
+}
 
-  if (!supabase) {
-    return getLocalMedia().filter(
-      (item) => item.published,
-    );
-  }
+function fromRow(row: Record<string, unknown>): MediaItem {
+  return {
+    id: String(row.id),
+    title: String(row.title ?? ""),
+    description: String(row.description ?? ""),
+    kind: row.kind as MediaKind,
+    source: row.source as "upload" | "external",
+    url: String(row.url ?? ""),
+    thumbnailUrl: row.thumbnail_url
+      ? String(row.thumbnail_url)
+      : undefined,
+    downloadUrl: row.download_url ? String(row.download_url) : undefined,
+    published: Boolean(row.published),
+    featured: Boolean(row.featured),
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+export async function listPublishedMedia(): Promise<MediaItem[]> {
+  const supabase = getSupabase();
+  if (!supabase) return getLocalMedia().filter((item) => item.published);
 
   const { data, error } = await supabase
     .from("media_items")
     .select("*")
     .eq("published", true)
-    .order("created_at", {
-      ascending: false,
-    });
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
-
   return (data ?? []).map(fromRow);
 }
 
-export async function listAllMedia(): Promise<
-  MediaItem[]
-> {
+export async function listAllMedia(): Promise<MediaItem[]> {
   const supabase = getSupabase();
-
   if (!supabase) return getLocalMedia();
 
   const { data, error } = await supabase
     .from("media_items")
     .select("*")
-    .order("created_at", {
-      ascending: false,
-    });
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
-
   return (data ?? []).map(fromRow);
 }
 
-export async function saveMedia(
-  item: MediaItem,
-) {
+export async function saveMedia(item: MediaItem) {
   const supabase = getSupabase();
 
   if (!supabase) {
     saveLocalMedia([
       item,
-      ...getLocalMedia().filter(
-        (existing) => existing.id !== item.id,
-      ),
+      ...getLocalMedia().filter((existing) => existing.id !== item.id),
     ]);
     return;
   }
 
-  const { error } = await supabase
-    .from("media_items")
-    .upsert(toRow(item));
-
+  const { error } = await supabase.from("media_items").upsert(toRow(item));
   if (error) throw error;
 }
 
-export async function deleteMedia(
-  id: string,
-) {
+export async function deleteMedia(id: string) {
   const supabase = getSupabase();
 
   if (!supabase) {
-    saveLocalMedia(
-      getLocalMedia().filter(
-        (item) => item.id !== id,
-      ),
-    );
+    saveLocalMedia(getLocalMedia().filter((item) => item.id !== id));
     return;
   }
 
@@ -461,21 +411,28 @@ export async function deleteMedia(
   if (error) throw error;
 }
 
+export type UploadProgress = {
+  percentage: number;
+  bytesUploaded: number;
+  bytesTotal: number;
+  phase: "starting" | "uploading" | "finalizing" | "complete";
+};
+
+export type UploadProgressCallback = (progress: UploadProgress) => void;
+
 /**
- * Upload a permanent Academy media file.
+ * Permanent Academy media upload.
  *
- * IMPORTANT:
- * - There is intentionally NO artificial 500 MB frontend limit here.
- * - The Supabase Storage policies remain the real authorization layer.
- * - Only the Super Admin should be able to write to the permanent
- *   Academy media bucket/library.
- * - The function returns the public URL after a successful upload.
+ * Authorization is deliberately not handled by a client-side role flag.
+ * Supabase Storage RLS remains the authorization boundary.
  *
- * Actual maximum file size can still be affected by Supabase plan/storage
- * configuration, browser/network limits, and the upload method.
+ * Supabase recommends TUS resumable uploads for large files and for
+ * progress events. We use TUS for every upload here so the Admin Studio
+ * can display real progress consistently, including on mobile networks.
  */
 export async function uploadMediaFile(
   file: File,
+  onProgress?: UploadProgressCallback,
 ): Promise<string> {
   const supabase = getSupabase();
 
@@ -489,9 +446,7 @@ export async function uploadMediaFile(
     /^(image\/|video\/|audio\/|application\/(pdf|msword|rtf|zip|epub\+zip|json|csv)|text\/(plain|csv|markdown)|application\/vnd\.(openxmlformats-officedocument\.|ms-excel|ms-powerpoint))/i;
 
   if (file.type && !allowed.test(file.type)) {
-    throw new Error(
-      "This file type is not supported.",
-    );
+    throw new Error("This file type is not supported.");
   }
 
   const safe = file.name
@@ -502,71 +457,103 @@ export async function uploadMediaFile(
     typeof crypto !== "undefined" &&
     typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
-      : Math.random()
-          .toString(36)
-          .slice(2);
+      : Math.random().toString(36).slice(2);
 
   const path = `academy/${Date.now()}-${randomId}-${safe}`;
 
-  const { error } = await supabase.storage
-    .from("media")
-    .upload(path, file, {
-      upsert: false,
-      contentType:
-        file.type || undefined,
-      cacheControl: "3600",
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error(
+      "Please sign in with the authorised Super Admin account before uploading Academy media.",
+    );
+  }
+
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!projectUrl) {
+    throw new Error("Supabase project configuration is missing.");
+  }
+
+  let projectId = "";
+  try {
+    projectId = new URL(projectUrl).hostname.split(".")[0];
+  } catch {
+    throw new Error("Supabase project URL is invalid.");
+  }
+
+  if (!projectId) {
+    throw new Error("Supabase project reference could not be determined.");
+  }
+
+  onProgress?.({
+    percentage: 0,
+    bytesUploaded: 0,
+    bytesTotal: file.size,
+    phase: "starting",
+  });
+
+  const publicUrl = supabase.storage.from("media").getPublicUrl(path).data
+    .publicUrl;
+
+  await new Promise<void>((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${session.access_token}`,
+        "x-upsert": "false",
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      chunkSize: 6 * 1024 * 1024,
+      metadata: {
+        bucketName: "media",
+        objectName: path,
+        contentType: file.type || "application/octet-stream",
+        cacheControl: "3600",
+      },
+      onError: (error) => reject(error),
+      onProgress: (bytesUploaded, bytesTotal) => {
+        onProgress?.({
+          percentage:
+            bytesTotal > 0
+              ? Math.min(99, (bytesUploaded / bytesTotal) * 100)
+              : 0,
+          bytesUploaded,
+          bytesTotal,
+          phase: "uploading",
+        });
+      },
+      onSuccess: () => {
+        onProgress?.({
+          percentage: 100,
+          bytesUploaded: file.size,
+          bytesTotal: file.size,
+          phase: "finalizing",
+        });
+        resolve();
+      },
     });
 
-  if (error) throw error;
+    void upload
+      .findPreviousUploads()
+      .then((previousUploads) => {
+        if (previousUploads.length > 0) {
+          upload.resumeFromPreviousUpload(previousUploads[0]);
+        }
+        upload.start();
+      })
+      .catch(reject);
+  });
 
-  return supabase.storage
-    .from("media")
-    .getPublicUrl(path)
-    .data.publicUrl;
-}
+  onProgress?.({
+    percentage: 100,
+    bytesUploaded: file.size,
+    bytesTotal: file.size,
+    phase: "complete",
+  });
 
-function toRow(i: MediaItem) {
-  return {
-    id: i.id,
-    title: i.title,
-    description: i.description,
-    kind: i.kind,
-    source: i.source,
-    url: i.url,
-    thumbnail_url:
-      i.thumbnailUrl ?? null,
-    download_url:
-      i.downloadUrl ?? null,
-    published: i.published,
-    featured: i.featured,
-    created_at: i.createdAt,
-  };
-}
-
-function fromRow(
-  r: Record<string, unknown>,
-): MediaItem {
-  return {
-    id: String(r.id),
-    title: String(r.title ?? ""),
-    description: String(
-      r.description ?? "",
-    ),
-    kind: r.kind as MediaKind,
-    source:
-      r.source as "upload" | "external",
-    url: String(r.url ?? ""),
-    thumbnailUrl: r.thumbnail_url
-      ? String(r.thumbnail_url)
-      : undefined,
-    downloadUrl: r.download_url
-      ? String(r.download_url)
-      : undefined,
-    published: Boolean(r.published),
-    featured: Boolean(r.featured),
-    createdAt: String(
-      r.created_at ??
-        new Date().toISOString(),
-    ),
-  };
+  return publicUrl;
 }
