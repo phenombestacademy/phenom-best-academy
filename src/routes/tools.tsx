@@ -577,7 +577,6 @@ function ToolsPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [toolLocale, setToolLocale] = useState<SupportedLocale>(() => getLocale());
-  const [keypadOpen, setKeypadOpen] = useState(true);
 
   const [unitCategory, setUnitCategory] = useState("Length");
   const [unitFrom, setUnitFrom] = useState("m");
@@ -1217,7 +1216,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
     <>
       <style>{`
         .phenom-tools-page { min-height: 70vh; }
-        [data-phenom-tools-theme="dark"] .phenom-tools-page { background: #0f1728; color: #f8f3e7; border-radius: 2rem; padding-bottom: 2rem; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-page { background: #0f1728; color: #f1f5f9; border-radius: 2rem; padding-bottom: 2rem; }
         [data-phenom-tools-theme="dark"] .phenom-tools-surface { background: #182235 !important; color: #f8f3e7; border-color: #33445f !important; }
         [data-phenom-tools-theme="dark"] .phenom-tools-surface .text-muted { color: #b9c3d4 !important; }
         [data-phenom-tools-theme="dark"] .phenom-tools-surface input,
@@ -1227,8 +1226,8 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
         [data-phenom-tools-theme="dark"] .phenom-tools-surface .bg-white { background: #101827 !important; }
       `}</style>
       <section
-      className="phenom-tools-page mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-5 lg:px-7"
-      style={{ fontSize: `${fontScale}em` }}
+      className="phenom-tools-page mx-auto w-full max-w-[1600px] px-3 py-5 text-ink sm:px-5 lg:px-7"
+      style={{ fontSize: `${fontScale}em`, color: "#0a0a0a" }}
     >
       <div
         className="relative overflow-hidden rounded-[2rem] text-cream shadow-card"
@@ -1253,7 +1252,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
               <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#FBBF24" }}>
                 Phenom Best Academy
               </p>
-              <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl">
+              <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl" style={{ color: "#4ADE80" }}>
                 Phenom Calculator
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-cream/75 sm:text-base">
@@ -1389,15 +1388,26 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
         </div>
       ) : null}
 
+      {!translationPremium ? (
+        <div className="mt-4 rounded-2xl border border-orange/30 bg-orange/5 p-4 text-sm text-ink">
+          <p className="font-semibold text-ink">Free preview of Premium Tools</p>
+          <p className="mt-1 text-muted">
+            You can open every Tool Hub section to explore what is available. Some advanced actions
+            (long translations, deeper multi-image processing, and premium speech pathways) stay
+            locked until Tools Premium is active — or until a matching CPD language plan unlocks
+            only the speech capability it requires. Standard calculator, units, formulas, graph,
+            codes and productivity helpers remain available.
+          </p>
+        </div>
+      ) : null}
+
       {activeTool === "calculator" ? (
         <div
           ref={calculatorRef}
-          onPointerDown={() => {
-            if (!keypadOpen) setKeypadOpen(true);
-          }}
-          className={`phenom-tools-surface mt-5 rounded-[2rem] border border-line bg-cream p-4 shadow-card sm:p-6 ${
-            calculatorFullscreen ? "h-screen overflow-auto rounded-none" : ""
+          className={`phenom-tools-surface mt-3 rounded-[2rem] border border-line bg-cream p-4 text-ink shadow-card sm:mt-5 sm:p-6 ${
+            calculatorFullscreen ? "fixed inset-0 z-[60] m-0 h-[100dvh] max-h-[100dvh] overflow-auto rounded-none" : "min-h-[min(100dvh,920px)]"
           }`}
+          style={{ color: "#0a0a0a" }}
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1416,8 +1426,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
               <textarea
                 value={expr}
                 onChange={(e) => setExpr(e.target.value)}
-                onFocus={() => setKeypadOpen(true)}
-                onClick={() => setKeypadOpen(true)}
+                
                 onKeyDown={(e) => { if (e.key === "Enter") calculate(); }}
                 className="mt-2 min-h-16 w-full resize-y border-0 bg-transparent p-0 text-right font-mono text-2xl font-semibold outline-none sm:text-3xl"
                 placeholder="12 × 4 + 5"
@@ -1434,9 +1443,8 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
 
           <button
             type="button"
-            onClick={() => setKeypadOpen(true)}
             className="mt-3 block w-full rounded-2xl bg-navy-deep p-4 text-right text-3xl font-bold text-gold shadow-inner sm:text-5xl"
-            aria-label="Open calculator keyboard"
+            aria-label="Calculator result"
           >
             {result || "0"}
           </button>
@@ -1449,43 +1457,16 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <Button size="sm" variant="outline" onClick={() => setExpr((value) => `${value}π`)}>π</Button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-line bg-paper/70 p-3 text-sm text-muted">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span><strong>Floating calculator keyboard</strong> stays above your phone controls and never pushes the Tool Hub screen.</span>
-              <button
-                type="button"
-                onClick={() => setKeypadOpen(true)}
-                className="font-semibold text-navy-deep underline underline-offset-2"
-              >
-                Open keyboard
-              </button>
-            </div>
-          </div>
-
-          {keypadOpen ? (
-            <div
-              className="fixed left-1/2 z-[70] w-[min(44rem,calc(100vw-1rem))] -translate-x-1/2 rounded-[1.5rem] border border-line bg-cream/95 p-3 shadow-2xl backdrop-blur-xl"
-              style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-              role="dialog"
-              aria-label="Floating calculator keyboard"
-              onPointerDown={(event) => event.stopPropagation()}
-            >
+          {/* Inline keypad — no floating overlay */}
+          <div className="mt-4 rounded-[1.5rem] border border-line bg-white p-3 shadow-sm">
               <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
                 <div className="flex items-center gap-2">
-                  <Keyboard className="size-5 text-purple" />
+                  <Keyboard className="size-5" style={{ color: "#16A34A" }} />
                   <div>
-                    <p className="font-semibold">Calculator keyboard</p>
-                    <p className="text-[11px] text-muted">Tap the expression or result to call it back.</p>
+                    <p className="font-semibold text-ink">Calculator keypad</p>
+                    <p className="text-[11px] text-muted">Basic and Scientific stay on this screen. Other tools open from the menu above.</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setKeypadOpen(false)}
-                  className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold"
-                  aria-label="Minimise calculator keyboard"
-                >
-                  Minimise
-                </button>
               </div>
 
               <div className="mt-2 flex items-center gap-2 overflow-x-auto">
@@ -1567,25 +1548,10 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                 ))}
               </div>
 
-              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted">
-                <span>DEG/RAD/GRAD · memory controls remain above.</span>
-                <button type="button" onClick={() => setKeypadOpen(false)} className="font-semibold text-navy-deep">
-                  Hide
-                </button>
+              <div className="mt-2 text-[11px] text-muted">
+                <span>DEG / RAD / GRAD · memory controls remain above. Switch tools with the dropdown menu only.</span>
               </div>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setKeypadOpen(true)}
-              className="fixed bottom-4 right-4 z-[69] flex items-center gap-2 rounded-full border border-line bg-navy-deep px-4 py-3 text-sm font-bold text-gold shadow-2xl"
-              style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
-              aria-label="Show calculator keyboard"
-            >
-              <Keyboard className="size-5" />
-              Keyboard
-            </button>
-          )}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_.8fr]">
             <div>
@@ -1938,7 +1904,7 @@ function ToolCard({
   children: ReactNode;
 }) {
   return (
-    <section className="phenom-tools-surface mt-5 rounded-[2rem] border border-line bg-cream p-4 shadow-card sm:p-6">
+    <section className="phenom-tools-surface mt-5 rounded-[2rem] border border-line bg-cream p-4 text-ink shadow-card sm:p-6">
       <div className="flex items-start gap-3">
         <div className="mt-1 rounded-xl bg-paper p-2">{icon}</div>
         <div>
