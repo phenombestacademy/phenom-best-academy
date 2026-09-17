@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { SiteShell } from "@/components/site-shell";
@@ -58,6 +60,8 @@ function RootDocument() {
         <SiteShell>
           <Outlet />
         </SiteShell>
+        <Analytics />
+        <SpeedInsights />
         <Scripts />
       </body>
     </html>
