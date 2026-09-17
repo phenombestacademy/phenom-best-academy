@@ -1,43 +1,70 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createFileRoute } from "@tanstack/react-router";
 import {
   Calculator,
-  Camera,
-  FlaskConical,
-  Languages,
-  RefreshCw,
-  ScanText,
-  Trash2,
-  Barcode,
+  ChevronDown,
   Copy,
-  Brain,
-  Minimize2,
+  Crown,
+  Download,
+  FileText,
+  FlaskConical,
+  GraduationCap,
+  Languages,
+  LineChart,
   Maximize2,
+  Minimize2,
+  Moon,
+  Monitor,
+  Play,
+  Printer,
+  QrCode,
+  RefreshCw,
+  ScanLine,
+  Search,
+  Settings2,
+  ShieldCheck,
   Keyboard,
-  Delete,
-  RotateCcw,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+  Sun,
+  Trash2,
+  Upload,
+  Volume2,
+  X,
+  Clock,
+  Percent,
+  Calendar,
+  Shuffle,
+  StickyNote,
+} from "lucide-react";
+import bwipjs from "@bwip-js/browser";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  getCurrencyCodes,
-  currencyName,
-  getLiveCurrencyRates,
   convertCurrency,
+  currencyName,
+  getCurrencyCodes,
+  getLiveCurrencyRates,
   type CurrencyState,
-} from '@/lib/currency';
-import { getSupabase } from '@/lib/cms';
+} from "@/lib/currency";
+import { getSupabase } from "@/lib/cms";
+import { getLocale, setLocale, supportedLocales, type SupportedLocale } from "@/lib/i18n";
+import { getMyActiveSubscriptions, type ActiveSubscription } from "@/lib/platform";
 
-export const Route = createFileRoute('/tools')({ component: ToolsPage });
+export const Route = createFileRoute("/tools")({
+  component: ToolsPage,
+});
 
-const formulas = [
-  ['Mathematics', 'Quadratic equation', 'x = (-b ± √(b² - 4ac)) / 2a'],
-  ['Mathematics', 'Pythagoras', 'a² + b² = c²'],
-  ['Physics', 'Force', 'F = ma'],
-  ['Physics', 'Kinetic energy', 'KE = ½mv²'],
-  ['Physics', 'Ohm’s law', 'V = IR'],
-  ['Chemistry', 'Moles', 'n = m / M'],
-  ['Chemistry', 'Concentration', 'c = n / V'],
-];
+type HubTool =
+  | "calculator"
+  | "units"
+  | "formulas"
+  | "graph"
+  | "english"
+  | "translation"
+  | "scanner"
+  | "productivity";
+
+type CalculatorMode = "basic" | "scientific";
+type AngleMode = "DEG" | "RAD" | "GRAD";
+type ThemeMode = "system" | "light" | "dark";
 
 type Snap = {
   id: string;
@@ -46,273 +73,424 @@ type Snap = {
   createdAt: string;
 };
 
-type CalculatorMode =
-  | 'basic'
-  | 'scientific'
-  | 'engineering'
-  | 'advanced';
+type UnitDefinition = {
+  label: string;
+  symbol: string;
+  factor: number;
+  offset?: number;
+};
 
-type AngleMode = 'DEG' | 'RAD' | 'GRAD';
+type UnitCategory = {
+  name: string;
+  units: UnitDefinition[];
+};
 
-type VariableName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'X' | 'Y' | 'M';
-
-const VARIABLES: VariableName[] = [
-  'A',
-  'B',
-  'C',
-  'D',
-  'E',
-  'F',
-  'X',
-  'Y',
-  'M',
+const toolMenu: Array<{
+  id: HubTool;
+  label: string;
+  description: string;
+  icon: typeof Calculator;
+}> = [
+  {
+    id: "calculator",
+    label: "Calculator",
+    description: "Basic and scientific mathematics",
+    icon: Calculator,
+  },
+  {
+    id: "units",
+    label: "Unit Converter",
+    description: "Mathematics, physics, chemistry and live currency",
+    icon: RefreshCw,
+  },
+  {
+    id: "formulas",
+    label: "Formula & Units",
+    description: "Learn, enter values, solve and understand",
+    icon: FlaskConical,
+  },
+  {
+    id: "graph",
+    label: "Graph Plotter",
+    description: "Plot functions and compare curves",
+    icon: LineChart,
+  },
+  {
+    id: "english",
+    label: "English Literacy",
+    description: "Words, grammar, phonics and pronunciation",
+    icon: FileText,
+  },
+  {
+    id: "translation",
+    label: "Language Translation",
+    description: "Translation, pronunciation and speech",
+    icon: Languages,
+  },
+  {
+    id: "scanner",
+    label: "All-Purpose Scanner & Creator",
+    description: "OCR, reader and professional code creation",
+    icon: QrCode,
+  },
+  {
+    id: "productivity",
+    label: "Productivity",
+    description: "Percentage, dates, timer, notes and helpers",
+    icon: StickyNote,
+  },
 ];
 
+const unitCategories: UnitCategory[] = [
+  {
+    name: "Length",
+    units: [
+      { label: "Metre", symbol: "m", factor: 1 },
+      { label: "Kilometre", symbol: "km", factor: 1000 },
+      { label: "Centimetre", symbol: "cm", factor: 0.01 },
+      { label: "Millimetre", symbol: "mm", factor: 0.001 },
+      { label: "Micrometre", symbol: "µm", factor: 1e-6 },
+      { label: "Nanometre", symbol: "nm", factor: 1e-9 },
+      { label: "Inch", symbol: "in", factor: 0.0254 },
+      { label: "Foot", symbol: "ft", factor: 0.3048 },
+      { label: "Yard", symbol: "yd", factor: 0.9144 },
+      { label: "Mile", symbol: "mi", factor: 1609.344 },
+      { label: "Nautical mile", symbol: "nmi", factor: 1852 },
+    ],
+  },
+  {
+    name: "Mass",
+    units: [
+      { label: "Kilogram", symbol: "kg", factor: 1 },
+      { label: "Gram", symbol: "g", factor: 0.001 },
+      { label: "Milligram", symbol: "mg", factor: 1e-6 },
+      { label: "Tonne", symbol: "t", factor: 1000 },
+      { label: "Pound", symbol: "lb", factor: 0.45359237 },
+      { label: "Ounce", symbol: "oz", factor: 0.028349523125 },
+    ],
+  },
+  {
+    name: "Area",
+    units: [
+      { label: "Square metre", symbol: "m²", factor: 1 },
+      { label: "Square kilometre", symbol: "km²", factor: 1e6 },
+      { label: "Square centimetre", symbol: "cm²", factor: 1e-4 },
+      { label: "Hectare", symbol: "ha", factor: 10000 },
+      { label: "Acre", symbol: "acre", factor: 4046.8564224 },
+      { label: "Square foot", symbol: "ft²", factor: 0.09290304 },
+    ],
+  },
+  {
+    name: "Volume",
+    units: [
+      { label: "Cubic metre", symbol: "m³", factor: 1 },
+      { label: "Litre", symbol: "L", factor: 0.001 },
+      { label: "Millilitre", symbol: "mL", factor: 1e-6 },
+      { label: "Cubic centimetre", symbol: "cm³", factor: 1e-6 },
+      { label: "US gallon", symbol: "US gal", factor: 0.003785411784 },
+      { label: "US fluid ounce", symbol: "US fl oz", factor: 0.0000295735295625 },
+    ],
+  },
+  {
+    name: "Temperature",
+    units: [
+      { label: "Celsius", symbol: "°C", factor: 1 },
+      { label: "Fahrenheit", symbol: "°F", factor: 1 },
+      { label: "Kelvin", symbol: "K", factor: 1 },
+    ],
+  },
+  {
+    name: "Speed",
+    units: [
+      { label: "Metre per second", symbol: "m/s", factor: 1 },
+      { label: "Kilometre per hour", symbol: "km/h", factor: 1000 / 3600 },
+      { label: "Mile per hour", symbol: "mph", factor: 1609.344 / 3600 },
+      { label: "Knot", symbol: "kn", factor: 1852 / 3600 },
+    ],
+  },
+  {
+    name: "Acceleration",
+    units: [
+      { label: "Metre per second squared", symbol: "m/s²", factor: 1 },
+      { label: "Standard gravity", symbol: "g₀", factor: 9.80665 },
+    ],
+  },
+  {
+    name: "Force",
+    units: [
+      { label: "Newton", symbol: "N", factor: 1 },
+      { label: "Kilonewton", symbol: "kN", factor: 1000 },
+      { label: "Dyne", symbol: "dyn", factor: 1e-5 },
+      { label: "Pound-force", symbol: "lbf", factor: 4.4482216152605 },
+    ],
+  },
+  {
+    name: "Energy",
+    units: [
+      { label: "Joule", symbol: "J", factor: 1 },
+      { label: "Kilojoule", symbol: "kJ", factor: 1000 },
+      { label: "Calorie", symbol: "cal", factor: 4.184 },
+      { label: "Kilocalorie", symbol: "kcal", factor: 4184 },
+      { label: "Watt-hour", symbol: "Wh", factor: 3600 },
+      { label: "Kilowatt-hour", symbol: "kWh", factor: 3.6e6 },
+      { label: "Electronvolt", symbol: "eV", factor: 1.602176634e-19 },
+    ],
+  },
+  {
+    name: "Power",
+    units: [
+      { label: "Watt", symbol: "W", factor: 1 },
+      { label: "Kilowatt", symbol: "kW", factor: 1000 },
+      { label: "Megawatt", symbol: "MW", factor: 1e6 },
+      { label: "Horsepower", symbol: "hp", factor: 745.6998715822702 },
+    ],
+  },
+  {
+    name: "Pressure",
+    units: [
+      { label: "Pascal", symbol: "Pa", factor: 1 },
+      { label: "Kilopascal", symbol: "kPa", factor: 1000 },
+      { label: "Bar", symbol: "bar", factor: 100000 },
+      { label: "Atmosphere", symbol: "atm", factor: 101325 },
+      { label: "Millimetre of mercury", symbol: "mmHg", factor: 133.322387415 },
+      { label: "PSI", symbol: "psi", factor: 6894.757293168 },
+    ],
+  },
+  {
+    name: "Time",
+    units: [
+      { label: "Second", symbol: "s", factor: 1 },
+      { label: "Millisecond", symbol: "ms", factor: 0.001 },
+      { label: "Minute", symbol: "min", factor: 60 },
+      { label: "Hour", symbol: "h", factor: 3600 },
+      { label: "Day", symbol: "day", factor: 86400 },
+      { label: "Week", symbol: "week", factor: 604800 },
+    ],
+  },
+  {
+    name: "Frequency",
+    units: [
+      { label: "Hertz", symbol: "Hz", factor: 1 },
+      { label: "Kilohertz", symbol: "kHz", factor: 1000 },
+      { label: "Megahertz", symbol: "MHz", factor: 1e6 },
+      { label: "Gigahertz", symbol: "GHz", factor: 1e9 },
+    ],
+  },
+  {
+    name: "Charge",
+    units: [
+      { label: "Coulomb", symbol: "C", factor: 1 },
+      { label: "Millicoulomb", symbol: "mC", factor: 0.001 },
+      { label: "Microcoulomb", symbol: "µC", factor: 1e-6 },
+      { label: "Ampere-hour", symbol: "Ah", factor: 3600 },
+    ],
+  },
+  {
+    name: "Voltage",
+    units: [
+      { label: "Volt", symbol: "V", factor: 1 },
+      { label: "Millivolt", symbol: "mV", factor: 0.001 },
+      { label: "Kilovolt", symbol: "kV", factor: 1000 },
+    ],
+  },
+  {
+    name: "Resistance",
+    units: [
+      { label: "Ohm", symbol: "Ω", factor: 1 },
+      { label: "Kilohm", symbol: "kΩ", factor: 1000 },
+      { label: "Megohm", symbol: "MΩ", factor: 1e6 },
+    ],
+  },
+  {
+    name: "Capacitance",
+    units: [
+      { label: "Farad", symbol: "F", factor: 1 },
+      { label: "Microfarad", symbol: "µF", factor: 1e-6 },
+      { label: "Nanofarad", symbol: "nF", factor: 1e-9 },
+      { label: "Picofarad", symbol: "pF", factor: 1e-12 },
+    ],
+  },
+  {
+    name: "Inductance",
+    units: [
+      { label: "Henry", symbol: "H", factor: 1 },
+      { label: "Millihenry", symbol: "mH", factor: 1e-3 },
+      { label: "Microhenry", symbol: "µH", factor: 1e-6 },
+    ],
+  },
+  {
+    name: "Amount of substance",
+    units: [
+      { label: "Mole", symbol: "mol", factor: 1 },
+      { label: "Millimole", symbol: "mmol", factor: 0.001 },
+      { label: "Micromole", symbol: "µmol", factor: 1e-6 },
+    ],
+  },
+  {
+    name: "Density",
+    units: [
+      { label: "Kilogram per cubic metre", symbol: "kg/m³", factor: 1 },
+      { label: "Gram per cubic centimetre", symbol: "g/cm³", factor: 1000 },
+      { label: "Gram per millilitre", symbol: "g/mL", factor: 1000 },
+    ],
+  },
+  {
+    name: "Digital data",
+    units: [
+      { label: "Byte", symbol: "B", factor: 1 },
+      { label: "Kilobyte", symbol: "KB", factor: 1000 },
+      { label: "Megabyte", symbol: "MB", factor: 1e6 },
+      { label: "Gigabyte", symbol: "GB", factor: 1e9 },
+      { label: "Kibibyte", symbol: "KiB", factor: 1024 },
+      { label: "Mebibyte", symbol: "MiB", factor: 1024 ** 2 },
+      { label: "Gibibyte", symbol: "GiB", factor: 1024 ** 3 },
+    ],
+  },
+  {
+    name: "Angle",
+    units: [
+      { label: "Degree", symbol: "°", factor: Math.PI / 180 },
+      { label: "Radian", symbol: "rad", factor: 1 },
+      { label: "Gradian", symbol: "gon", factor: Math.PI / 200 },
+      { label: "Arcminute", symbol: "′", factor: Math.PI / 10800 },
+      { label: "Arcsecond", symbol: "″", factor: Math.PI / 648000 },
+    ],
+  },
+];
+
+const formulaLibrary = [
+  { subject: "Mathematics", level: "Primary", name: "Percentage", formula: "percentage = part ÷ whole × 100", explanation: "A percentage tells you how many parts there are out of 100.", variables: ["part", "whole"], solve: (v: Record<string, number>) => (v.whole ? (v.part / v.whole) * 100 : NaN) },
+  { subject: "Mathematics", level: "Primary", name: "Average / Mean", formula: "mean = sum ÷ count", explanation: "Add all observations and divide by how many observations there are.", variables: ["sum", "count"], solve: (v: Record<string, number>) => (v.count ? v.sum / v.count : NaN) },
+  { subject: "Mathematics", level: "Secondary", name: "Pythagoras", formula: "c = √(a² + b²)", explanation: "For a right-angled triangle, the square of the hypotenuse equals the sum of the squares of the other two sides.", variables: ["a", "b"], solve: (v: Record<string, number>) => Math.sqrt(v.a ** 2 + v.b ** 2) },
+  { subject: "Mathematics", level: "Secondary", name: "Quadratic roots", formula: "x = (−b ± √(b² − 4ac)) ÷ 2a", explanation: "Find the roots of ax² + bx + c = 0 using the quadratic formula.", variables: ["a", "b", "c"], solve: (v: Record<string, number>) => { const d = v.b ** 2 - 4 * v.a * v.c; if (d < 0 || v.a === 0) return NaN; return (-v.b + Math.sqrt(d)) / (2 * v.a); } },
+  { subject: "Mathematics", level: "University", name: "Simple interest", formula: "I = PRT", explanation: "Simple interest is principal multiplied by rate and time. Use rate as a decimal.", variables: ["P", "R", "T"], solve: (v: Record<string, number>) => v.P * v.R * v.T },
+  { subject: "Mathematics", level: "University", name: "Compound amount", formula: "A = P(1 + r/n)^(nt)", explanation: "Compounding applies interest repeatedly over n periods per year.", variables: ["P", "r", "n", "t"], solve: (v: Record<string, number>) => v.P * (1 + v.r / v.n) ** (v.n * v.t) },
+  { subject: "Statistics", level: "Secondary", name: "Z-score", formula: "z = (x − μ) ÷ σ", explanation: "A z-score measures how many standard deviations an observation is from the mean.", variables: ["x", "μ", "σ"], solve: (v: Record<string, number>) => (v.x - v.μ) / v.σ },
+  { subject: "Statistics", level: "University", name: "Variance", formula: "σ² = Σ(x − μ)² ÷ N", explanation: "Population variance is the mean of squared deviations from the population mean.", variables: ["sumSquaredDeviations", "N"], solve: (v: Record<string, number>) => v.sumSquaredDeviations / v.N },
+  { subject: "Physics", level: "Primary", name: "Speed", formula: "v = d ÷ t", explanation: "Speed is distance travelled divided by elapsed time.", variables: ["d", "t"], solve: (v: Record<string, number>) => v.d / v.t },
+  { subject: "Physics", level: "Secondary", name: "Force", formula: "F = ma", explanation: "Net force equals mass multiplied by acceleration.", variables: ["m", "a"], solve: (v: Record<string, number>) => v.m * v.a },
+  { subject: "Physics", level: "Secondary", name: "Kinetic energy", formula: "KE = ½mv²", explanation: "The energy associated with motion depends on mass and the square of speed.", variables: ["m", "v"], solve: (v: Record<string, number>) => 0.5 * v.m * v.v ** 2 },
+  { subject: "Physics", level: "University", name: "Ohm's law", formula: "V = IR", explanation: "Voltage across a resistor equals current multiplied by resistance.", variables: ["I", "R"], solve: (v: Record<string, number>) => v.I * v.R },
+  { subject: "Physics", level: "University", name: "Ideal gas law", formula: "PV = nRT", explanation: "Relates pressure, volume, amount of gas, the gas constant and absolute temperature.", variables: ["n", "R", "T", "V"], solve: (v: Record<string, number>) => (v.n * v.R * v.T) / v.V },
+  { subject: "Physics", level: "Professional", name: "Electrical power", formula: "P = VI", explanation: "For a DC electrical system, power equals voltage multiplied by current.", variables: ["V", "I"], solve: (v: Record<string, number>) => v.V * v.I },
+  { subject: "Chemistry", level: "Secondary", name: "Moles", formula: "n = m ÷ M", explanation: "Moles equal sample mass divided by molar mass.", variables: ["m", "M"], solve: (v: Record<string, number>) => v.m / v.M },
+  { subject: "Chemistry", level: "Secondary", name: "Molar concentration", formula: "c = n ÷ V", explanation: "Molar concentration is amount of substance per litre or other chosen volume unit.", variables: ["n", "V"], solve: (v: Record<string, number>) => v.n / v.V },
+  { subject: "Chemistry", level: "University", name: "pH", formula: "pH = −log₁₀[H⁺]", explanation: "For dilute aqueous solutions, pH is the negative base-10 logarithm of hydrogen-ion concentration.", variables: ["H"], solve: (v: Record<string, number>) => -Math.log10(v.H) },
+  { subject: "Chemistry", level: "Professional", name: "Beer–Lambert law", formula: "A = εlc", explanation: "Absorbance is proportional to molar absorptivity, path length and concentration.", variables: ["ε", "l", "c"], solve: (v: Record<string, number>) => v.ε * v.l * v.c },
+];
+
+const languageOptions = supportedLocales.map(([code, label]) => ({
+  code,
+  label,
+}));
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const index = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+}
+
 function factorial(n: number) {
-  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n) || n > 170) {
-    throw new Error('Factorial requires a whole number from 0 to 170.');
+  if (!Number.isInteger(n) || n < 0 || n > 170) {
+    throw new Error("Factorial requires a whole number from 0 to 170.");
   }
-
   let value = 1;
-
-  for (let i = 2; i <= n; i++) value *= i;
-
+  for (let i = 2; i <= n; i += 1) value *= i;
   return value;
 }
 
-function permutation(n: number, r: number) {
-  if (
-    !Number.isFinite(n) ||
-    !Number.isFinite(r) ||
-    !Number.isInteger(n) ||
-    !Number.isInteger(r) ||
-    n < 0 ||
-    r < 0 ||
-    r > n
-  ) {
-    throw new Error('nPr requires whole numbers with 0 ≤ r ≤ n.');
-  }
-
-  return factorial(n) / factorial(n - r);
-}
-
-function combination(n: number, r: number) {
-  if (
-    !Number.isFinite(n) ||
-    !Number.isFinite(r) ||
-    !Number.isInteger(n) ||
-    !Number.isInteger(r) ||
-    n < 0 ||
-    r < 0 ||
-    r > n
-  ) {
-    throw new Error('nCr requires whole numbers with 0 ≤ r ≤ n.');
-  }
-
-  return factorial(n) / (factorial(r) * factorial(n - r));
-}
-
-function toRadians(value: number, angleMode: AngleMode) {
-  if (angleMode === 'RAD') return value;
-  if (angleMode === 'GRAD') return (value * Math.PI) / 200;
+function angleToRadians(value: number, mode: AngleMode) {
+  if (mode === "RAD") return value;
+  if (mode === "GRAD") return (value * Math.PI) / 200;
   return (value * Math.PI) / 180;
 }
 
-function fromRadians(value: number, angleMode: AngleMode) {
-  if (angleMode === 'RAD') return value;
-  if (angleMode === 'GRAD') return (value * 200) / Math.PI;
+function radiansToAngle(value: number, mode: AngleMode) {
+  if (mode === "RAD") return value;
+  if (mode === "GRAD") return (value * 200) / Math.PI;
   return (value * 180) / Math.PI;
 }
 
-function decimalToFraction(value: number) {
-  if (!Number.isFinite(value)) return String(value);
-
-  const sign = value < 0 ? -1 : 1;
-  let x = Math.abs(value);
-
-  if (Number.isInteger(x)) return String(value);
-
-  let bestNumerator = Math.round(x);
-  let bestDenominator = 1;
-  let bestError = Math.abs(x - bestNumerator);
-
-  for (let denominator = 1; denominator <= 10000; denominator++) {
-    const numerator = Math.round(x * denominator);
-    const error = Math.abs(x - numerator / denominator);
-
-    if (error < bestError) {
-      bestError = error;
-      bestNumerator = numerator;
-      bestDenominator = denominator;
-
-      if (error < 1e-10) break;
-    }
-  }
-
-  const gcd = (a: number, b: number): number => {
-    while (b) {
-      const temp = a % b;
-      a = b;
-      b = temp;
-    }
-
-    return Math.abs(a);
-  };
-
-  const divisor = gcd(bestNumerator, bestDenominator);
-
-  return `${sign * (bestNumerator / divisor)}/${bestDenominator / divisor}`;
-}
-
-function engineeringNotation(value: number) {
-  if (!Number.isFinite(value) || value === 0) return String(value);
-
-  const exponent = Math.floor(Math.log10(Math.abs(value)) / 3) * 3;
-  const mantissa = value / 10 ** exponent;
-
-  return `${Number(mantissa.toPrecision(10))} × 10^${exponent}`;
-}
-
-function dmsToDecimal(degrees: number, minutes = 0, seconds = 0) {
-  const sign = degrees < 0 ? -1 : 1;
-
-  return sign * (Math.abs(degrees) + minutes / 60 + seconds / 3600);
-}
-
-function decimalToDms(value: number) {
-  const sign = value < 0 ? '-' : '';
-  const absolute = Math.abs(value);
-  const degrees = Math.floor(absolute);
-  const minutesFloat = (absolute - degrees) * 60;
-  const minutes = Math.floor(minutesFloat);
-  const seconds = (minutesFloat - minutes) * 60;
-
-  return `${sign}${degrees}° ${minutes}' ${Number(seconds.toFixed(6))}"`;
-}
-
-function evaluateCalculatorExpression(
+function evaluateExpression(
   expression: string,
   angleMode: AngleMode,
   ans: number,
-  variables: Record<VariableName, number>,
 ) {
   let source = expression
-    .replace(/×/g, '*')
-    .replace(/÷/g, '/')
-    .replace(/−/g, '-')
-    .replace(/π/g, 'PI')
-    .replace(/\bAns\b/gi, 'ANS')
-    .replace(/\bRan#/gi, 'RAN')
-    .replace(/√/g, 'sqrt')
-    .replace(/∛/g, 'cbrt')
-    .replace(/\^/g, '**')
-    .replace(/\bmod\b/gi, '%')
-    .replace(/xʸ/gi, '**')
-    .replace(/\s+/g, '');
+    .replace(/×/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/−/g, "-")
+    .replace(/π/g, "PI")
+    .replace(/√/g, "sqrt")
+    .replace(/∛/g, "cbrt")
+    .replace(/\^/g, "**")
+    .replace(/\bmod\b/gi, "%")
+    .replace(/\s+/g, "");
 
-  source = source.replace(/\b10\^/gi, '10**');
-  source = source.replace(/\be\^/gi, 'Math.E**');
-
-  source = source.replace(/\b([A-FXYM])\b/g, (match) => {
-    const key = match as VariableName;
-    return `V_${key}`;
+  // Treat a trailing percent as a percentage while preserving a/b-style modulo.
+  source = source.replace(/(\d+(?:\.\d+)?)%(?!\d|\.)/g, "($1/100)");
+  // Scientific-notation key: 1 EXP 6 => 1 × 10^6.
+  source = source.replace(/(\d+(?:\.\d+)?)[eE][+-]?(\d+)/g, (_, mantissa, exponent) => {
+    const sign = String(exponent).startsWith("-") ? "-" : "";
+    const digits = String(exponent).replace(/^[+-]/, "");
+    return `(${mantissa}*10**${sign}${digits})`;
   });
 
-  source = source.replace(/\bANS\b/g, 'ANS');
-  source = source.replace(/\bRAN\b/g, 'RAN');
-  source = source.replace(/\bPI\b/g, 'PI');
+  source = source.replace(/\bAns\b/gi, "ANS");
+  source = source.replace(/\be\^/gi, "exp(");
 
-  const allowed = /^[0-9A-Za-z_+*/().,%\-*]+$/;
-
-  if (!allowed.test(source)) {
-    throw new Error('Expression contains an unsupported character.');
+  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+    throw new Error("Unsupported character in expression.");
   }
 
-  const rad = (value: number) => toRadians(value, angleMode);
-  const angle = (value: number) => fromRadians(value, angleMode);
+  const rad = (v: number) => angleToRadians(v, angleMode);
+  const fromRad = (v: number) => radiansToAngle(v, angleMode);
+  const sin = (v: number) => Math.sin(rad(v));
+  const cos = (v: number) => Math.cos(rad(v));
+  const tan = (v: number) => Math.tan(rad(v));
+  const asin = (v: number) => fromRad(Math.asin(v));
+  const acos = (v: number) => fromRad(Math.acos(v));
+  const atan = (v: number) => fromRad(Math.atan(v));
+  const log = (v: number) => Math.log10(v);
+  const ln = (v: number) => Math.log(v);
+  const sqrt = (v: number) => Math.sqrt(v);
+  const cbrt = (v: number) => Math.cbrt(v);
+  const abs = (v: number) => Math.abs(v);
+  const floor = (v: number) => Math.floor(v);
+  const ceil = (v: number) => Math.ceil(v);
+  const tenPow = (v: number) => 10 ** v;
+  const exp = (v: number) => Math.exp(v);
+  const nPr = (n: number, r: number) => factorial(n) / factorial(n - r);
+  const nCr = (n: number, r: number) =>
+    factorial(n) / (factorial(r) * factorial(n - r));
 
-  const sin = (value: number) => Math.sin(rad(value));
-  const cos = (value: number) => Math.cos(rad(value));
-  const tan = (value: number) => Math.tan(rad(value));
-
-  const asin = (value: number) => angle(Math.asin(value));
-  const acos = (value: number) => angle(Math.acos(value));
-  const atan = (value: number) => angle(Math.atan(value));
-
-  const sinh = (value: number) => Math.sinh(value);
-  const cosh = (value: number) => Math.cosh(value);
-  const tanh = (value: number) => Math.tanh(value);
-
-  const asinh = (value: number) => Math.asinh(value);
-  const acosh = (value: number) => Math.acosh(value);
-  const atanh = (value: number) => Math.atanh(value);
-
-  const log = (value: number) => Math.log10(value);
-  const ln = (value: number) => Math.log(value);
-  const sqrt = (value: number) => Math.sqrt(value);
-  const cbrt = (value: number) => Math.cbrt(value);
-  const abs = (value: number) => Math.abs(value);
-  const floor = (value: number) => Math.floor(value);
-  const ceil = (value: number) => Math.ceil(value);
-  const nPr = (n: number, r: number) => permutation(n, r);
-  const nCr = (n: number, r: number) => combination(n, r);
-  const fact = (value: number) => factorial(value);
-  const dms = (d: number, m = 0, s = 0) => dmsToDecimal(d, m, s);
-  const pol = (r: number, theta: number) => r * Math.cos(rad(theta));
-  const rec = (x: number, y: number) =>
-    Math.sqrt(x * x + y * y);
-
-  const V_A = variables.A;
-  const V_B = variables.B;
-  const V_C = variables.C;
-  const V_D = variables.D;
-  const V_E = variables.E;
-  const V_F = variables.F;
-  const V_X = variables.X;
-  const V_Y = variables.Y;
-  const V_M = variables.M;
-  const ANS = ans;
-  const PI = Math.PI;
-  const RAN = Math.random();
+  source = source.replace(/\be\b/g, "E");
 
   const value = Function(
-    'sin',
-    'cos',
-    'tan',
-    'asin',
-    'acos',
-    'atan',
-    'sinh',
-    'cosh',
-    'tanh',
-    'asinh',
-    'acosh',
-    'atanh',
-    'log',
-    'ln',
-    'sqrt',
-    'cbrt',
-    'abs',
-    'floor',
-    'ceil',
-    'nPr',
-    'nCr',
-    'fact',
-    'dms',
-    'pol',
-    'rec',
-    'PI',
-    'ANS',
-    'RAN',
-    'V_A',
-    'V_B',
-    'V_C',
-    'V_D',
-    'V_E',
-    'V_F',
-    'V_X',
-    'V_Y',
-    'V_M',
+    "sin",
+    "cos",
+    "tan",
+    "asin",
+    "acos",
+    "atan",
+    "log",
+    "ln",
+    "sqrt",
+    "cbrt",
+    "abs",
+    "floor",
+    "ceil",
+    "tenPow",
+    "exp",
+    "nPr",
+    "nCr",
+    "PI",
+    "E",
+    "ANS",
     `"use strict"; return (${source})`,
   )(
     sin,
@@ -321,12 +499,6 @@ function evaluateCalculatorExpression(
     asin,
     acos,
     atan,
-    sinh,
-    cosh,
-    tanh,
-    asinh,
-    acosh,
-    atanh,
     log,
     ln,
     sqrt,
@@ -334,1942 +506,1523 @@ function evaluateCalculatorExpression(
     abs,
     floor,
     ceil,
+    tenPow,
+    exp,
     nPr,
     nCr,
-    fact,
-    dms,
-    pol,
-    rec,
-    PI,
-    ANS,
-    RAN,
-    V_A,
-    V_B,
-    V_C,
-    V_D,
-    V_E,
-    V_F,
-    V_X,
-    V_Y,
-    V_M,
+    Math.PI,
+    Math.E,
+    ans,
   );
 
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new Error('Math error.');
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error("Math error.");
   }
-
   return value;
 }
 
-function ToolsPage() {
-  const calculatorRef = useRef<HTMLDivElement>(null);
-  const expressionRef = useRef<HTMLTextAreaElement>(null);
-
-  const [calculatorFullscreen, setCalculatorFullscreen] =
-    useState(false);
-  const [showKeyboard, setShowKeyboard] = useState(true);
-
-  async function toggleCalculatorFullscreen() {
-    if (!calculatorRef.current) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        await calculatorRef.current.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch {}
-  }
-
+function useWakeLock(enabled: boolean) {
   useEffect(() => {
-    const f = () =>
-      setCalculatorFullscreen(Boolean(document.fullscreenElement));
+    if (!enabled || typeof navigator === "undefined" || !("wakeLock" in navigator)) {
+      return;
+    }
 
-    document.addEventListener('fullscreenchange', f);
+    let sentinel: WakeLockSentinel | null = null;
+    const acquire = async () => {
+      try {
+        sentinel = await (navigator as Navigator & {
+          wakeLock: { request(type: "screen"): Promise<WakeLockSentinel> };
+        }).wakeLock.request("screen");
+      } catch {
+        // Some browsers require a user gesture; the setting remains enabled.
+      }
+    };
 
-    return () =>
-      document.removeEventListener('fullscreenchange', f);
-  }, []);
+    void acquire();
 
-  const [mode, setMode] = useState<CalculatorMode>('basic');
-  const [shift, setShift] = useState(false);
-  const [alpha, setAlpha] = useState(false);
-  const [angleMode, setAngleMode] = useState<AngleMode>('DEG');
-  const [selectedVariable, setSelectedVariable] =
-    useState<VariableName>('A');
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void acquire();
+    };
 
-  const [expr, setExpr] = useState('');
-  const [result, setResult] = useState('');
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      void sentinel?.release().catch(() => undefined);
+    };
+  }, [enabled]);
+}
+
+function ToolsPage() {
+  const [activeTool, setActiveTool] = useState<HubTool>("calculator");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [calculatorFullscreen, setCalculatorFullscreen] = useState(false);
+  const [mode, setMode] = useState<CalculatorMode>("basic");
+  const [angleMode, setAngleMode] = useState<AngleMode>("DEG");
+  const [expr, setExpr] = useState("");
+  const [result, setResult] = useState("");
   const [ans, setAns] = useState(0);
-
   const [memory, setMemory] = useState(0);
-  const [variables, setVariables] = useState<
-    Record<VariableName, number>
-  >({
-    A: 0,
-    B: 0,
-    C: 0,
-    D: 0,
-    E: 0,
-    F: 0,
-    X: 0,
-    Y: 0,
-    M: 0,
-  });
-
   const [history, setHistory] = useState<string[]>(() =>
-    typeof window === 'undefined'
+    typeof window === "undefined"
       ? []
       : JSON.parse(
-          window.localStorage.getItem(
-            'phenom-calculator-history',
-          ) || '[]',
+          window.localStorage.getItem("phenom-calculator-history") || "[]",
         ),
   );
+  const calculatorRef = useRef<HTMLDivElement>(null);
 
-  const [translationTarget, setTranslationTarget] =
-    useState('French');
-  const [translationInput, setTranslationInput] = useState('');
-  const [translationOutput, setTranslationOutput] = useState('');
+  const [theme, setTheme] = useState<ThemeMode>("system");
+  const [fontScale, setFontScale] = useState(1);
+  const [keepAwake, setKeepAwake] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [toolLocale, setToolLocale] = useState<SupportedLocale>(() => getLocale());
+  const [keypadOpen, setKeypadOpen] = useState(true);
+
+  const [unitCategory, setUnitCategory] = useState("Length");
+  const [unitFrom, setUnitFrom] = useState("m");
+  const [unitTo, setUnitTo] = useState("km");
+  const [unitValue, setUnitValue] = useState("1");
+  const [currencyFrom, setCurrencyFrom] = useState("USD");
+  const [currencyTo, setCurrencyTo] = useState("NGN");
+  const [currencyAmount, setCurrencyAmount] = useState("1");
+  const [currency, setCurrency] = useState<CurrencyState | null>(null);
+  const [currencyLoading, setCurrencyLoading] = useState(true);
+
+  const [formulaSubject, setFormulaSubject] = useState("Mathematics");
+  const [formulaLevel, setFormulaLevel] = useState("Primary");
+  const [formulaId, setFormulaId] = useState(formulaLibrary[0].name);
+  const [formulaValues, setFormulaValues] = useState<Record<string, string>>({});
+
+  const [graphExpression, setGraphExpression] = useState("sin(x)");
+  const [graphExpression2, setGraphExpression2] = useState("");
+  const [graphMin, setGraphMin] = useState("-10");
+  const [graphMax, setGraphMax] = useState("10");
+  const [graphScale, setGraphScale] = useState(35);
+
+  const [englishInput, setEnglishInput] = useState("");
+  const [englishMode, setEnglishMode] = useState("Definition");
+  const [englishOutput, setEnglishOutput] = useState("");
+  const [englishBusy, setEnglishBusy] = useState(false);
+
+  const [translationInput, setTranslationInput] = useState("");
+  const [translationTarget, setTranslationTarget] = useState<SupportedLocale>(() => getLocale());
+  const [translationOutput, setTranslationOutput] = useState("");
   const [translationBusy, setTranslationBusy] = useState(false);
-  const [translationPremium, setTranslationPremium] =
-    useState(false);
-  const [sentenceCount, setSentenceCount] = useState(0);
+  const [speechVoice, setSpeechVoice] = useState("");
+  const [translationPremium, setTranslationPremium] = useState(false);
+  const [speechPremium, setSpeechPremium] = useState(false);
+  const [activeSubscriptions, setActiveSubscriptions] = useState<ActiveSubscription[]>([]);
 
-  const [from, setFrom] = useState('USD');
-  const [to, setTo] = useState('NGN');
-  const [amount, setAmount] = useState('1');
-  const [currency, setCurrency] = useState<CurrencyState | null>(
-    null,
-  );
-  const [loadingCurrency, setLoadingCurrency] = useState(true);
-
-  const [text, setText] = useState('');
+  const [scannerMode, setScannerMode] = useState<"ocr" | "reader" | "codes">("ocr");
   const [snapshots, setSnapshots] = useState<Snap[]>([]);
   const [ocrBusy, setOcrBusy] = useState(false);
-  const [ocrResult, setOcrResult] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [ocrResult, setOcrResult] = useState("");
+  const [codeType, setCodeType] = useState("qrcode");
+  const [codeText, setCodeText] = useState("");
+  const [codeSvg, setCodeSvg] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactUrl, setContactUrl] = useState("");
+  const [scanResult, setScanResult] = useState("");
+  const [fileRef, setFileRef] = useState<HTMLInputElement | null>(null);
 
-  const [barcodeText, setBarcodeText] = useState('');
-  const barcodeRef = useRef<HTMLDivElement>(null);
+  const [pasteText, setPasteText] = useState("");
 
-  const [textSize, setTextSize] = useState('medium');
+  /* Productivity helpers */
+  const [percentBase, setPercentBase] = useState("");
+  const [percentRate, setPercentRate] = useState("");
+  const [dateA, setDateA] = useState("");
+  const [dateB, setDateB] = useState("");
+  const [timerSec, setTimerSec] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const [notes, setNotes] = useState(() =>
+    typeof window === "undefined" ? "" : window.localStorage.getItem("phenom-calculator-notes") || "",
+  );
+  const [randomMin, setRandomMin] = useState("1");
+  const [randomMax, setRandomMax] = useState("100");
+  const [randomOut, setRandomOut] = useState("");
 
   const codes = useMemo(() => getCurrencyCodes(), []);
 
+  const selectedCategory = unitCategories.find((category) => category.name === unitCategory) ?? unitCategories[0];
+  const selectedFormula = formulaLibrary.find(
+    (formula) =>
+      formula.name === formulaId &&
+      formula.subject === formulaSubject &&
+      formula.level === formulaLevel,
+  ) ?? formulaLibrary.find((formula) => formula.subject === formulaSubject && formula.level === formulaLevel) ?? formulaLibrary[0];
+
+  const filteredFormulas = formulaLibrary.filter(
+    (formula) => formula.subject === formulaSubject && formula.level === formulaLevel,
+  );
+
+  const selectedFromUnit =
+    selectedCategory.units.find((unit) => unit.symbol === unitFrom) ??
+    selectedCategory.units[0];
+  const selectedToUnit =
+    selectedCategory.units.find((unit) => unit.symbol === unitTo) ??
+    selectedCategory.units[1] ??
+    selectedCategory.units[0];
+
+  const convertedUnit = (() => {
+    const value = Number(unitValue);
+    if (!Number.isFinite(value)) return null;
+    if (unitCategory === "Temperature") {
+      const toC = unitFrom === "°C" ? value : unitFrom === "°F" ? (value - 32) * (5 / 9) : value - 273.15;
+      return unitTo === "°C" ? toC : unitTo === "°F" ? toC * (9 / 5) + 32 : toC + 273.15;
+    }
+    return (value * selectedFromUnit.factor) / selectedToUnit.factor;
+  })();
+
+  const convertedCurrency =
+    currency && Number.isFinite(Number(currencyAmount))
+      ? convertCurrency(Number(currencyAmount), currencyFrom, currencyTo, currency.rates)
+      : null;
+
+  useWakeLock(keepAwake);
+
   useEffect(() => {
-    getLiveCurrencyRates()
-      .then(setCurrency)
-      .finally(() => setLoadingCurrency(false));
+    const storedTheme = window.localStorage.getItem("phenom-tools-theme") as ThemeMode | null;
+    const storedScale = Number(window.localStorage.getItem("phenom-tools-font-scale") || "1");
+    const storedWake = window.localStorage.getItem("phenom-tools-keep-awake") === "true";
+    if (storedTheme) setTheme(storedTheme);
+    if (Number.isFinite(storedScale) && storedScale >= 0.85 && storedScale <= 1.35) setFontScale(storedScale);
+    setKeepAwake(storedWake);
+  }, []);
 
-    (async () => {
+  useEffect(() => {
+    const syncLocale = () => {
+      const locale = getLocale();
+      setToolLocale(locale);
+      setTranslationTarget((current) => current || locale);
+    };
+    syncLocale();
+    window.addEventListener("phenom-locale-change", syncLocale);
+    return () => window.removeEventListener("phenom-locale-change", syncLocale);
+  }, []);
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const chooseVoice = () => {
+      if (speechVoice) return;
+      const preferredSpeech = toolLocale.toLowerCase();
+      const voices = window.speechSynthesis.getVoices();
+      const exact = voices.find((voice) => voice.lang.toLowerCase() === preferredSpeech);
+      const language = preferredSpeech.split("-")[0];
+      const regional = voices.find((voice) => voice.lang.toLowerCase().startsWith(`${language}-`));
+      if (exact || regional) setSpeechVoice((exact || regional)!.name);
+    };
+    chooseVoice();
+    window.speechSynthesis.addEventListener("voiceschanged", chooseVoice);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", chooseVoice);
+  }, [toolLocale, speechVoice]);
+
+
+  useEffect(() => {
+    const resolvedTheme =
+      theme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : theme;
+    document.documentElement.dataset.phenomToolsTheme = resolvedTheme;
+    document.documentElement.style.setProperty("--phenom-tools-font-scale", String(fontScale));
+    localStorage.setItem("phenom-tools-theme", theme);
+    localStorage.setItem("phenom-tools-font-scale", String(fontScale));
+    localStorage.setItem("phenom-tools-keep-awake", String(keepAwake));
+  }, [theme, fontScale, keepAwake]);
+
+  useEffect(() => {
+    localStorage.setItem("phenom-calculator-history", JSON.stringify(history.slice(0, 100)));
+  }, [history]);
+
+  useEffect(() => {
+    const listener = () => setCalculatorFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", listener);
+    return () => document.removeEventListener("fullscreenchange", listener);
+  }, []);
+
+  useEffect(() => {
+    void getLiveCurrencyRates().then(setCurrency).finally(() => setCurrencyLoading(false));
+    void (async () => {
       try {
-        const s = getSupabase();
-        const session = await s?.auth.getSession();
-
-        if (s && session?.data.session) {
-          const { data } = await s.rpc('has_premium_access', {
-            p_service_code: 'calculator-premium',
-            p_user_id: session.data.session.user.id,
-          });
-
-          setTranslationPremium(Boolean(data));
+        const supabase = getSupabase();
+        if (!supabase) return;
+        const session = await supabase.auth.getSession();
+        const userId = session.data.session?.user.id;
+        if (userId) {
+          const [tools, speech, subs] = await Promise.all([
+            supabase.rpc("has_premium_access", {
+              p_service_code: "tools_premium",
+              p_user_id: userId,
+            }),
+            supabase.rpc("has_premium_access", {
+              p_service_code: "tools_speech_premium",
+              p_user_id: userId,
+            }),
+            getMyActiveSubscriptions(),
+          ]);
+          setTranslationPremium(Boolean(tools.data));
+          setSpeechPremium(Boolean(speech.data));
+          setActiveSubscriptions(subs);
         }
-      } catch {}
+      } catch {
+        // Public/free tools remain usable.
+      }
     })();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(
-      'phenom-calculator-history',
-      JSON.stringify(history.slice(0, 100)),
-    );
-  }, [history]);
-
-  function focusExpression(position?: number) {
-    requestAnimationFrame(() => {
-      const input = expressionRef.current;
-
-      if (!input) return;
-
-      input.focus();
-
-      const cursor =
-        position === undefined ? input.value.length : position;
-
-      input.setSelectionRange(cursor, cursor);
-    });
-  }
-
-  function insertAtCursor(value: string) {
-    const input = expressionRef.current;
-
-    if (!input) {
-      setExpr((current) => current + value);
-      return;
+    if (!filteredFormulas.some((formula) => formula.name === formulaId)) {
+      setFormulaId(filteredFormulas[0]?.name || formulaLibrary[0].name);
+      setFormulaValues({});
     }
+  }, [formulaSubject, formulaLevel, filteredFormulas, formulaId]);
 
-    const start = input.selectionStart ?? expr.length;
-    const end = input.selectionEnd ?? start;
+  const currentTool = toolMenu.find((tool) => tool.id === activeTool) ?? toolMenu[0];
+  const CurrentIcon = currentTool.icon;
 
-    const next = expr.slice(0, start) + value + expr.slice(end);
-
-    setExpr(next);
-    focusExpression(start + value.length);
-  }
-
-  function deleteAtCursor() {
-    const input = expressionRef.current;
-
-    if (!input) {
-      setExpr((current) => current.slice(0, -1));
-      return;
-    }
-
-    const start = input.selectionStart ?? expr.length;
-    const end = input.selectionEnd ?? start;
-
-    if (start !== end) {
-      const next = expr.slice(0, start) + expr.slice(end);
-      setExpr(next);
-      focusExpression(start);
-      return;
-    }
-
-    if (start === 0) return;
-
-    const next = expr.slice(0, start - 1) + expr.slice(start);
-
-    setExpr(next);
-    focusExpression(start - 1);
-  }
-
-  function clearCalculator() {
-    setExpr('');
-    setResult('');
-    focusExpression(0);
+  function insert(value: string) {
+    setExpr((previous) => `${previous}${value}`);
   }
 
   function calculate() {
     try {
       if (!expr.trim()) return;
-
-      const value = evaluateCalculatorExpression(
-        expr,
-        angleMode,
-        ans,
-        variables,
-      );
-
-      const output = Number(value.toPrecision(12)).toString();
-
+      const value = evaluateExpression(expr, angleMode, ans);
+      const output = Number(value.toPrecision(14)).toString();
       setResult(output);
       setAns(value);
-      setHistory((h) =>
-        [`${expr} = ${output}`, ...h].slice(0, 100),
-      );
+      setHistory((items) => [`${expr} = ${output}`, ...items].slice(0, 100));
     } catch (error) {
-      setResult(
-        error instanceof Error ? error.message : 'Error',
-      );
+      setResult(error instanceof Error ? error.message : "Math error.");
     }
   }
 
-  function calculateUnary(
-    fn: (
-      value: number,
-    ) => number | string,
-    label: string,
-  ) {
+  function applyScientific(label: string) {
+    if (!expr.trim()) {
+      setResult("Enter a value or expression first.");
+      return;
+    }
     try {
-      const value = Number(
-        evaluateCalculatorExpression(
-          expr || 'Ans',
-          angleMode,
-          ans,
-          variables,
-        ),
-      );
-
-      const output = fn(value);
-
-      if (typeof output === 'number' && Number.isFinite(output)) {
-        const formatted = Number(output.toPrecision(12)).toString();
-
-        setResult(formatted);
-        setAns(output);
-        setHistory((h) =>
-          [`${label}(${value}) = ${formatted}`, ...h].slice(
-            0,
-            100,
-          ),
-        );
-      } else {
-        setResult(String(output));
-      }
-    } catch (error) {
-      setResult(
-        error instanceof Error ? error.message : 'Error',
-      );
-    }
-  }
-
-  function handleScientificFunction(name: string) {
-    if (shift) {
-      const shifted: Record<string, string> = {
-        sin: 'asin(',
-        cos: 'acos(',
-        tan: 'atan(',
-        sinh: 'asinh(',
-        cosh: 'acosh(',
-        tanh: 'atanh(',
-        log: '10**(',
-        ln: 'e**(',
-        sqrt: 'cbrt(',
-        square: '**3',
+      const value = evaluateExpression(expr, angleMode, ans);
+      const operations: Record<string, (n: number) => number> = {
+        sin: (n) => Math.sin(angleToRadians(n, angleMode)),
+        cos: (n) => Math.cos(angleToRadians(n, angleMode)),
+        tan: (n) => Math.tan(angleToRadians(n, angleMode)),
+        asin: (n) => radiansToAngle(Math.asin(n), angleMode),
+        acos: (n) => radiansToAngle(Math.acos(n), angleMode),
+        atan: (n) => radiansToAngle(Math.atan(n), angleMode),
+        sinh: Math.sinh,
+        cosh: Math.cosh,
+        tanh: Math.tanh,
+        asinh: Math.asinh,
+        acosh: Math.acosh,
+        atanh: Math.atanh,
+        log: Math.log10,
+        ln: Math.log,
+        sqrt: Math.sqrt,
+        cbrt: Math.cbrt,
+        square: (n) => n ** 2,
+        cube: (n) => n ** 3,
+        reciprocal: (n) => 1 / n,
+        abs: Math.abs,
+        floor: Math.floor,
+        ceil: Math.ceil,
+        exp: Math.exp,
+        tenPow: (n) => 10 ** n,
+        factorial,
       };
-
-      const replacement = shifted[name];
-
-      if (replacement) {
-        insertAtCursor(replacement);
-        setShift(false);
-        return;
-      }
+      const next = operations[label](value);
+      if (!Number.isFinite(next)) throw new Error("Math error.");
+      setResult(String(Number(next.toPrecision(14))));
+      setAns(next);
+      setHistory((items) => [`${label}(${expr}) = ${next}`, ...items].slice(0, 100));
+    } catch (error) {
+      setResult(error instanceof Error ? error.message : "Math error.");
     }
-
-    const direct: Record<string, string> = {
-      sin: 'sin(',
-      cos: 'cos(',
-      tan: 'tan(',
-      asin: 'asin(',
-      acos: 'acos(',
-      atan: 'atan(',
-      sinh: 'sinh(',
-      cosh: 'cosh(',
-      tanh: 'tanh(',
-      asinh: 'asinh(',
-      acosh: 'acosh(',
-      atanh: 'atanh(',
-      log: 'log(',
-      ln: 'ln(',
-      sqrt: 'sqrt(',
-      cbrt: 'cbrt(',
-      abs: 'abs(',
-      floor: 'floor(',
-      ceil: 'ceil(',
-      square: '**2',
-      cube: '**3',
-      reciprocal: '1/(',
-      exp10: '10**(',
-      expe: 'e**(',
-      factorial: 'fact(',
-    };
-
-    const value = direct[name];
-
-    if (value) insertAtCursor(value);
   }
 
-  function handleMemory(action: 'MC' | 'MR' | 'M+' | 'M-') {
-    if (action === 'MC') {
-      setMemory(0);
-      return;
-    }
-
-    if (action === 'MR') {
-      insertAtCursor(String(memory));
-      return;
-    }
-
+  async function toggleFullscreen() {
+    if (!calculatorRef.current) return;
     try {
-      const value = evaluateCalculatorExpression(
-        expr || 'Ans',
-        angleMode,
-        ans,
-        variables,
-      );
-
-      setMemory((current) =>
-        action === 'M+' ? current + value : current - value,
-      );
+      if (!document.fullscreenElement) await calculatorRef.current.requestFullscreen();
+      else await document.exitFullscreen();
     } catch {
-      setResult('Enter a valid number first.');
+      setCalculatorFullscreen(false);
     }
   }
 
-  function storeVariable() {
-    try {
-      const value = evaluateCalculatorExpression(
-        expr || 'Ans',
-        angleMode,
-        ans,
-        variables,
-      );
-
-      setVariables((current) => ({
-        ...current,
-        [selectedVariable]: value,
-      }));
-
-      setResult(
-        `${selectedVariable} = ${Number(
-          value.toPrecision(12),
-        )}`,
-      );
-    } catch {
-      setResult('Enter a valid expression first.');
-    }
-  }
-
-  function recallVariable() {
-    insertAtCursor(selectedVariable);
+  function clearCalculator() {
+    setExpr("");
+    setResult("");
   }
 
   function toggleSign() {
-    if (!expr.trim()) {
-      insertAtCursor('-');
-      return;
-    }
-
-    if (expr.startsWith('-(') && expr.endsWith(')')) {
-      setExpr(expr.slice(2, -1));
-      focusExpression();
-      return;
-    }
-
-    setExpr(`-(${expr})`);
-    focusExpression();
+    setExpr((value) => {
+      const trimmed = value.trim();
+      if (!trimmed) return "-";
+      if (trimmed.startsWith("-(") && trimmed.endsWith(")")) return trimmed.slice(2, -1);
+      return `-(${trimmed})`;
+    });
   }
 
-  function smartResultAction() {
-    if (!result || result === 'Error') return;
-
-    setExpr(result);
-    setResult('');
-    focusExpression();
-  }
-
-  const converted =
-    currency && Number.isFinite(Number(amount))
-      ? convertCurrency(
-          Number(amount),
-          from,
-          to,
-          currency.rates,
-        )
-      : null;
-
-  const size =
-    textSize === 'large'
-      ? 'text-lg'
-      : textSize === 'small'
-        ? 'text-sm'
-        : 'text-base';
-
-  async function translateTextNow() {
-    const input = translationInput.trim();
-
-    if (!input) return;
-
-    const sentences =
-      (input.match(/[.!?]+(?=\s|$)/g) || []).length || 1;
-
-    setSentenceCount(sentences);
-
-    if (!translationPremium && sentences > 5) {
-      setTranslationOutput(
-        'Limited Calculator translation allows up to 5 sentences at a time. Individual word translation remains available without this sentence limit. Premium removes the sentence limit.',
-      );
+  function useMemory(action: "MC" | "MR" | "M+" | "M-" | "MS") {
+    if (action === "MC") return setMemory(0);
+    if (action === "MR") return setExpr((value) => `${value}${memory}`);
+    if (action === "MS") {
+      const value = Number(result);
+      if (Number.isFinite(value)) setMemory(value);
       return;
     }
+    const value = Number(result);
+    if (!Number.isFinite(value)) return;
+    setMemory((m) => (action === "M+" ? m + value : m - value));
+  }
 
-    setTranslationBusy(true);
+  function buildGraph(expression: string, expression2: string) {
+    const min = Number(graphMin);
+    const max = Number(graphMax);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min >= max) {
+      return { error: "Choose a valid x-range." };
+    }
 
     try {
-      const s = getSupabase();
+      const width = 760;
+      const height = 420;
+      const samples = 420;
+      const xToPx = (x: number) => ((x - min) / (max - min)) * width;
+      const yToPx = (y: number) => height / 2 - y * graphScale;
 
-      if (!s) {
-        throw new Error(
-          'Connect the Academy language service to use translation.',
-        );
+      const plot = (source: string) => {
+        if (!source.trim()) return "";
+        const points: string[] = [];
+
+        for (let i = 0; i <= samples; i += 1) {
+          const x = min + ((max - min) * i) / samples;
+
+          try {
+            const y = evaluateGraphExpression(source, x);
+            if (!Number.isFinite(y) || Math.abs(y) > 1e6) {
+              points.push("M");
+              continue;
+            }
+            points.push(`${xToPx(x).toFixed(1)},${yToPx(y).toFixed(1)}`);
+          } catch {
+            points.push("M");
+          }
+        }
+
+        let d = "";
+        let lastWasBreak = true;
+
+        for (const point of points) {
+          if (point === "M") {
+            lastWasBreak = true;
+            continue;
+          }
+          d += `${lastWasBreak ? "M" : "L"}${point}`;
+          lastWasBreak = false;
+        }
+
+        return d;
+      };
+
+      const path1 = plot(expression);
+      const path2 = plot(expression2);
+
+      if (!path1 && !path2) {
+        return { error: "The graph expression could not be plotted." };
       }
 
-      const { data, error } = await s.functions.invoke(
-        'ai-router',
-        {
-          body: {
-            mode: 'reasoning',
-            prompt: `Translate the following text into ${translationTarget}. Preserve punctuation, numbers, names and line breaks. Do not add commentary. If the input is a single word, give only its direct translation.
-
-${input}`,
-          },
-        },
-      );
-
-      if (error) throw error;
-
-      setTranslationOutput(String(data?.text || ''));
+      return { width, height, path1, path2, error: "" };
     } catch (error) {
-      setTranslationOutput(
-        error instanceof Error
-          ? error.message
-          : 'Translation failed.',
+      return {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not plot graph.",
+      };
+    }
+  }
+
+
+  async function runAi(prompt: string) {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error("Connect the Academy AI service first.");
+    const { data, error } = await supabase.functions.invoke("ai-router", {
+      body: { mode: "reasoning", prompt },
+    });
+    if (error) throw error;
+    return String(data?.text || "");
+  }
+
+  async function runEnglish() {
+    const input = englishInput.trim();
+    if (!input) return;
+    setEnglishBusy(true);
+    try {
+      const response = await runAi(
+        `You are the Phenom Best Academy English Literacy service. Task: ${englishMode}.
+For a single word, include correct spelling, a concise definition, useful synonyms and antonyms, pronunciation in readable phonetics and IPA where appropriate, phonics/sound breakdown when useful, British English and American English differences when they exist, common mistakes, and 2 examples. For a phrase or sentence, correct it where necessary, explain grammar, pronunciation, vocabulary and common errors. If the user asks for transcription, provide an IPA-style phonetic transcription and clearly label it. Do not provide CPD course lessons unless the user explicitly has that learning programme; this is the Tools service.
+User input:
+${input}`,
       );
+      setEnglishOutput(response);
+    } catch (error) {
+      setEnglishOutput(error instanceof Error ? error.message : "English service failed.");
+    } finally {
+      setEnglishBusy(false);
+    }
+  }
+
+  function speak(text: string, language = "en-GB") {
+    if (!("speechSynthesis" in window)) {
+      setTranslationOutput("Speech synthesis is not available on this device/browser.");
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language;
+    const voice = window.speechSynthesis
+      .getVoices()
+      .find((candidate) => candidate.name === speechVoice);
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function translate() {
+    const input = translationInput.trim();
+    if (!input) return;
+    setTranslationBusy(true);
+    try {
+      const sentences = (input.match(/[.!?]+(?=\s|$)/g) || []).length || 1;
+      if (!translationPremium && sentences > 5) {
+        throw new Error(
+          "Free translation supports up to 5 sentences per request. Tools Premium removes this sentence limit, subject to fair-use and provider limits.",
+        );
+      }
+      const label =
+        languageOptions.find((language) => language.code === translationTarget)?.label ||
+        translationTarget;
+      const response = await runAi(
+        `Translate the following text into ${label}. Preserve meaning, names, numbers, punctuation and line breaks. Do not add commentary. If the input is a single word, give the direct translation only. If a pronunciation is requested, give a useful pronunciation guide.
+Text:
+${input}`,
+      );
+      setTranslationOutput(response);
+    } catch (error) {
+      setTranslationOutput(error instanceof Error ? error.message : "Translation failed.");
     } finally {
       setTranslationBusy(false);
     }
   }
 
-  async function extractImage(file: File) {
-    if (!file.type.startsWith('image/')) {
-      setOcrResult('Please select an image file.');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setOcrResult(
-        'This image is larger than 10 MB. Please choose a smaller image.',
-      );
-      return;
-    }
-
+  async function processImage(file: File) {
     setOcrBusy(true);
-
     try {
-      const s = getSupabase();
-
-      if (!s) {
-        throw new Error(
-          'Connect the Academy processing service to use image/text extraction.',
-        );
-      }
-
-      const data = await fileToDataUrl(file);
-
-      const { data: out, error } = await s.functions.invoke(
-        'ai-router',
-        {
-          body: {
-            mode: 'reasoning',
-            image: data,
-            prompt:
-              'Transcribe this image verbatim. Preserve every word, number, punctuation mark, line break and spelling. Do not solve or correct it. Then provide a separate section called ANALYSIS explaining what was detected. If it contains a maths/science assignment, also solve it step-by-step after the verbatim transcription.',
-          },
+      const dataUrl = await fileToDataUrl(file);
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Connect the Academy AI service first.");
+      const { data: output, error } = await supabase.functions.invoke("ai-router", {
+        body: {
+          mode: "reasoning",
+          image: dataUrl,
+          prompt: `You are the Phenom Best Academy all-purpose image-to-text and document processing service.
+Transcribe the supplied image verbatim first. Preserve words, numbers, punctuation, line breaks, tables, symbols and handwriting as faithfully as possible. Identify the language where possible. Do not silently correct the transcription. Then provide a separate ANALYSIS section. If the image contains a mathematics, physics, chemistry or academic question, provide a separate step-by-step solution after the transcription.
+The user may combine up to 10 snapshots into one document.`,
         },
-      );
-
+      });
       if (error) throw error;
-
-      setOcrResult(String(out?.text || 'No text returned.'));
-
-      setSnapshots((previous) =>
-        [
-          ...previous,
-          {
-            id: crypto.randomUUID(),
-            name: file.name,
-            text: String(out?.text || ''),
-            createdAt: new Date().toISOString(),
-          },
-        ].slice(-10),
+      const text = String(output?.text || "No text returned.");
+      setSnapshots((items) =>
+        [...items, { id: crypto.randomUUID(), name: file.name, text, createdAt: new Date().toISOString() }].slice(-10),
       );
+      setOcrResult(text);
     } catch (error) {
-      setOcrResult(
-        error instanceof Error
-          ? error.message
-          : 'Extraction failed.',
-      );
+      setOcrResult(error instanceof Error ? error.message : "Image processing failed.");
     } finally {
       setOcrBusy(false);
     }
   }
 
-  async function decodeAll() {
+  async function processSnapshots() {
     if (!snapshots.length) return;
-
     setOcrBusy(true);
-
     try {
-      const s = getSupabase();
+      const response = await runAi(
+        `Combine and process these up to 10 consecutive image snapshots as one document. Preserve the extracted text first, then organise the content into a clean document. Retain tables and headings where possible. If it contains questions, solve them step-by-step after the transcription. Do not omit visible information.
 
-      if (!s) {
-        throw new Error(
-          'Connect the Academy processing service to combine snapshots.',
-        );
-      }
-
-      const prompt = `Work with these up to 10 consecutive snapshots as one document. Preserve verbatim text first, then solve/decode/explain what is appropriate.
-
-${snapshots
-  .map((snapshot, index) => `SNAPSHOT ${index + 1}:\n${snapshot.text}`)
-  .join('\n\n')}`;
-
-      const { data, error } = await s.functions.invoke(
-        'ai-router',
-        {
-          body: {
-            mode: 'reasoning',
-            prompt,
-          },
-        },
+${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.text}`).join("\n\n")}`,
       );
-
-      if (error) throw error;
-
-      setOcrResult(String(data?.text || ''));
+      setOcrResult(response);
     } catch (error) {
-      setOcrResult(
-        error instanceof Error
-          ? error.message
-          : 'Could not process snapshots.',
-      );
+      setOcrResult(error instanceof Error ? error.message : "Could not process snapshots.");
     } finally {
       setOcrBusy(false);
     }
   }
 
-  function clearSnapshots() {
-    setSnapshots([]);
-    setOcrResult('');
-  }
+  async function readCode(file: File) {
+    const Detector = (window as typeof window & {
+      BarcodeDetector?: new (options?: { formats?: string[] }) => {
+        detect(image: ImageBitmap): Promise<Array<{ rawValue?: string; format?: string }>>;
+      };
+    }).BarcodeDetector;
 
-  function makeBarcode() {
-    const value = barcodeText.trim();
-
-    if (!value || !barcodeRef.current) return;
-
-    barcodeRef.current.innerHTML = '';
-
-    const svg = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'svg',
-    );
-
-    svg.setAttribute('viewBox', '0 0 420 100');
-    svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', `Barcode ${value}`);
-
-    let x = 10;
-
-    for (let i = 0; i < value.length; i++) {
-      const character = value.charCodeAt(i);
-
-      for (let bit = 0; bit < 7; bit++) {
-        if ((character >> (bit % 8)) & 1) {
-          const rect = document.createElementNS(
-            'http://www.w3.org/2000/svg',
-            'rect',
-          );
-
-          rect.setAttribute('x', String(x));
-          rect.setAttribute('y', '10');
-          rect.setAttribute('width', String((bit % 2) + 1));
-          rect.setAttribute('height', '70');
-
-          svg.appendChild(rect);
-        }
-
-        x += 2 + (bit % 2);
-      }
-    }
-
-    barcodeRef.current.appendChild(svg);
-  }
-
-  async function readBarcode(file: File) {
-    if (!file.type.startsWith('image/')) {
-      setBarcodeText('Please select an image file.');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setBarcodeText(
-        'This image is larger than 10 MB. Please choose a smaller image.',
-      );
-      return;
-    }
-
-    const windowWithBarcode = window as any;
-
-    if (windowWithBarcode.BarcodeDetector) {
+    if (Detector) {
       try {
-        const detector = new windowWithBarcode.BarcodeDetector({
+        const detector = new Detector({
           formats: [
-            'code_128',
-            'code_39',
-            'ean_13',
-            'ean_8',
-            'qr_code',
+            "qr_code",
+            "data_matrix",
+            "aztec",
+            "pdf417",
+            "code_128",
+            "code_39",
+            "ean_13",
+            "ean_8",
           ],
         });
-
-        const output = await detector.detect(
-          await createImageBitmap(file),
+        const image = await createImageBitmap(file);
+        const detected = await detector.detect(image);
+        image.close?.();
+        setScanResult(
+          detected.length
+            ? detected.map((item) => `${item.format || "code"}: ${item.rawValue || ""}`).join("\n")
+            : "No supported code was detected.",
         );
-
-        setBarcodeText(
-          output.map((item: any) => item.rawValue).join('\n') ||
-            'No barcode detected.',
-        );
-
         return;
-      } catch {}
+      } catch {
+        // Fall through to AI image processing.
+      }
     }
 
-    await extractImage(file);
+    await processImage(file);
   }
 
-  async function teachEnglish() {
-    if (!text.trim()) return;
-
+  function createCode() {
     try {
-      const s = getSupabase();
+      const payload =
+        codeType === "qrcode" && (contactName || contactPhone || contactEmail || contactUrl)
+          ? [
+              "BEGIN:VCARD",
+              "VERSION:3.0",
+              contactName ? `FN:${contactName}` : "",
+              contactPhone ? `TEL:${contactPhone}` : "",
+              contactEmail ? `EMAIL:${contactEmail}` : "",
+              contactUrl ? `URL:${contactUrl}` : "",
+              "END:VCARD",
+            ]
+              .filter(Boolean)
+              .join("\n")
+          : codeText.trim();
 
-      if (!s) {
-        setOcrResult(
-          'Connect the Academy language service to use English learning.',
-        );
+      if (!payload) {
+        setScanResult("Enter data to encode first.");
         return;
       }
 
-      const { data, error } = await s.functions.invoke(
-        'ai-router',
-        {
-          body: {
-            mode: 'reasoning',
-            prompt: `Teach this school-English/language question. Give meaning, spelling, grammar, pronunciation guidance and examples as applicable. Do not provide CPD content.
+      const svg = bwipjs.toSVG({
+        bcid: codeType,
+        text: payload,
+        scale: 3,
+        height: codeType === "pdf417" ? 12 : 18,
+        includetext: codeType === "code128" || codeType === "code39",
+        textxalign: "center",
+        padding: 10,
+      });
 
-${text}`,
-          },
-        },
-      );
-
-      if (error) throw error;
-
-      setOcrResult(
-        String(
-          data?.text ||
-            'No explanation was returned. Please try again.',
-        ),
-      );
+      setCodeSvg(svg);
+      setScanResult(`Created ${codeType.toUpperCase()} successfully.`);
     } catch (error) {
-      setOcrResult(
-        error instanceof Error
-          ? error.message
-          : 'English learning request failed.',
-      );
+      setCodeSvg("");
+      setScanResult(error instanceof Error ? error.message : "Could not create code.");
     }
   }
 
-  const basicKeys = [
-    ['AC', 'action'],
-    ['DEL', 'action'],
-    ['(', 'value'],
-    [')', 'value'],
-    ['7', 'value'],
-    ['8', 'value'],
-    ['9', 'value'],
-    ['÷', 'value'],
-    ['4', 'value'],
-    ['5', 'value'],
-    ['6', 'value'],
-    ['×', 'value'],
-    ['1', 'value'],
-    ['2', 'value'],
-    ['3', 'value'],
-    ['−', 'value'],
-    ['0', 'value'],
-    ['.', 'value'],
-    ['%', 'value'],
-    ['+', 'value'],
-  ];
+  function downloadCode() {
+    if (!codeSvg) return;
+    const blob = new Blob([codeSvg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `phenom-${codeType}.svg`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
 
-  const scientificKeys = [
-    ['sin', 'scientific'],
-    ['cos', 'scientific'],
-    ['tan', 'scientific'],
-    ['sin⁻¹', 'scientific'],
-    ['cos⁻¹', 'scientific'],
-    ['tan⁻¹', 'scientific'],
-    ['sinh', 'scientific'],
-    ['cosh', 'scientific'],
-    ['tanh', 'scientific'],
-    ['sinh⁻¹', 'scientific'],
-    ['cosh⁻¹', 'scientific'],
-    ['tanh⁻¹', 'scientific'],
-    ['log', 'scientific'],
-    ['ln', 'scientific'],
-    ['10ˣ', 'scientific'],
-    ['eˣ', 'scientific'],
-    ['√x', 'scientific'],
-    ['∛x', 'scientific'],
-    ['x²', 'scientific'],
-    ['x³', 'scientific'],
-    ['xʸ', 'value'],
-    ['1/x', 'scientific'],
-    ['x!', 'scientific'],
-    ['π', 'value'],
-    ['e', 'value'],
-    ['abs', 'scientific'],
-    ['floor', 'scientific'],
-    ['ceil', 'scientific'],
-    ['nPr', 'special'],
-    ['nCr', 'special'],
-    ['Ran#', 'value'],
-    ['mod', 'value'],
-  ];
+  function printCode() {
+    if (!codeSvg) return;
+    const popup = window.open("", "_blank", "noopener,noreferrer,width=700,height=700");
+    if (!popup) return;
+    popup.document.write(`<html><head><title>Phenom ${codeType}</title></head><body style="font-family:sans-serif;text-align:center;padding:30px">${codeSvg}<p>Phenom Best Academy</p></body></html>`);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  }
 
-  const engineeringKeys = [
-    ['EXP', 'value'],
-    ['ENG', 'action'],
-    ['S⇔D', 'action'],
-    ['DMS', 'action'],
-    ['Pol/Rec', 'action'],
-    ['DEG', 'action'],
-    ['RAD', 'action'],
-    ['GRAD', 'action'],
-    ['Ans', 'value'],
-  ];
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("phenom-calculator-notes", notes);
+  }, [notes]);
 
-  function handleKey(
-    key: string,
-    kind: string,
-  ) {
-    if (key === 'AC') {
-      clearCalculator();
-      return;
+  useEffect(() => {
+    if (timerRunning) {
+      timerRef.current = window.setInterval(() => setTimerSec((s) => s + 1), 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [timerRunning]);
 
-    if (key === 'DEL') {
-      deleteAtCursor();
-      return;
-    }
+  const percentResult = useMemo(() => {
+    const b = Number(percentBase);
+    const r = Number(percentRate);
+    if (!Number.isFinite(b) || !Number.isFinite(r)) return "";
+    return String(Number(((b * r) / 100).toPrecision(10)));
+  }, [percentBase, percentRate]);
 
-    if (key === 'DEG' || key === 'RAD' || key === 'GRAD') {
-      setAngleMode(key as AngleMode);
-      return;
-    }
+  const dateDiff = useMemo(() => {
+    if (!dateA || !dateB) return "";
+    const a = new Date(dateA).getTime();
+    const b = new Date(dateB).getTime();
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return "";
+    const days = Math.abs(Math.round((b - a) / 86400000));
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }, [dateA, dateB]);
 
-    if (key === 'ENG') {
-      try {
-        const value = evaluateCalculatorExpression(
-          expr || 'Ans',
-          angleMode,
-          ans,
-          variables,
-        );
-
-        setResult(engineeringNotation(value));
-      } catch {
-        setResult('Enter a valid number first.');
-      }
-
-      return;
-    }
-
-    if (key === 'S⇔D') {
-      try {
-        const value = evaluateCalculatorExpression(
-          expr || 'Ans',
-          angleMode,
-          ans,
-          variables,
-        );
-
-        const fraction = decimalToFraction(value);
-
-        setResult(
-          result === fraction
-            ? Number(value.toPrecision(12)).toString()
-            : fraction,
-        );
-      } catch {
-        setResult('Enter a valid number first.');
-      }
-
-      return;
-    }
-
-    if (key === 'DMS') {
-      calculateUnary(
-        (value) => decimalToDms(value),
-        'DMS',
-      );
-      return;
-    }
-
-    if (key === 'Pol/Rec') {
-      setResult(
-        'Use pol(r,θ) or rec(x,y) in the expression, then press =.',
-      );
-      insertAtCursor('pol(');
-      return;
-    }
-
-    if (key === 'EXP') {
-      insertAtCursor('e');
-      return;
-    }
-
-    if (key === 'Ans') {
-      insertAtCursor('Ans');
-      return;
-    }
-
-    if (key === 'π') {
-      insertAtCursor('π');
-      return;
-    }
-
-    if (key === 'e') {
-      insertAtCursor('Math.E');
-      return;
-    }
-
-    if (key === 'Ran#') {
-      insertAtCursor('Ran#');
-      return;
-    }
-
-    if (key === 'xʸ') {
-      insertAtCursor('**');
-      return;
-    }
-
-    if (key === 'mod') {
-      insertAtCursor(' mod ');
-      return;
-    }
-
-    if (key === 'nPr' || key === 'nCr') {
-      insertAtCursor(`${key}(`);
-      return;
-    }
-
-    if (kind === 'scientific') {
-      const map: Record<string, string> = {
-        sin: 'sin',
-        cos: 'cos',
-        tan: 'tan',
-        'sin⁻¹': 'asin',
-        'cos⁻¹': 'acos',
-        'tan⁻¹': 'atan',
-        sinh: 'sinh',
-        cosh: 'cosh',
-        tanh: 'tanh',
-        'sinh⁻¹': 'asinh',
-        'cosh⁻¹': 'acosh',
-        'tanh⁻¹': 'atanh',
-        log: 'log',
-        ln: 'ln',
-        '10ˣ': 'exp10',
-        'eˣ': 'expe',
-        '√x': 'sqrt',
-        '∛x': 'cbrt',
-        'x²': 'square',
-        'x³': 'cube',
-        '1/x': 'reciprocal',
-        'x!': 'factorial',
-        abs: 'abs',
-        floor: 'floor',
-        ceil: 'ceil',
-      };
-
-      handleScientificFunction(map[key] || key);
-      return;
-    }
-
-    if (key === '±') {
-      toggleSign();
-      return;
-    }
-
-    if (kind === 'value') {
-      insertAtCursor(key);
+  async function pasteIntoTools() {
+    try {
+      const value = await navigator.clipboard.readText();
+      setPasteText(value);
+      setEnglishInput(value);
+      setTranslationInput(value);
+      setExpr(value);
+    } catch {
+      setPasteText("Clipboard access was not granted. Paste directly into any editable Phenom Tools field.");
     }
   }
+
+  const graph = useMemo(() => buildGraph(graphExpression, graphExpression2), [graphExpression, graphExpression2, graphMin, graphMax, graphScale]);
+  const graphError = graph.error;
 
   return (
-    <section
-      className={`mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 ${size}`}
+    <>
+      <style>{`
+        .phenom-tools-page { min-height: 70vh; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-page { background: #0f1728; color: #f8f3e7; border-radius: 2rem; padding-bottom: 2rem; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface { background: #182235 !important; color: #f8f3e7; border-color: #33445f !important; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface .text-muted { color: #b9c3d4 !important; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface input,
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface textarea,
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface select,
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface button:not(.bg-orange) { background: #101827 !important; color: #f8f3e7; border-color: #33445f !important; }
+        [data-phenom-tools-theme="dark"] .phenom-tools-surface .bg-white { background: #101827 !important; }
+      `}</style>
+      <section
+      className="phenom-tools-page mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-5 lg:px-7"
+      style={{ fontSize: `${fontScale}em` }}
     >
-      <div className="rounded-3xl bg-navy-deep p-6 text-cream shadow-card sm:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-gold">
-          Phenom Calculator
-        </p>
-
-        <h1 className="mt-3 font-display text-4xl font-bold text-green-400 sm:text-6xl">
-          Calculate, scan, extract, translate and learn.
-        </h1>
-
-        <p className="mt-5 max-w-5xl text-base leading-7 text-cream/80 sm:text-lg">
-          A powerful Academy learning and calculation workspace for
-          mathematics, science, engineering, language learning,
-          multilingual text processing, barcode workflows and
-          practical everyday calculations.
-        </p>
-      </div>
-
-      <div className="mt-8">
+      <div
+        className="relative overflow-hidden rounded-[2rem] text-cream shadow-card"
+        style={{ background: "linear-gradient(145deg, #0d1522 0%, #1E3A8A 52%, #152238 100%)" }}
+      >
         <div
-          ref={calculatorRef}
-          className={`rounded-3xl border border-line bg-cream p-4 shadow-card sm:p-6 ${
-            calculatorFullscreen
-              ? 'min-h-screen overflow-auto'
-              : ''
-          }`}
-        >
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-blue/10 p-3">
-                  <Calculator className="size-7 text-blue" />
-                </div>
-
-                <div>
-                  <h2 className="font-display text-2xl font-bold sm:text-3xl">
-                    Phenom Calculator
-                  </h2>
-
-                  <p className="text-sm text-muted">
-                    Interactive scientific & engineering calculator
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={toggleCalculatorFullscreen}
-                >
-                  {calculatorFullscreen ? (
-                    <Minimize2 className="mr-2 size-4" />
-                  ) : (
-                    <Maximize2 className="mr-2 size-4" />
-                  )}
-
-                  {calculatorFullscreen
-                    ? 'Exit full screen'
-                    : 'Full screen'}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setShowKeyboard((current) => !current)
-                  }
-                >
-                  <Keyboard className="mr-2 size-4" />
-
-                  {showKeyboard ? 'Hide keyboard' : 'Show keyboard'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {(
-                [
-                  ['basic', 'Basic'],
-                  ['scientific', 'Scientific'],
-                  ['engineering', 'Engineering'],
-                  ['advanced', 'Advanced'],
-                ] as [CalculatorMode, string][]
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setMode(value)}
-                  className={`rounded-xl border px-3 py-3 text-sm font-bold transition sm:text-base ${
-                    mode === value
-                      ? 'border-blue bg-blue text-white'
-                      : 'border-line bg-white hover:bg-paper'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="rounded-3xl border-2 border-blue/20 bg-white p-4 shadow-inner sm:p-6">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue">
-                  Expression
-                </span>
-
-                <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold text-muted">
-                  {angleMode}
-                </span>
-              </div>
-
-              <textarea
-                ref={expressionRef}
-                value={expr}
-                onChange={(event) => setExpr(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    calculate();
-                  }
-                }}
-                spellCheck={false}
-                className="min-h-24 w-full resize-none border-0 bg-transparent text-right font-mono text-3xl font-semibold outline-none sm:min-h-28 sm:text-5xl"
-                placeholder="0"
-                aria-label="Calculator expression"
-              />
-
-              <div className="mt-3 border-t border-line pt-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Result
-                </div>
-
-                <button
-                  type="button"
-                  onClick={smartResultAction}
-                  className="mt-1 block min-h-20 w-full overflow-x-auto text-right font-mono text-4xl font-bold text-blue outline-none sm:text-6xl"
-                  title="Tap the result to move it into the expression"
-                >
-                  {result || '0'}
-                </button>
-
-                <div className="mt-2 flex flex-wrap justify-end gap-2 text-xs text-muted">
-                  <span>Ans: {Number(ans.toPrecision(10))}</span>
-                  <span>Memory: {Number(memory.toPrecision(10))}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              <button
-                type="button"
-                onClick={() => setShift((current) => !current)}
-                className={`rounded-xl border px-3 py-3 font-bold ${
-                  shift
-                    ? 'border-orange bg-orange text-white'
-                    : 'border-line bg-white'
-                }`}
-              >
-                SHIFT
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAlpha((current) => !current)}
-                className={`rounded-xl border px-3 py-3 font-bold ${
-                  alpha
-                    ? 'border-purple bg-purple text-white'
-                    : 'border-line bg-white'
-                }`}
-              >
-                ALPHA
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMode('basic')}
-                className="rounded-xl border border-line bg-white px-3 py-3 font-bold"
-              >
-                MODE
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setAngleMode((current) =>
-                    current === 'DEG'
-                      ? 'RAD'
-                      : current === 'RAD'
-                        ? 'GRAD'
-                        : 'DEG',
-                  )
-                }
-                className="rounded-xl border border-line bg-white px-3 py-3 font-bold"
-              >
-                SETUP
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setExpr('');
-                  setResult('');
-                  setAns(0);
-                  setMemory(0);
-                }}
-                className="rounded-xl border border-line bg-white px-3 py-3 font-bold"
-              >
-                RESET
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setResult('')}
-                className="rounded-xl border border-line bg-white px-3 py-3 font-bold"
-              >
-                CLEAR RESULT
-              </button>
-            </div>
-
-            {alpha && (
-              <div className="rounded-2xl border border-purple/30 bg-purple/5 p-3">
-                <div className="mb-2 text-sm font-bold text-purple">
-                  ALPHA variables
-                </div>
-
-                <div className="grid grid-cols-5 gap-2 sm:grid-cols-9">
-                  {VARIABLES.map((variable) => (
-                    <button
-                      key={variable}
-                      type="button"
-                      onClick={() => {
-                        setSelectedVariable(variable);
-                        insertAtCursor(variable);
-                      }}
-                      className={`rounded-lg border px-2 py-3 font-bold ${
-                        selectedVariable === variable
-                          ? 'border-purple bg-purple text-white'
-                          : 'border-line bg-white'
-                      }`}
-                    >
-                      {variable}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {mode === 'advanced' && (
-              <div className="rounded-2xl border border-gold/40 bg-gold/5 p-4">
-                <h3 className="font-display text-xl font-bold">
-                  Advanced tools
-                </h3>
-
-                <p className="mt-1 text-sm text-muted">
-                  Use functions directly in the expression area:
-                  nPr(n,r), nCr(n,r), pol(r,θ), rec(x,y),
-                  dms(degrees,minutes,seconds), abs(x), floor(x),
-                  ceil(x) and modular arithmetic.
-                </p>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {[
-                    'nPr(',
-                    'nCr(',
-                    'pol(',
-                    'rec(',
-                    'dms(',
-                    'abs(',
-                    'floor(',
-                    'ceil(',
-                  ].map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => insertAtCursor(value)}
-                      className="rounded-xl border border-line bg-white px-4 py-3 font-mono font-bold"
-                    >
-                      {value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {showKeyboard && (
-              <div className="rounded-2xl border border-line bg-paper/60 p-3 sm:p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-bold uppercase tracking-wider text-muted">
-                    On-screen keyboard
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowKeyboard(false)}
-                    className="rounded-lg p-2 text-muted hover:bg-white"
-                  >
-                    <Delete className="size-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                  {basicKeys.map(([key, kind]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => handleKey(key, kind)}
-                      className={`min-h-14 rounded-2xl border text-lg font-bold transition active:scale-[.98] sm:min-h-16 sm:text-xl ${
-                        key === 'AC'
-                          ? 'border-orange bg-orange text-white'
-                          : key === 'DEL'
-                            ? 'border-purple bg-purple text-white'
-                            : ['÷', '×', '−', '+'].includes(key)
-                              ? 'border-blue/30 bg-blue/10 text-blue'
-                              : 'border-line bg-white hover:bg-cream'
-                      }`}
-                    >
-                      {key}
-                    </button>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={() => handleKey('±', 'action')}
-                    className="min-h-14 rounded-2xl border border-line bg-white text-lg font-bold sm:min-h-16"
-                  >
-                    ±
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => insertAtCursor('Ans')}
-                    className="min-h-14 rounded-2xl border border-gold/40 bg-gold/10 text-lg font-bold text-ink sm:min-h-16"
-                  >
-                    Ans
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={calculate}
-                    className="col-span-2 min-h-14 rounded-2xl border border-green/30 bg-green px-4 text-xl font-bold text-white sm:min-h-16"
-                  >
-                    =
-                  </button>
-                </div>
-
-                {(mode === 'scientific' ||
-                  mode === 'engineering' ||
-                  mode === 'advanced') && (
-                  <>
-                    <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
-                      {scientificKeys.map(([key, kind]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleKey(key, kind)}
-                          className="min-h-12 rounded-xl border border-blue/15 bg-white px-2 py-2 text-sm font-bold text-ink shadow-sm hover:bg-blue/5 sm:text-base"
-                        >
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
-                      {engineeringKeys.map(([key, kind]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleKey(key, kind)}
-                          className="min-h-12 rounded-xl border border-gold/25 bg-gold/5 px-2 py-2 text-sm font-bold sm:text-base"
-                        >
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {['MC', 'MR', 'M+', 'M-'].map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() =>
-                        handleMemory(
-                          key as 'MC' | 'MR' | 'M+' | 'M-',
-                        )
-                      }
-                      className="rounded-xl border border-purple/20 bg-purple/5 px-3 py-3 font-bold text-purple"
-                    >
-                      {key}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-4 rounded-xl border border-line bg-white p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-bold">
-                      STO / RCL
-                    </span>
-
-                    <select
-                      value={selectedVariable}
-                      onChange={(event) =>
-                        setSelectedVariable(
-                          event.target.value as VariableName,
-                        )
-                      }
-                      className="rounded-lg border border-line px-3 py-2 font-bold"
-                    >
-                      {VARIABLES.map((variable) => (
-                        <option key={variable} value={variable}>
-                          {variable}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={storeVariable}
-                      className="rounded-lg border border-line bg-paper px-3 py-2 font-bold"
-                    >
-                      STO
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={recallVariable}
-                      className="rounded-lg border border-line bg-paper px-3 py-2 font-bold"
-                    >
-                      RCL
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={calculate} className="min-h-12 px-6">
-                Calculate
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={deleteAtCursor}
-                className="min-h-12"
-              >
-                <Delete className="mr-2 size-4" />
-                Delete
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard?.writeText(
-                    result || expr,
-                  );
-                }}
-                disabled={!result && !expr}
-                className="min-h-12"
-              >
-                <Copy className="mr-2 size-4" />
-                Copy
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setExpr('');
-                  setResult('');
-                  focusExpression(0);
-                }}
-                className="min-h-12"
-              >
-                <RotateCcw className="mr-2 size-4" />
-                Clear
-              </Button>
-            </div>
-
+          className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-25"
+          style={{ background: "radial-gradient(circle, #FBBF24 0%, transparent 70%)" }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 -left-10 h-48 w-48 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, #16A34A 0%, transparent 70%)" }}
+        />
+        <div className="relative flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-7">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <img
+              src="/brand/mark-clear.png"
+              alt="Phenom Best Academy"
+              className="mt-1 h-12 w-12 shrink-0 object-contain drop-shadow-md sm:h-14 sm:w-14"
+            />
             <div>
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-display text-xl font-bold">
-                  History & memory
-                </h3>
-
-                <span className="text-sm text-muted">
-                  {history.length} saved
-                </span>
-              </div>
-
-              <div className="mt-2 max-h-44 overflow-auto rounded-2xl bg-paper p-4 text-sm">
-                {history.length ? (
-                  history.map((item, index) => (
-                    <button
-                      key={`${item}-${index}`}
-                      type="button"
-                      onClick={() => {
-                        const expression = item.split(' = ')[0];
-                        setExpr(expression);
-                        focusExpression();
-                      }}
-                      className="block w-full border-b border-line/60 py-2 text-left last:border-0 hover:text-blue"
-                    >
-                      {item}
-                    </button>
-                  ))
-                ) : (
-                  <span className="text-muted">
-                    No calculations yet.
-                  </span>
-                )}
-              </div>
-
-              <Button
-                className="mt-2"
-                variant="outline"
-                onClick={() => setHistory([])}
-              >
-                <Trash2 className="mr-2 size-4" />
-                Clear history
-              </Button>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#FBBF24" }}>
+                Phenom Best Academy
+              </p>
+              <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl">
+                Phenom Calculator
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm text-cream/75 sm:text-base">
+                The Academy Tool Hub — mathematics, science, engineering, finance, language, scanning and creation in one beautiful workspace.
+              </p>
+              <p className="mt-1.5 text-xs italic text-cream/55">
+                Tranquil Excellence for Global Impact.
+              </p>
             </div>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="cream" size="sm" onClick={pasteIntoTools}>
+              Paste into Tools
+            </Button>
+            <div className="relative">
+              <Button
+                variant="cream"
+                size="sm"
+                aria-expanded={languageOpen}
+                onClick={() => setLanguageOpen((value) => !value)}
+              >
+                <Languages className="mr-2 size-4" />
+                {toolLocale}
+              </Button>
+              {languageOpen ? (
+                <div className="absolute right-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/15 bg-navy-deep p-2 shadow-2xl">
+                  <p className="px-3 py-2 text-xs text-cream/60">
+                    Tool language follows your Academy language selection, then your device/browser language, with English — Nigeria as the fallback.
+                  </p>
+                  <select
+                    aria-label="Tool Hub language"
+                    value={toolLocale}
+                    onChange={(e) => {
+                      const locale = e.target.value as SupportedLocale;
+                      setToolLocale(locale);
+                      setLocale(locale);
+                      setLanguageOpen(false);
+                    }}
+                    className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-sm text-cream outline-none"
+                  >
+                    {languageOptions.map((language) => (
+                      <option key={language.code} value={language.code} className="text-navy-deep">
+                        {language.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
+            <Button variant="cream" size="sm" onClick={() => setSettingsOpen((value) => !value)}>
+              <Settings2 className="mr-2 size-4" />
+              Settings
+            </Button>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 px-3 py-3 sm:px-5">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((value) => !value)}
+            className="flex w-full items-center justify-between rounded-2xl bg-white/10 px-4 py-4 text-left hover:bg-white/15"
+          >
+            <span className="flex items-center gap-3">
+              <CurrentIcon className="size-5 text-gold" />
+              <span>
+                <strong className="block">{currentTool.label}</strong>
+                <span className="text-xs text-cream/60">{currentTool.description}</span>
+              </span>
+            </span>
+            <ChevronDown className={`size-5 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {menuOpen ? (
+            <div className="mt-2 grid gap-2 rounded-2xl bg-white/10 p-2 sm:grid-cols-2 lg:grid-cols-4">
+              {toolMenu.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <button
+                    type="button"
+                    key={tool.id}
+                    onClick={() => {
+                      setActiveTool(tool.id);
+                      setMenuOpen(false);
+                    }}
+                    className={`rounded-xl p-3 text-left transition ${
+                      activeTool === tool.id
+                        ? "bg-gold text-navy-deep"
+                        : "bg-white/5 text-cream hover:bg-white/10"
+                    }`}
+                  >
+                    <Icon className="size-5" />
+                    <strong className="mt-2 block text-sm">{tool.label}</strong>
+                    <span className="mt-1 block text-[11px] opacity-70">{tool.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-line bg-cream p-6 shadow-card">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="text-purple" />
-            <h2 className="font-display text-2xl font-semibold">
-              Live currency converter
-            </h2>
+      {settingsOpen ? (
+        <div className="phenom-tools-surface mt-4 rounded-2xl border border-line bg-cream p-5 shadow-card">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-semibold">Tool Hub settings</h2>
+              <p className="text-sm text-muted">Your preferences are saved on this device.</p>
+            </div>
+            <button type="button" onClick={() => setSettingsOpen(false)} aria-label="Close settings" className="rounded-full p-2 hover:bg-paper">
+              <X className="size-5" />
+            </button>
           </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <input
-              type="number"
-              min="0"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="rounded-xl border border-line bg-white p-3"
-              placeholder="Amount"
-            />
-
-            <select
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              className="rounded-xl border border-line bg-white p-3"
-            >
-              {codes.map((code) => (
-                <option key={code} value={code}>
-                  {code} — {currencyName(code)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              className="rounded-xl border border-line bg-white p-3"
-            >
-              {codes.map((code) => (
-                <option key={code} value={code}>
-                  {code} — {currencyName(code)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-5 rounded-2xl bg-paper p-5 text-3xl font-bold">
-            {converted === null
-              ? 'Enter a valid amount'
-              : `${converted.toLocaleString(undefined, {
-                  maximumFractionDigits: 6,
-                })} ${to}`}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFrom(to);
-                setTo(from);
-              }}
-            >
-              Swap
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => {
-                setLoadingCurrency(true);
-
-                getLiveCurrencyRates(true)
-                  .then(setCurrency)
-                  .catch(() => {
-                    setCurrency(null);
-                  })
-                  .finally(() => setLoadingCurrency(false));
-              }}
-            >
-              <RefreshCw className="mr-2 size-4" />
-              Refresh
-            </Button>
-
-            {loadingCurrency && (
-              <span className="self-center text-sm text-muted">
-                Loading rates…
-              </span>
-            )}
-          </div>
-
-          <div className="mt-8">
-            <label className="text-sm font-semibold">
-              Display text size
-
-              <select
-                value={textSize}
-                onChange={(event) =>
-                  setTextSize(event.target.value)
-                }
-                className="mt-1 w-full rounded-xl border border-line bg-white p-3"
-              >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-sm font-semibold">Theme
+              <select className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={theme} onChange={(e) => setTheme(e.target.value as ThemeMode)}>
+                <option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
               </select>
             </label>
+            <label className="text-sm font-semibold">Font size
+              <select className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={fontScale} onChange={(e) => setFontScale(Number(e.target.value))}>
+                <option value="0.9">90%</option><option value="1">100%</option><option value="1.1">110%</option><option value="1.2">120%</option><option value="1.3">130%</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 text-sm font-semibold">
+              <input type="checkbox" checked={keepAwake} onChange={(e) => setKeepAwake(e.target.checked)} />
+              Keep screen on while using Tools
+            </label>
+            <div className="rounded-xl border border-line bg-white p-3 text-sm">
+              <strong>Paste / edit</strong>
+              <p className="mt-1 text-xs text-muted">Every major tool uses editable fields. Clipboard paste is also available.</p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel
-          icon={<ScanText className="text-orange" />}
-          title="Multi-snapshot Scanner & Processing"
+      {activeTool === "calculator" ? (
+        <div
+          ref={calculatorRef}
+          onPointerDown={() => {
+            if (!keypadOpen) setKeypadOpen(true);
+          }}
+          className={`phenom-tools-surface mt-5 rounded-[2rem] border border-line bg-cream p-4 shadow-card sm:p-6 ${
+            calculatorFullscreen ? "h-screen overflow-auto rounded-none" : ""
+          }`}
         >
-          <p className="text-sm leading-6 text-muted">
-            Add up to 10 consecutive snapshots. Images are
-            processed securely for text extraction, solving,
-            explanation and decoding. This page does not persist
-            image files. The returned text can be copied, solved,
-            explained or decoded.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-purple">Calculator engine</p>
+              <h2 className="mt-1 font-display text-2xl font-bold sm:text-3xl">Basic + Scientific</h2>
+            </div>
+            <Button variant="outline" onClick={toggleFullscreen}>
+              {calculatorFullscreen ? <Minimize2 className="mr-2 size-4" /> : <Maximize2 className="mr-2 size-4" />}
+              {calculatorFullscreen ? "Exit full screen" : "Full-screen calculator"}
+            </Button>
+          </div>
 
-          <input
-            ref={fileRef}
-            className="hidden"
-            type="file"
-            accept="image/*"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
+            <div className="rounded-2xl border border-line bg-white p-3">
+              <p className="text-[11px] uppercase tracking-widest text-muted">Expression</p>
+              <textarea
+                value={expr}
+                onChange={(e) => setExpr(e.target.value)}
+                onFocus={() => setKeypadOpen(true)}
+                onClick={() => setKeypadOpen(true)}
+                onKeyDown={(e) => { if (e.key === "Enter") calculate(); }}
+                className="mt-2 min-h-16 w-full resize-y border-0 bg-transparent p-0 text-right font-mono text-2xl font-semibold outline-none sm:text-3xl"
+                placeholder="12 × 4 + 5"
+                aria-label="Calculator expression"
+              />
+              <p className="mt-2 text-right text-xs text-muted">Ans = {ans} · Memory = {memory}</p>
+            </div>
+            <Button variant={mode === "basic" ? "default" : "outline"} onClick={() => setMode("basic")}>Basic</Button>
+            <Button variant={mode === "scientific" ? "default" : "outline"} onClick={() => setMode("scientific")}>Scientific</Button>
+            <select className="rounded-md border border-line bg-white px-3 py-2 text-sm" value={angleMode} onChange={(e) => setAngleMode(e.target.value as AngleMode)}>
+              <option>DEG</option><option>RAD</option><option>GRAD</option>
+            </select>
+          </div>
 
-              if (file) void extractImage(file);
-
-              event.currentTarget.value = '';
-            }}
-          />
+          <button
+            type="button"
+            onClick={() => setKeypadOpen(true)}
+            className="mt-3 block w-full rounded-2xl bg-navy-deep p-4 text-right text-3xl font-bold text-gold shadow-inner sm:text-5xl"
+            aria-label="Open calculator keyboard"
+          >
+            {result || "0"}
+          </button>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              onClick={() => fileRef.current?.click()}
-              disabled={ocrBusy || snapshots.length >= 10}
-            >
-              <Camera className="mr-2 size-4" />
-              {ocrBusy
-                ? 'Working… Please wait…'
-                : snapshots.length >= 10
-                  ? '10 snapshots reached'
-                  : 'Add snapshot'}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => void decodeAll()}
-              disabled={ocrBusy || !snapshots.length}
-            >
-              <Brain className="mr-2 size-4" />
-              Process all {snapshots.length}/10
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={clearSnapshots}
-            >
-              <Trash2 className="mr-2 size-4" />
-              Clear
-            </Button>
+            {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => useMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
+            <Button size="sm" variant="outline" onClick={() => setExpr((value) => value.slice(0, -1))}>⌫</Button>
+            <Button size="sm" variant="outline" onClick={clearCalculator}>AC</Button>
+            <Button size="sm" variant="outline" onClick={() => setExpr((value) => `${value}Ans`)}>Ans</Button>
+            <Button size="sm" variant="outline" onClick={() => setExpr((value) => `${value}π`)}>π</Button>
           </div>
 
-          <div className="mt-4 grid gap-2">
-            {snapshots.map((snapshot, index) => (
-              <div
-                key={snapshot.id}
-                className="rounded-xl bg-paper p-3 text-sm"
+          <div className="mt-4 rounded-2xl border border-line bg-paper/70 p-3 text-sm text-muted">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span><strong>Floating calculator keyboard</strong> stays above your phone controls and never pushes the Tool Hub screen.</span>
+              <button
+                type="button"
+                onClick={() => setKeypadOpen(true)}
+                className="font-semibold text-navy-deep underline underline-offset-2"
               >
-                <strong>Snapshot {index + 1}</strong>
-
-                <p className="mt-1 line-clamp-3 whitespace-pre-wrap">
-                  {snapshot.text}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {ocrResult && (
-            <div className="mt-4 rounded-xl border border-line bg-white p-4">
-              <div className="flex flex-wrap justify-between gap-2">
-                <strong>Extracted / processed result</strong>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    navigator.clipboard?.writeText(ocrResult)
-                  }
-                >
-                  <Copy className="mr-1 size-4" />
-                  Copy
-                </Button>
-              </div>
-
-              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap text-sm leading-6">
-                {ocrResult}
-              </pre>
+                Open keyboard
+              </button>
             </div>
-          )}
-
-          <p className="mt-3 text-xs leading-5 text-muted">
-            Privacy: captured images are sent only to the
-            configured processing endpoint for the requested
-            operation; this UI does not save them to Academy
-            storage. Users should keep any desired copy on their
-            own device.
-          </p>
-        </Panel>
-
-        <Panel
-          icon={<Languages className="text-purple" />}
-          title="Translation & English learning"
-        >
-          <p className="text-sm leading-6 text-muted">
-            The limited calculator supports unlimited
-            individual-word translation and up to 5 sentences per
-            translation request. Premium removes the sentence
-            limit and supports unlimited words and sentences,
-            subject to fair-use and provider limits.
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              value={translationTarget}
-              onChange={(event) =>
-                setTranslationTarget(event.target.value)
-              }
-              className="rounded-xl border border-line bg-white p-3"
-              list="phenom-language-list"
-              placeholder="Target language"
-            />
-
-            <datalist id="phenom-language-list">
-              <option>English</option>
-              <option>French</option>
-              <option>Spanish</option>
-              <option>Mandarin / Chinese</option>
-              <option>Portuguese</option>
-              <option>Arabic</option>
-              <option>German</option>
-              <option>Italian</option>
-              <option>Russian</option>
-              <option>Yoruba</option>
-              <option>Igbo</option>
-              <option>Hausa</option>
-              <option>Nigerian Pidgin English</option>
-            </datalist>
-
-            <label className="flex items-center gap-2 rounded-xl border border-line bg-white p-3 text-sm">
-              <input
-                type="checkbox"
-                checked={translationPremium}
-                readOnly
-              />
-
-              {translationPremium
-                ? 'Premium translation enabled'
-                : 'Limited translation'}
-            </label>
           </div>
 
-          <textarea
-            value={translationInput}
-            onChange={(event) =>
-              setTranslationInput(event.target.value)
-            }
-            className="mt-3 min-h-32 w-full rounded-xl border border-line bg-white p-4 leading-7"
-            placeholder="Enter a word, phrase or sentences…"
-          />
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              onClick={translateTextNow}
-              disabled={translationBusy}
-            >
-              {translationBusy
-                ? 'Translating…'
-                : 'Translate'}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                navigator.clipboard?.writeText(
-                  translationOutput,
-                )
-              }
-              disabled={!translationOutput}
-            >
-              <Copy className="mr-2 size-4" />
-              Copy
-            </Button>
-          </div>
-
-          {translationOutput && (
-            <div className="mt-3 rounded-xl bg-paper p-4 whitespace-pre-wrap leading-7">
-              {translationOutput}
-            </div>
-          )}
-
-          <p className="mt-2 text-xs text-muted">
-            Detected sentence count: {sentenceCount}. The premium
-            control is an entitlement preview; production access
-            is enforced by the signed-in account.
-          </p>
-        </Panel>
-
-        <Panel
-          icon={<Languages className="text-purple" />}
-          title="English & language learning"
-        >
-          <p className="text-sm leading-6 text-muted">
-            Use the same processing display for spelling, grammar,
-            pronunciation, meaning, sentence correction, reading
-            comprehension and limited translation. Extended
-            language-service usage should be routed to the
-            Academy language service subscription.
-          </p>
-
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            className="mt-4 min-h-32 w-full rounded-xl border border-line bg-white p-4 leading-7"
-            placeholder="Type English or another supported language here…"
-          />
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={() => void teachEnglish()}>
-              Teach / explain
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                navigator.clipboard?.writeText(text)
-              }
-              disabled={!text}
-            >
-              <Copy className="mr-2 size-4" />
-              Copy input
-            </Button>
-          </div>
-
-          {ocrResult && (
-            <div className="mt-4 rounded-xl bg-paper p-4 whitespace-pre-wrap leading-7">
-              {ocrResult}
-            </div>
-          )}
-        </Panel>
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel
-          icon={<Barcode className="text-green" />}
-          title="Barcode create & read"
-        >
-          <input
-            value={barcodeText}
-            onChange={(event) =>
-              setBarcodeText(event.target.value)
-            }
-            className="w-full rounded-xl border border-line bg-white p-3"
-            placeholder="Enter barcode text"
-          />
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={makeBarcode}>
-              Create barcode
-            </Button>
-
-            <label className="inline-flex cursor-pointer items-center rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold">
-              Read barcode
-
-              <input
-                className="sr-only"
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-
-                  if (file) void readBarcode(file);
-
-                  event.currentTarget.value = '';
-                }}
-              />
-            </label>
-          </div>
-
-          <div
-            ref={barcodeRef}
-            className="mt-4 min-h-28 overflow-auto rounded-xl bg-white p-3"
-          />
-        </Panel>
-
-        <Panel
-          icon={<FlaskConical className="text-green" />}
-          title="Formula library"
-        >
-          {formulas.map(([category, title, formula]) => (
+          {keypadOpen ? (
             <div
-              key={title}
-              className="mt-2 rounded-xl bg-paper p-3"
+              className="fixed left-1/2 z-[70] w-[min(44rem,calc(100vw-1rem))] -translate-x-1/2 rounded-[1.5rem] border border-line bg-cream/95 p-3 shadow-2xl backdrop-blur-xl"
+              style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+              role="dialog"
+              aria-label="Floating calculator keyboard"
+              onPointerDown={(event) => event.stopPropagation()}
             >
-              <span className="text-xs font-semibold uppercase text-purple">
-                {category}
-              </span>
+              <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
+                <div className="flex items-center gap-2">
+                  <Keyboard className="size-5 text-purple" />
+                  <div>
+                    <p className="font-semibold">Calculator keyboard</p>
+                    <p className="text-[11px] text-muted">Tap the expression or result to call it back.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setKeypadOpen(false)}
+                  className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold"
+                  aria-label="Minimise calculator keyboard"
+                >
+                  Minimise
+                </button>
+              </div>
 
-              <strong className="block">{title}</strong>
+              <div className="mt-2 flex items-center gap-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setMode("basic")}
+                  className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold ${mode === "basic" ? "bg-navy-deep text-gold" : "border border-line bg-white text-navy-deep"}`}
+                >
+                  Basic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("scientific")}
+                  className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold ${mode === "scientific" ? "bg-navy-deep text-gold" : "border border-line bg-white text-navy-deep"}`}
+                >
+                  Scientific
+                </button>
+                <select
+                  className="ml-auto shrink-0 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold"
+                  value={angleMode}
+                  onChange={(e) => setAngleMode(e.target.value as AngleMode)}
+                  aria-label="Angle mode"
+                >
+                  <option>DEG</option><option>RAD</option><option>GRAD</option>
+                </select>
+              </div>
 
-              <code className="text-sm">{formula}</code>
+              {mode === "scientific" ? (
+                <div className="mt-2 grid max-h-[34vh] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-7">
+                  {[
+                    ["sin", "sin"], ["cos", "cos"], ["tan", "tan"], ["asin", "sin⁻¹"], ["acos", "cos⁻¹"], ["atan", "tan⁻¹"], ["sinh", "sinh"],
+                    ["cosh", "cosh"], ["tanh", "tanh"], ["asinh", "sinh⁻¹"], ["acosh", "cosh⁻¹"], ["atanh", "tanh⁻¹"], ["log", "log"],
+                    ["ln", "ln"], ["sqrt", "√x"], ["cbrt", "∛x"], ["square", "x²"], ["cube", "x³"], ["tenPow", "10ˣ"], ["exp", "eˣ"],
+                    ["reciprocal", "1/x"], ["abs", "|x|"], ["floor", "⌊x⌋"], ["ceil", "⌈x⌉"], ["factorial", "x!"],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => applyScientific(key)}
+                      className="min-h-11 rounded-xl border border-line bg-white px-2 py-2 text-xs font-bold hover:bg-paper sm:text-sm"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => insert("nPr(")} className="min-h-11 rounded-xl border border-line bg-white px-2 py-2 text-xs font-bold">nPr</button>
+                  <button type="button" onClick={() => insert("nCr(")} className="min-h-11 rounded-xl border border-line bg-white px-2 py-2 text-xs font-bold">nCr</button>
+                </div>
+              ) : null}
+
+              <div className="mt-2 grid grid-cols-5 gap-2">
+                {[
+                  ["AC", "clear"], ["⌫", "backspace"], ["(", "input"], [")", "input"], ["mod", "input"],
+                  ["7", "input"], ["8", "input"], ["9", "input"], ["÷", "input"], ["×", "input"],
+                  ["4", "input"], ["5", "input"], ["6", "input"], ["−", "input"], ["+", "input"],
+                  ["1", "input"], ["2", "input"], ["3", "input"], ["%", "input"], ["±", "sign"],
+                  ["0", "input"], [".", "input"], ["π", "input"], ["e", "input"], ["=", "equals"],
+                  ["√", "input"], ["∛", "input"], ["^", "input"], ["EXP", "input"], ["Ans", "input"],
+                ].map(([key, action]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (action === "clear") clearCalculator();
+                      else if (action === "backspace") setExpr((value) => value.slice(0, -1));
+                      else if (action === "sign") toggleSign();
+                      else if (action === "equals") calculate();
+                      else insert(key === "mod" ? " mod " : key);
+                    }}
+                    className={`min-h-12 rounded-xl border border-line px-2 py-2 text-sm font-bold shadow-sm transition hover:-translate-y-px ${
+                      key === "="
+                        ? "bg-orange text-white"
+                        : key === "AC"
+                          ? "bg-red-50 text-red-700"
+                          : "bg-white text-navy-deep"
+                    }`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted">
+                <span>DEG/RAD/GRAD · memory controls remain above.</span>
+                <button type="button" onClick={() => setKeypadOpen(false)} className="font-semibold text-navy-deep">
+                  Hide
+                </button>
+              </div>
             </div>
-          ))}
-        </Panel>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setKeypadOpen(true)}
+              className="fixed bottom-4 right-4 z-[69] flex items-center gap-2 rounded-full border border-line bg-navy-deep px-4 py-3 text-sm font-bold text-gold shadow-2xl"
+              style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+              aria-label="Show calculator keyboard"
+            >
+              <Keyboard className="size-5" />
+              Keyboard
+            </button>
+          )}
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_.8fr]">
+            <div>
+              <h3 className="font-display text-xl font-semibold">Calculation history</h3>
+              <div className="mt-2 max-h-52 overflow-auto rounded-xl bg-paper p-3 font-mono text-sm">
+                {history.length ? history.map((item, index) => <p key={`${item}-${index}`} className="border-b border-line py-2 last:border-0">{item}</p>) : <p className="text-muted">No calculations yet.</p>}
+              </div>
+              <Button variant="outline" className="mt-2" onClick={() => setHistory([])}><Trash2 className="mr-2 size-4" />Clear history</Button>
+            </div>
+            <div className="rounded-xl border border-line bg-white p-4">
+              <h3 className="font-semibold">Paste and edit</h3>
+              <textarea value={pasteText} onChange={(e) => setPasteText(e.target.value)} className="mt-2 min-h-28 w-full rounded-xl border border-line p-3" placeholder="Paste maths, science or language text here, then copy it into the appropriate tool." />
+              <Button size="sm" className="mt-2" variant="outline" onClick={() => { setExpr(pasteText); setEnglishInput(pasteText); setTranslationInput(pasteText); }}>Use this text in Calculator / English / Translation</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeTool === "units" ? (
+        <ToolCard title="Unit Converter" icon={<RefreshCw className="text-purple" />} description="Convert practical, mathematical, physics and chemistry quantities, plus live world currencies.">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <SelectField label="Quantity" value={unitCategory} onChange={(value) => { setUnitCategory(value); const u = unitCategories.find((x) => x.name === value)?.units ?? []; setUnitFrom(u[0]?.symbol || ""); setUnitTo(u[1]?.symbol || u[0]?.symbol || ""); }} options={unitCategories.map((category) => category.name)} />
+            <SelectField label="From" value={unitFrom} onChange={setUnitFrom} options={selectedCategory.units.map((unit) => unit.symbol)} labels={selectedCategory.units.map((unit) => unit.label)} />
+            <SelectField label="To" value={unitTo} onChange={setUnitTo} options={selectedCategory.units.map((unit) => unit.symbol)} labels={selectedCategory.units.map((unit) => unit.label)} />
+            <label className="text-sm font-semibold">Value<input className="mt-1 w-full rounded-xl border border-line bg-white p-3 text-lg" value={unitValue} onChange={(e) => setUnitValue(e.target.value)} inputMode="decimal" /></label>
+          </div>
+          <div className="mt-5 rounded-2xl bg-navy-deep p-5 text-cream">
+            <p className="text-xs uppercase tracking-widest text-gold">Converted value</p>
+            <p className="mt-2 text-3xl font-bold">{convertedUnit === null ? "—" : `${Number(convertedUnit.toPrecision(12))} ${selectedToUnit.symbol}`}</p>
+          </div>
+
+          <div className="mt-7 border-t border-line pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-display text-xl font-semibold">Live world currency</h3><p className="text-sm text-muted">Rates come from the Academy currency service. Refresh to request current rates.</p></div><Button variant="outline" onClick={() => { setCurrencyLoading(true); void getLiveCurrencyRates(true).then(setCurrency).finally(() => setCurrencyLoading(false)); }}><RefreshCw className="mr-2 size-4" />Refresh</Button></div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="text-sm font-semibold">Amount<input type="number" className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={currencyAmount} onChange={(e) => setCurrencyAmount(e.target.value)} /></label>
+              <SelectField label="From" value={currencyFrom} onChange={setCurrencyFrom} options={codes} labels={codes.map(currencyName)} />
+              <SelectField label="To" value={currencyTo} onChange={setCurrencyTo} options={codes} labels={codes.map(currencyName)} />
+            </div>
+            <div className="mt-4 rounded-xl bg-paper p-4 text-2xl font-bold">{currencyLoading ? "Loading live rates…" : convertedCurrency === null ? "—" : `${convertedCurrency.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${currencyTo}`}</div>
+          </div>
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "formulas" ? (
+        <ToolCard title="Formula & Units" icon={<FlaskConical className="text-green" />} description="From primary-school foundations to university and professional formulas. Enter values directly and get a result plus an explanation.">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <SelectField label="Subject" value={formulaSubject} onChange={setFormulaSubject} options={["Mathematics", "Statistics", "Physics", "Chemistry"]} />
+            <SelectField label="Level" value={formulaLevel} onChange={setFormulaLevel} options={["Primary", "Secondary", "University", "Professional"]} />
+            <SelectField label="Formula" value={selectedFormula.name} onChange={setFormulaId} options={filteredFormulas.map((formula) => formula.name)} />
+          </div>
+          <div className="mt-5 rounded-2xl border border-purple/20 bg-purple/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-purple">{selectedFormula.subject} · {selectedFormula.level}</p>
+            <h3 className="mt-2 font-display text-2xl font-bold">{selectedFormula.name}</h3>
+            <code className="mt-3 block overflow-auto rounded-xl bg-white p-4 text-base">{selectedFormula.formula}</code>
+            <p className="mt-3 text-sm leading-6 text-muted">{selectedFormula.explanation}</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {selectedFormula.variables.map((variable) => <label key={variable} className="text-sm font-semibold">{variable}<input className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={formulaValues[variable] || ""} onChange={(e) => setFormulaValues((values) => ({ ...values, [variable]: e.target.value }))} inputMode="decimal" /></label>)}
+            </div>
+            <Button className="mt-4" onClick={() => { const values = Object.fromEntries(Object.entries(formulaValues).map(([key, value]) => [key, Number(value)])); const answer = selectedFormula.solve(values); setResult(Number.isFinite(answer) ? String(Number(answer.toPrecision(12))) : "Check the entered values."); }}>Solve formula</Button>
+            {result && activeTool === "formulas" ? <div className="mt-4 rounded-xl bg-navy-deep p-4 text-xl font-bold text-gold">Answer: {result}</div> : null}
+          </div>
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "graph" ? (
+        <ToolCard title="Graph Plotter" icon={<LineChart className="text-blue" />} description="Plot one or two mathematical functions, change the x-range and inspect the curve visually.">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-sm font-semibold lg:col-span-2">y₁ = f(x)<input className="mt-1 w-full rounded-xl border border-line bg-white p-3 font-mono" value={graphExpression} onChange={(e) => setGraphExpression(e.target.value)} /></label>
+            <label className="text-sm font-semibold lg:col-span-2">y₂ = f(x) (optional)<input className="mt-1 w-full rounded-xl border border-line bg-white p-3 font-mono" value={graphExpression2} onChange={(e) => setGraphExpression2(e.target.value)} /></label>
+            <label className="text-sm font-semibold">X minimum<input className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={graphMin} onChange={(e) => setGraphMin(e.target.value)} /></label>
+            <label className="text-sm font-semibold">X maximum<input className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={graphMax} onChange={(e) => setGraphMax(e.target.value)} /></label>
+            <label className="text-sm font-semibold lg:col-span-2">Vertical scale<input type="range" min="10" max="80" value={graphScale} onChange={(e) => setGraphScale(Number(e.target.value))} className="mt-3 w-full" /></label>
+          </div>
+          <div className="mt-5 overflow-auto rounded-2xl bg-white p-2">
+            {graph && "width" in graph ? <svg viewBox={`0 0 ${graph.width} ${graph.height}`} className="min-w-[700px] w-full" role="img" aria-label="Mathematical graph">
+              <rect width={graph.width} height={graph.height} fill="white" />
+              <line x1="0" y1={graph.height / 2} x2={graph.width} y2={graph.height / 2} stroke="#8b95a7" strokeWidth="1" />
+              <line x1={graph.width / 2} y1="0" x2={graph.width / 2} y2={graph.height} stroke="#8b95a7" strokeWidth="1" />
+              <path d={graph.path1} fill="none" stroke="#c94b16" strokeWidth="3" />
+              {graph.path2 ? <path d={graph.path2} fill="none" stroke="#1a4a8c" strokeWidth="3" /> : null}
+            </svg> : <p className="p-8 text-center text-muted">Enter a plottable expression.</p>}
+          </div>
+          {graphError ? <p className="mt-3 rounded-xl bg-orange/10 p-3 text-sm">{graphError}</p> : null}
+          <p className="mt-3 text-xs text-muted">Try sin(x), cos(x), x^2, sqrt(x), log(x), ln(x), abs(x), or combinations such as 0.5*x^2-3.</p>
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "english" ? (
+        <ToolCard title="English Literacy" icon={<FileText className="text-orange" />} description="Spelling, pronunciation, definition, synonyms, antonyms, phonics, grammar, common mistakes, British vs American English and phonetic transcription.">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <select className="rounded-xl border border-line bg-white p-3" value={englishMode} onChange={(e) => setEnglishMode(e.target.value)}>
+              {["Definition", "Spelling", "Pronunciation", "Synonyms & Antonyms", "Phonics", "Grammar", "Common Mistakes", "British vs American English", "IPA / Phonetic Transcription"].map((item) => <option key={item}>{item}</option>)}
+            </select>
+            <Button onClick={runEnglish} disabled={englishBusy}>{englishBusy ? "Working…" : "Analyse language"}</Button>
+          </div>
+          <textarea className="mt-3 min-h-36 w-full rounded-xl border border-line bg-white p-4 text-base" value={englishInput} onChange={(e) => setEnglishInput(e.target.value)} placeholder="Type or paste a word, sentence, paragraph or language question…" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => speak(englishInput || "Phenom Best Academy", "en-GB")}><Volume2 className="mr-2 size-4" />Speak British English</Button>
+            <Button variant="outline" onClick={() => speak(englishInput || "Phenom Best Academy", "en-US")}><Volume2 className="mr-2 size-4" />Speak American English</Button>
+            <Button variant="outline" onClick={() => navigator.clipboard?.writeText(englishOutput)} disabled={!englishOutput}><Copy className="mr-2 size-4" />Copy result</Button>
+          </div>
+          {englishOutput ? <pre className="mt-4 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-2xl bg-paper p-5 text-sm leading-6">{englishOutput}</pre> : null}
+          <div className="mt-5 rounded-xl border border-purple/20 bg-purple/5 p-4 text-sm text-muted">
+            <strong>CPD distinction:</strong> English Literacy is a Tools service. It does not replace a structured CPD programme. A learner may subscribe to CPD separately; Tools Premium and CPD are separate entitlements. Where a specific CPD language requires premium speech or another Tool function, the relevant Tool entitlement can be enabled for that learning period without turning the entire CPD catalogue into Tools Premium.
+          </div>
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "translation" ? (
+        <ToolCard title="Language Translation" icon={<Languages className="text-purple" />} description="Translate supported Academy languages with editable text, pronunciation and device speech.">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <SelectField label="Target language" value={translationTarget} onChange={(value) => setTranslationTarget(value as SupportedLocale)} options={languageOptions.map((language) => language.code)} labels={languageOptions.map((language) => language.label)} />
+            <Button onClick={translate} disabled={translationBusy}>{translationBusy ? "Translating…" : "Translate"}</Button>
+          </div>
+          <textarea className="mt-3 min-h-36 w-full rounded-xl border border-line bg-white p-4 text-base" value={translationInput} onChange={(e) => setTranslationInput(e.target.value)} placeholder="Type or paste text here…" />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => speak(translationInput, translationTarget)} disabled={!translationInput}><Volume2 className="mr-2 size-4" />Speak source</Button>
+            <Button variant="outline" onClick={() => speak(translationOutput, translationTarget)} disabled={!translationOutput}><Volume2 className="mr-2 size-4" />Speak translation</Button>
+            <Button variant="outline" onClick={() => navigator.clipboard?.writeText(translationOutput)} disabled={!translationOutput}><Copy className="mr-2 size-4" />Copy</Button>
+          </div>
+          {translationOutput ? <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-paper p-5 text-sm leading-6">{translationOutput}</pre> : null}
+          <div className="mt-5 flex flex-wrap gap-2 text-xs">
+            <span className={`rounded-full px-3 py-1 ${translationPremium ? "bg-green/10 text-green" : "bg-paper text-muted"}`}>{translationPremium ? "Tools Premium enabled" : "Standard Tools access"}</span>
+            {speechPremium ? <span className="rounded-full bg-green/10 px-3 py-1 text-green">Speech Premium enabled</span> : <span className="rounded-full bg-paper px-3 py-1 text-muted">Device speech available where supported</span>}
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm font-semibold">Device voice
+              <select className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={speechVoice} onChange={(e) => setSpeechVoice(e.target.value)}>
+                <option value="">System default voice</option>
+                {typeof window !== "undefined" ? window.speechSynthesis.getVoices().map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name}>{voice.name} — {voice.lang}</option>) : null}
+              </select>
+            </label>
+            <div className="rounded-xl border border-line bg-white p-3 text-sm">
+              <strong>Language catalogue</strong>
+              <p className="mt-1 text-xs text-muted">{languageOptions.length} Academy language/locale variants are available for the translation interface.</p>
+            </div>
+          </div>
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "scanner" ? (
+        <ToolCard title="All-Purpose Scanner & Creator" icon={<QrCode className="text-green" />} description="Image-to-text, text reading, code scanning and code creation for QR, Data Matrix, Aztec, PDF417 and common barcodes.">
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["ocr", "Image to Text"], ["reader", "Text & Image Reader"], ["codes", "Code Scanner / Creator"],
+            ].map(([id, label]) => <Button key={id} variant={scannerMode === id ? "default" : "outline"} onClick={() => setScannerMode(id as typeof scannerMode)}>{label}</Button>)}
+          </div>
+
+          {scannerMode === "ocr" ? (
+            <div className="mt-5">
+              <input ref={(element) => { setFileRef(element); }} className="hidden" type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void processImage(file); }} />
+              <div className="rounded-2xl border-2 border-dashed border-line p-6 text-center">
+                <ScanLine className="mx-auto size-10 text-purple" />
+                <h3 className="mt-3 font-display text-xl font-semibold">Up to 10 consecutive images</h3>
+                <p className="mt-2 text-sm text-muted">Typed work, handwriting, photographs, symbols and common image formats can be submitted for processing. The configured premium service can perform deeper processing and longer work.</p>
+                <Button className="mt-4" onClick={() => fileRef?.click()} disabled={ocrBusy}><Upload className="mr-2 size-4" />{ocrBusy ? "Processing…" : "Add image"}</Button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" onClick={processSnapshots} disabled={ocrBusy || !snapshots.length}>Process {snapshots.length}/10 images</Button>
+                <Button variant="outline" onClick={() => { setSnapshots([]); setOcrResult(""); }}><Trash2 className="mr-2 size-4" />Clear</Button>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {snapshots.map((snapshot, index) => <div key={snapshot.id} className="rounded-xl border border-line bg-white p-3 text-sm"><strong>Image {index + 1}</strong><p className="mt-1 truncate text-muted">{snapshot.name}</p></div>)}
+              </div>
+              {ocrResult ? <div className="mt-4 rounded-2xl bg-paper p-5"><div className="flex flex-wrap justify-between gap-2"><strong>Processed content</strong><Button size="sm" variant="outline" onClick={() => navigator.clipboard?.writeText(ocrResult)}><Copy className="mr-2 size-4" />Copy</Button></div><pre className="mt-3 max-h-[34rem] overflow-auto whitespace-pre-wrap text-sm leading-6">{ocrResult}</pre></div> : null}
+            </div>
+          ) : null}
+
+          {scannerMode === "reader" ? (
+            <div className="mt-5">
+              <textarea className="min-h-40 w-full rounded-xl border border-line bg-white p-4" placeholder="Paste or type text to read aloud…" value={pasteText} onChange={(e) => setPasteText(e.target.value)} />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button onClick={() => speak(pasteText || "Phenom Best Academy", "en-GB")}><Volume2 className="mr-2 size-4" />Read aloud</Button>
+                <Button variant="outline" onClick={() => navigator.clipboard?.writeText(pasteText)}>Copy text</Button>
+                <label className="inline-flex cursor-pointer items-center rounded-md border border-line bg-white px-4 py-2 text-sm font-semibold">
+                  Read an image
+                  <input className="sr-only" type="file" accept="image/*" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; await processImage(file); }} />
+                </label>
+              </div>
+              {ocrResult ? <div className="mt-4 rounded-xl bg-paper p-4"><div className="flex flex-wrap justify-between gap-2"><strong>Image text</strong><Button size="sm" variant="outline" onClick={() => speak(ocrResult, "en-GB")}><Volume2 className="mr-2 size-4" />Read result</Button></div><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-sm">{ocrResult}</pre></div> : null}
+              <p className="mt-3 text-xs text-muted">Speech uses the device's configured text-to-speech capability. The interface does not expose or brand the underlying speech engine.</p>
+            </div>
+          ) : null}
+
+          {scannerMode === "codes" ? (
+            <div className="mt-5 grid gap-6 lg:grid-cols-[.85fr_1.15fr]">
+              <div>
+                <h3 className="font-display text-xl font-semibold">Create</h3>
+                <SelectField label="Code format" value={codeType} onChange={setCodeType} options={["qrcode", "datamatrix", "azteccode", "pdf417", "code128", "code39", "ean13"]} labels={["QR Code", "Data Matrix", "Aztec Code", "PDF417", "Code 128", "Code 39", "EAN-13"]} />
+                <textarea className="mt-3 min-h-32 w-full rounded-xl border border-line bg-white p-4" value={codeText} onChange={(e) => setCodeText(e.target.value)} placeholder="Enter a phone number, email, website, text, numeric data, alphanumeric text or other supported payload…" />
+                {codeType === "qrcode" ? <div className="mt-3 rounded-xl border border-line bg-white p-4"><p className="text-sm font-semibold">Contact / link creator</p><div className="mt-2 grid gap-2"><input className="rounded-lg border border-line p-2" placeholder="Name" value={contactName} onChange={(e) => setContactName(e.target.value)} /><input className="rounded-lg border border-line p-2" placeholder="Phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} /><input className="rounded-lg border border-line p-2" placeholder="Email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} /><input className="rounded-lg border border-line p-2" placeholder="Website / social media link" value={contactUrl} onChange={(e) => setContactUrl(e.target.value)} /></div><p className="mt-2 text-xs text-muted">Leave contact fields empty to encode the main text box. QR can carry a web link that a scanner can open.</p></div> : null}
+                <div className="mt-3 flex flex-wrap gap-2"><Button onClick={createCode}>Create code</Button><Button variant="outline" onClick={downloadCode} disabled={!codeSvg}><Download className="mr-2 size-4" />Save SVG</Button><Button variant="outline" onClick={printCode} disabled={!codeSvg}><Printer className="mr-2 size-4" />Print</Button></div>
+              </div>
+              <div>
+                <h3 className="font-display text-xl font-semibold">Scan</h3>
+                <label className="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-line p-6 text-sm font-semibold">Choose code image<input className="sr-only" type="file" accept="image/*" onChange={(e) => { const file = e.target.files?.[0]; if (file) void readCode(file); }} /></label>
+                {scanResult ? <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-paper p-4 text-sm">{scanResult}</pre> : null}
+                {codeSvg ? <div className="mt-4 overflow-auto rounded-2xl border border-line bg-white p-5" dangerouslySetInnerHTML={{ __html: codeSvg }} /> : null}
+              </div>
+            </div>
+          ) : null}
+        </ToolCard>
+      ) : null}
+
+      {activeTool === "productivity" ? (
+        <ToolCard
+          title="Productivity"
+          icon={<StickyNote className="text-green" />}
+          description="Everyday helpers for study and work — percentage, date difference, stopwatch, random numbers, quick notes and device speech."
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-2xl border border-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold"><Percent className="size-4 text-green" /> Percentage</div>
+              <label className="mt-3 block text-sm">Base value
+                <input type="number" value={percentBase} onChange={(e) => setPercentBase(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+              </label>
+              <label className="mt-2 block text-sm">Percentage (%)
+                <input type="number" value={percentRate} onChange={(e) => setPercentRate(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+              </label>
+              <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-mono font-semibold">{percentResult || "—"}</p>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold"><Calendar className="size-4 text-green" /> Date difference</div>
+              <label className="mt-3 block text-sm">From
+                <input type="date" value={dateA} onChange={(e) => setDateA(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+              </label>
+              <label className="mt-2 block text-sm">To
+                <input type="date" value={dateB} onChange={(e) => setDateB(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+              </label>
+              <p className="mt-3 rounded-xl bg-paper px-3 py-2 font-semibold">{dateDiff || "—"}</p>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold"><Clock className="size-4 text-green" /> Stopwatch</div>
+              <p className="mt-3 font-mono text-3xl font-semibold tabular-nums">
+                {String(Math.floor(timerSec / 3600)).padStart(2, "0")}:
+                {String(Math.floor((timerSec % 3600) / 60)).padStart(2, "0")}:
+                {String(timerSec % 60).padStart(2, "0")}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={() => setTimerRunning((v) => !v)}>{timerRunning ? "Pause" : "Start"}</Button>
+                <Button size="sm" variant="outline" onClick={() => { setTimerRunning(false); setTimerSec(0); }}>Reset</Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold"><Shuffle className="size-4 text-green" /> Random number</div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="text-sm">Min
+                  <input type="number" value={randomMin} onChange={(e) => setRandomMin(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+                </label>
+                <label className="text-sm">Max
+                  <input type="number" value={randomMax} onChange={(e) => setRandomMax(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-cream px-3 py-2" />
+                </label>
+              </div>
+              <Button
+                className="mt-3"
+                size="sm"
+                onClick={() => {
+                  const lo = Number(randomMin);
+                  const hi = Number(randomMax);
+                  if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi < lo) {
+                    setRandomOut("Invalid range");
+                    return;
+                  }
+                  setRandomOut(String(Math.floor(Math.random() * (hi - lo + 1)) + lo));
+                }}
+              >
+                Generate
+              </Button>
+              <p className="mt-2 font-mono text-xl font-semibold">{randomOut || "—"}</p>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 font-semibold"><StickyNote className="size-4 text-green" /> Quick notes</div>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-3 min-h-28 w-full rounded-xl border border-line bg-cream p-3 text-sm"
+                placeholder="Scratch pad — saved on this device…"
+              />
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => navigator.clipboard?.writeText(notes)}>
+                <Copy className="mr-1 size-4" /> Copy notes
+              </Button>
+            </div>
+
+            <div className="rounded-2xl border border-line bg-white p-4">
+              <div className="flex items-center gap-2 font-semibold"><Volume2 className="size-4 text-green" /> Text to speech</div>
+              <p className="mt-2 text-sm text-muted">
+                Uses the speech voices available on this device. Select text in any tool, or speak notes and current results.
+              </p>
+              <Button
+                className="mt-3"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const t =
+                    window.getSelection()?.toString() ||
+                    notes ||
+                    expr ||
+                    translationOutput ||
+                    englishOutput ||
+                    ocrResult ||
+                    result;
+                  if (t && "speechSynthesis" in window) {
+                    const u = new SpeechSynthesisUtterance(t);
+                    window.speechSynthesis.speak(u);
+                  }
+                }}
+              >
+                Speak selected / current text
+              </Button>
+            </div>
+          </div>
+        </ToolCard>
+      ) : null}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <div className="rounded-2xl border border-line bg-cream p-5">
+          <ShieldCheck className="text-green" />
+          <h2 className="mt-2 font-display text-lg font-semibold">Safe entitlement model</h2>
+          <p className="mt-1 text-sm text-muted">Tools Premium and CPD are separate. A specific CPD programme may grant the particular Tool Premium capability it requires without granting unrelated Tool Premium services.</p>
+        </div>
+        <div className="rounded-2xl border border-line bg-cream p-5">
+          <Crown className="text-gold" />
+          <h2 className="mt-2 font-display text-lg font-semibold">Premium without confusion</h2>
+          <p className="mt-1 text-sm text-muted">A Tools Premium subscription does not automatically enrol a learner in CPD. A CPD subscription does not automatically unlock the entire Tool Hub.</p>
+        </div>
+        <div className="rounded-2xl border border-line bg-cream p-5">
+          <GraduationCap className="text-purple" />
+          <h2 className="mt-2 font-display text-lg font-semibold">Learning stays learning</h2>
+          <p className="mt-1 text-sm text-muted">CPD lessons, assessments and certificates remain in the CPD learning service. The Tool Hub provides the practical functions needed for direct learning access.</p>
+        </div>
       </div>
+    </section>
+    </>
+  );
+}
+
+function ToolCard({
+  title,
+  icon,
+  description,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="phenom-tools-surface mt-5 rounded-[2rem] border border-line bg-cream p-4 shadow-card sm:p-6">
+      <div className="flex items-start gap-3">
+        <div className="mt-1 rounded-xl bg-paper p-2">{icon}</div>
+        <div>
+          <h2 className="font-display text-2xl font-bold sm:text-3xl">{title}</h2>
+          <p className="mt-1 max-w-4xl text-sm text-muted">{description}</p>
+        </div>
+      </div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
 
-function Panel({
-  icon,
-  title,
-  children,
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  labels = options,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  labels?: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-cream p-6 shadow-card">
-      <div className="flex items-center gap-2">
-        {icon}
-
-        <h2 className="font-display text-2xl font-semibold">
-          {title}
-        </h2>
-      </div>
-
-      <div className="mt-3">{children}</div>
-    </div>
+    <label className="text-sm font-semibold">
+      {label}
+      <select className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((option, index) => <option key={option} value={option}>{labels[index] || option}</option>)}
+      </select>
+    </label>
   );
+}
+
+function evaluateGraphExpression(expression: string, x: number) {
+  let source = expression
+    .replace(/×/g, "*")
+    .replace(/÷/g, "/")
+    .replace(/\^/g, "**")
+    .replace(/\bpi\b/gi, "PI")
+    .replace(/\s+/g, "");
+  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+    throw new Error("Unsupported graph character.");
+  }
+
+  const value = Function(
+    "x",
+    "sin",
+    "cos",
+    "tan",
+    "sqrt",
+    "log",
+    "ln",
+    "abs",
+    "floor",
+    "ceil",
+    "PI",
+    `"use strict"; return (${source})`,
+  )(
+    x,
+    Math.sin,
+    Math.cos,
+    Math.tan,
+    Math.sqrt,
+    Math.log10,
+    Math.log,
+    Math.abs,
+    Math.floor,
+    Math.ceil,
+    Math.PI,
+  );
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error("Non-finite graph value.");
+  }
+  return value;
 }
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(reader.error);
-
     reader.readAsDataURL(file);
   });
 }
