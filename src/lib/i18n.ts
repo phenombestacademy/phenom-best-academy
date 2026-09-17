@@ -5,10 +5,52 @@ export const supportedLocales = [
 ] as const;
 export type SupportedLocale = typeof supportedLocales[number][0];
 const KEY='phenom-locale-v3';
+const ONBOARDING_KEY='phenom-onboarding-locale-v1';
 const ORIGINAL = new WeakMap<Text,string>();
+
+function localeFromTag(tag:string):SupportedLocale|null{
+  const normalized=tag.trim().toLowerCase();
+  const exact=supportedLocales.find(([code])=>code.toLowerCase()===normalized);
+  if(exact)return exact[0];
+  const language=normalized.split('-')[0];
+  const regional=supportedLocales.find(([code])=>code.toLowerCase().split('-')[0]===language);
+  return regional?.[0]||null;
+}
+
+function detectDefaultLocale():SupportedLocale{
+  if(typeof window==='undefined')return'en-NG';
+  const onboarding=window.localStorage.getItem(ONBOARDING_KEY);
+  const savedOnboarding=onboarding?localeFromTag(onboarding):null;
+  if(savedOnboarding)return savedOnboarding;
+
+  const browserLanguages=[...(navigator.languages||[]),navigator.language||''];
+  for(const tag of browserLanguages){
+    const detected=localeFromTag(tag);
+    if(detected)return detected;
+  }
+
+  try{
+    const timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if(timeZone==='Africa/Lagos')return'en-NG';
+  }catch{}
+
+  return'en-NG';
+}
 let observer: MutationObserver | null = null; let translating=false; let queued=false;
-export function getLocale():SupportedLocale{if(typeof window==='undefined')return'en-NG';const saved=window.localStorage.getItem(KEY) as SupportedLocale|null;return supportedLocales.some(x=>x[0]===saved)?saved:'en-NG';}
-export function setLocale(locale:SupportedLocale){if(typeof window==='undefined')return;window.localStorage.setItem(KEY,locale);document.documentElement.lang=locale;window.dispatchEvent(new Event('phenom-locale-change'));void translateVisibleContent(locale);}
+export function getLocale():SupportedLocale{
+  if(typeof window==='undefined')return'en-NG';
+  const saved=window.localStorage.getItem(KEY);
+  const detectedSaved=saved?localeFromTag(saved):null;
+  return detectedSaved||detectDefaultLocale();
+}
+export function setLocale(locale:SupportedLocale){
+  if(typeof window==='undefined')return;
+  window.localStorage.setItem(KEY,locale);
+  window.localStorage.setItem(ONBOARDING_KEY,locale);
+  document.documentElement.lang=locale;
+  window.dispatchEvent(new Event('phenom-locale-change'));
+  void translateVisibleContent(locale);
+}
 export function initLocale(){const locale=getLocale();if(typeof document!=='undefined')document.documentElement.lang=locale;return locale;}
 function isExcluded(node:Text){const parent=node.parentElement;if(!parent)return true;if(parent.closest('script,style,noscript,textarea,input,select,option,[data-no-translate],[contenteditable="true"]'))return true;const text=node.nodeValue?.trim()||'';if(text.length<2||/^https?:\/\//i.test(text)||/^mailto:/i.test(text)||/^\+?\d[\d\s().-]{5,}$/.test(text))return true;return false;}
 function collect(){const nodes:Text[]=[];const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n:Node|null;while((n=walker.nextNode())){const t=n as Text;if(!isExcluded(t)){if(!ORIGINAL.has(t))ORIGINAL.set(t,t.nodeValue||'');nodes.push(t);}}return nodes;}
