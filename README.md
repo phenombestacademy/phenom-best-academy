@@ -33,7 +33,7 @@ The public website package intentionally excludes the original corporate referen
 
 The site uses the official Phenom Best Academy brand assets and incorporates the Academy's two specialist identities: Phenom Sound Press — The Library Service of Phenom Best Academy, and Phenom Sound Lab — The Creative Division of Phenom Best Academy.
 
-This production source preserves the original visual system and Academy brand assets while removing Grok builder scaffolding.
+This production source preserves the original visual system and Academy brand assets while keeping Phenom Best Academy branding only.
 
 ## Level 2 CMS — Admin Studio
 
@@ -150,3 +150,6 @@ The final platform foundation also includes optional, tenant-controlled personal
 Receipts, report cards and payslips are designed as tenant-owned documents and should use the school/company/organisation's own identity rather than unnecessarily displaying Phenom Best Academy branding. The Academy remains the platform provider and master administrative layer.
 
 These features are schema/architecture foundations in this package. Production activation still requires the corresponding UI workflows, Supabase RLS testing, secure handling of sensitive personal/health data, verified payment/HR integrations where desired, and professional legal/privacy/security review before public use.
+
+Phenom Best Calc — The Calculation Tool of Phenom Best Academy
+Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
