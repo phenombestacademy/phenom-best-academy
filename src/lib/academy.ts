@@ -953,6 +953,3 @@ export const strategicPartners = [
   "Industry, corporate, NGO, and community partners",
   "Qualified specialists and professional networks",
 ] as const;
-
-Phenom Best Calc — The Calculation Tool of Phenom Best Academy
-Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
