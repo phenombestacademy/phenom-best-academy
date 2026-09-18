@@ -111,3 +111,6 @@ function Leadership() {
     </>
   );
 }
+
+Phenom Best Calc — The Calculation Tool of Phenom Best Academy
+Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy

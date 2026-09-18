@@ -376,6 +376,42 @@ const formulaLibrary = [
   { subject: "Chemistry", level: "Secondary", name: "Moles", formula: "n = m ÷ M", explanation: "Moles equal sample mass divided by molar mass.", variables: ["m", "M"], solve: (v: Record<string, number>) => v.m / v.M },
   { subject: "Chemistry", level: "Secondary", name: "Molar concentration", formula: "c = n ÷ V", explanation: "Molar concentration is amount of substance per litre or other chosen volume unit.", variables: ["n", "V"], solve: (v: Record<string, number>) => v.n / v.V },
   { subject: "Chemistry", level: "University", name: "pH", formula: "pH = −log₁₀[H⁺]", explanation: "For dilute aqueous solutions, pH is the negative base-10 logarithm of hydrogen-ion concentration.", variables: ["H"], solve: (v: Record<string, number>) => -Math.log10(v.H) },
+
+  { subject: "Mathematics", level: "Primary", name: "Area of rectangle", formula: "A = l × w", explanation: "Area of a rectangle is length multiplied by width.", variables: ["l", "w"], solve: (v: Record<string, number>) => v.l * v.w },
+  { subject: "Mathematics", level: "Primary", name: "Perimeter of rectangle", formula: "P = 2(l + w)", explanation: "Add all sides; for a rectangle this is twice length plus width.", variables: ["l", "w"], solve: (v: Record<string, number>) => 2 * (v.l + v.w) },
+  { subject: "Mathematics", level: "Primary", name: "Area of triangle", formula: "A = ½ × b × h", explanation: "Area of a triangle is half the base times the perpendicular height.", variables: ["b", "h"], solve: (v: Record<string, number>) => 0.5 * v.b * v.h },
+  { subject: "Mathematics", level: "Primary", name: "Circumference of circle", formula: "C = 2πr", explanation: "Distance around a circle is twice pi times the radius.", variables: ["r"], solve: (v: Record<string, number>) => 2 * Math.PI * v.r },
+  { subject: "Mathematics", level: "Primary", name: "Area of circle", formula: "A = πr²", explanation: "Area of a circle is pi times the square of the radius.", variables: ["r"], solve: (v: Record<string, number>) => Math.PI * v.r ** 2 },
+  { subject: "Mathematics", level: "Secondary", name: "Slope of a line", formula: "m = (y₂ − y₁) ÷ (x₂ − x₁)", explanation: "Slope measures steepness between two points on a straight line.", variables: ["y2", "y1", "x2", "x1"], solve: (v: Record<string, number>) => (v.y2 - v.y1) / (v.x2 - v.x1) },
+  { subject: "Mathematics", level: "Secondary", name: "Distance between points", formula: "d = √((x₂−x₁)² + (y₂−y₁)²)", explanation: "Straight-line distance on the Cartesian plane.", variables: ["x1", "y1", "x2", "y2"], solve: (v: Record<string, number>) => Math.sqrt((v.x2 - v.x1) ** 2 + (v.y2 - v.y1) ** 2) },
+  { subject: "Mathematics", level: "Secondary", name: "Sine rule (side)", formula: "a ÷ sin A = b ÷ sin B", explanation: "In any triangle, sides are proportional to the sines of opposite angles. Enter a, A (degrees) and B to find b.", variables: ["a", "A", "B"], solve: (v: Record<string, number>) => { const ar = (v.A * Math.PI) / 180; const br = (v.B * Math.PI) / 180; return (v.a * Math.sin(br)) / Math.sin(ar); } },
+  { subject: "Mathematics", level: "Secondary", name: "Cosine rule (side)", formula: "c² = a² + b² − 2ab cos C", explanation: "Find a side when two sides and the included angle are known.", variables: ["a", "b", "C"], solve: (v: Record<string, number>) => Math.sqrt(v.a ** 2 + v.b ** 2 - 2 * v.a * v.b * Math.cos((v.C * Math.PI) / 180)) },
+  { subject: "Mathematics", level: "Secondary", name: "Volume of cylinder", formula: "V = πr²h", explanation: "Volume of a right circular cylinder.", variables: ["r", "h"], solve: (v: Record<string, number>) => Math.PI * v.r ** 2 * v.h },
+  { subject: "Mathematics", level: "Secondary", name: "Volume of sphere", formula: "V = ⁴⁄₃πr³", explanation: "Volume of a sphere from its radius.", variables: ["r"], solve: (v: Record<string, number>) => (4 / 3) * Math.PI * v.r ** 3 },
+  { subject: "Mathematics", level: "University", name: "Arithmetic series sum", formula: "Sₙ = n/2 × (2a + (n−1)d)", explanation: "Sum of the first n terms of an arithmetic progression.", variables: ["n", "a", "d"], solve: (v: Record<string, number>) => (v.n / 2) * (2 * v.a + (v.n - 1) * v.d) },
+  { subject: "Mathematics", level: "University", name: "Geometric series sum", formula: "Sₙ = a(1 − rⁿ) ÷ (1 − r)", explanation: "Sum of the first n terms of a geometric progression (r ≠ 1).", variables: ["a", "r", "n"], solve: (v: Record<string, number>) => v.a * (1 - v.r ** v.n) / (1 - v.r) },
+  { subject: "Mathematics", level: "University", name: "Permutation nPr", formula: "nPr = n! ÷ (n−r)!", explanation: "Ordered arrangements of r items from n.", variables: ["n", "r"], solve: (v: Record<string, number>) => { const fact = (k: number) => { let p = 1; for (let i = 2; i <= k; i++) p *= i; return p; }; return fact(v.n) / fact(v.n - v.r); } },
+  { subject: "Mathematics", level: "University", name: "Combination nCr", formula: "nCr = n! ÷ (r!(n−r)!)", explanation: "Unordered selections of r items from n.", variables: ["n", "r"], solve: (v: Record<string, number>) => { const fact = (k: number) => { let p = 1; for (let i = 2; i <= k; i++) p *= i; return p; }; return fact(v.n) / (fact(v.r) * fact(v.n - v.r)); } },
+  { subject: "Mathematics", level: "Professional", name: "Present value", formula: "PV = FV ÷ (1 + r)ⁿ", explanation: "Discount a future cash amount to present value at rate r over n periods.", variables: ["FV", "r", "n"], solve: (v: Record<string, number>) => v.FV / (1 + v.r) ** v.n },
+  { subject: "Mathematics", level: "Professional", name: "Future value annuity", formula: "FV = PMT × ((1+r)ⁿ − 1) ÷ r", explanation: "Future value of equal payments at end of each period.", variables: ["PMT", "r", "n"], solve: (v: Record<string, number>) => v.PMT * ((1 + v.r) ** v.n - 1) / v.r },
+  { subject: "Statistics", level: "Primary", name: "Median of three", formula: "median = middle value after sorting", explanation: "Enter three numbers a ≤ b ≤ c conceptually; this returns the middle of three inputs.", variables: ["a", "b", "c"], solve: (v: Record<string, number>) => [v.a, v.b, v.c].sort((x, y) => x - y)[1] },
+  { subject: "Statistics", level: "Secondary", name: "Probability (equally likely)", formula: "P = favourable ÷ total", explanation: "Classical probability for equally likely outcomes.", variables: ["favourable", "total"], solve: (v: Record<string, number>) => v.favourable / v.total },
+  { subject: "Statistics", level: "University", name: "Standard error of mean", formula: "SE = σ ÷ √n", explanation: "Standard error decreases as sample size increases.", variables: ["σ", "n"], solve: (v: Record<string, number>) => v.σ / Math.sqrt(v.n) },
+  { subject: "Statistics", level: "Professional", name: "Coefficient of variation", formula: "CV = (σ ÷ μ) × 100", explanation: "Relative variability as a percentage of the mean.", variables: ["σ", "μ"], solve: (v: Record<string, number>) => (v.σ / v.μ) * 100 },
+  { subject: "Physics", level: "Primary", name: "Speed", formula: "v = d ÷ t", explanation: "Average speed is distance divided by time.", variables: ["d", "t"], solve: (v: Record<string, number>) => v.d / v.t },
+  { subject: "Physics", level: "Secondary", name: "Density", formula: "ρ = m ÷ V", explanation: "Density is mass per unit volume.", variables: ["m", "V"], solve: (v: Record<string, number>) => v.m / v.V },
+  { subject: "Physics", level: "Secondary", name: "Weight", formula: "W = mg", explanation: "Weight is mass times gravitational field strength.", variables: ["m", "g"], solve: (v: Record<string, number>) => v.m * v.g },
+  { subject: "Physics", level: "Secondary", name: "Pressure", formula: "P = F ÷ A", explanation: "Pressure is force per unit area.", variables: ["F", "A"], solve: (v: Record<string, number>) => v.F / v.A },
+  { subject: "Physics", level: "University", name: "Momentum", formula: "p = mv", explanation: "Linear momentum is mass times velocity.", variables: ["m", "v"], solve: (v: Record<string, number>) => v.m * v.v },
+  { subject: "Physics", level: "University", name: "Wave speed", formula: "v = fλ", explanation: "Wave speed equals frequency times wavelength.", variables: ["f", "λ"], solve: (v: Record<string, number>) => v.f * v["λ"] },
+  { subject: "Physics", level: "Professional", name: "Gravitational force", formula: "F = G m₁ m₂ ÷ r²", explanation: "Newton's law of universal gravitation.", variables: ["G", "m1", "m2", "r"], solve: (v: Record<string, number>) => (v.G * v.m1 * v.m2) / v.r ** 2 },
+  { subject: "Chemistry", level: "Primary", name: "Percentage composition", formula: "% = (part mass ÷ total mass) × 100", explanation: "Mass percent of an element or component in a sample.", variables: ["part", "total"], solve: (v: Record<string, number>) => (v.part / v.total) * 100 },
+  { subject: "Chemistry", level: "Secondary", name: "Dilution", formula: "C₁V₁ = C₂V₂", explanation: "Solve for C₂ given initial concentration and volumes.", variables: ["C1", "V1", "V2"], solve: (v: Record<string, number>) => (v.C1 * v.V1) / v.V2 },
+  { subject: "Chemistry", level: "University", name: "Ideal gas density", formula: "ρ = PM ÷ RT", explanation: "Gas density from pressure, molar mass, gas constant and temperature.", variables: ["P", "M", "R", "T"], solve: (v: Record<string, number>) => (v.P * v.M) / (v.R * v.T) },
+  { subject: "Chemistry", level: "Professional", name: "Reaction rate (simple)", formula: "rate = Δconcentration ÷ Δtime", explanation: "Average rate of change of concentration with time.", variables: ["dC", "dt"], solve: (v: Record<string, number>) => v.dC / v.dt },
+  { subject: "Business Mathematics", level: "Secondary", name: "Profit", formula: "Profit = Revenue − Cost", explanation: "Basic profit from revenue and total cost.", variables: ["Revenue", "Cost"], solve: (v: Record<string, number>) => v.Revenue - v.Cost },
+  { subject: "Business Mathematics", level: "University", name: "Markup percent", formula: "Markup % = (selling − cost) ÷ cost × 100", explanation: "Markup relative to cost price.", variables: ["selling", "cost"], solve: (v: Record<string, number>) => ((v.selling - v.cost) / v.cost) * 100 },
+  { subject: "Business Mathematics", level: "Professional", name: "Break-even units", formula: "Q = Fixed ÷ (Price − Variable)", explanation: "Units needed to cover fixed costs at a contribution margin.", variables: ["Fixed", "Price", "Variable"], solve: (v: Record<string, number>) => v.Fixed / (v.Price - v.Variable) },
   { subject: "Chemistry", level: "Professional", name: "Beer–Lambert law", formula: "A = εlc", explanation: "Absorbance is proportional to molar absorptivity, path length and concentration.", variables: ["ε", "l", "c"], solve: (v: Record<string, number>) => v.ε * v.l * v.c },
 ];
 
@@ -951,7 +987,7 @@ function ToolsPage() {
 
   async function runAi(prompt: string) {
     const supabase = getSupabase();
-    if (!supabase) throw new Error("Connect the Academy AI service first.");
+    if (!supabase) throw new Error("Connect the Academy Phenom Best Core first.");
     const { data, error } = await supabase.functions.invoke("ai-router", {
       body: { mode: "reasoning", prompt },
     });
@@ -1025,7 +1061,7 @@ ${input}`,
     try {
       const dataUrl = await fileToDataUrl(file);
       const supabase = getSupabase();
-      if (!supabase) throw new Error("Connect the Academy AI service first.");
+      if (!supabase) throw new Error("Connect the Academy Phenom Best Core first.");
       const { data: output, error } = await supabase.functions.invoke("ai-router", {
         body: {
           mode: "reasoning",
@@ -1215,7 +1251,28 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
   return (
     <>
       <style>{`
-        .phenom-tools-page { min-height: 70vh; }
+        .phenom-tools-page { min-height: 70vh; font-size: 1.05rem; color: #0a0a0a; }
+        .phenom-tools-page p, .phenom-tools-page li, .phenom-tools-page label { color: #0a0a0a; }
+        .phenom-tools-page .text-muted { color: #374151 !important; }
+        .phenom-calc-key {
+          min-height: 3rem; border-radius: 0.65rem; font-weight: 700; font-size: 1.05rem;
+          border: 1px solid #d1d5db; background: #3d4f5f; color: #f8fafc;
+          box-shadow: 0 2px 0 #1f2937;
+          transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+          touch-action: manipulation; user-select: none;
+        }
+        .phenom-calc-key:active { transform: scale(0.94) translateY(1px); box-shadow: 0 0 0 #1f2937; filter: brightness(1.12); }
+        .phenom-calc-key-op { background: #2b3a48; }
+        .phenom-calc-key-fn { background: #334155; font-size: 0.82rem; }
+        .phenom-calc-key-eq { background: #1E3A8A; border-color: #1e3a8a; }
+        .phenom-calc-key-clr { background: #1d4ed8; border-color: #1d4ed8; }
+        .phenom-feature-tile {
+          border-radius: 1rem; border: 1px solid #e5e7eb; background: #fff;
+          padding: 0.9rem 1rem; text-align: left; color: #0a0a0a;
+          transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .phenom-feature-tile:active { transform: scale(0.98); }
+        .phenom-feature-tile:hover { box-shadow: 0 8px 24px rgba(15,23,42,0.08); }
         [data-phenom-tools-theme="dark"] .phenom-tools-page { background: #0f1728; color: #f1f5f9; border-radius: 2rem; padding-bottom: 2rem; }
         [data-phenom-tools-theme="dark"] .phenom-tools-surface { background: #182235 !important; color: #f8f3e7; border-color: #33445f !important; }
         [data-phenom-tools-theme="dark"] .phenom-tools-surface .text-muted { color: #b9c3d4 !important; }
@@ -1255,10 +1312,10 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
               <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl" style={{ color: "#4ADE80" }}>
                 Phenom Calculator
               </h1>
-              <p className="mt-2 max-w-3xl text-sm text-cream/75 sm:text-base">
+              <p className="mt-2 max-w-3xl text-sm text-on-navy sm:text-base">
                 The Academy Tool Hub — mathematics, science, engineering, finance, language, scanning and creation in one beautiful workspace.
               </p>
-              <p className="mt-1.5 text-xs italic text-cream/55">
+              <p className="mt-1.5 text-xs italic text-on-navy-muted">
                 Tranquil Excellence for Global Impact.
               </p>
             </div>
@@ -1337,10 +1394,10 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                       setActiveTool(tool.id);
                       setMenuOpen(false);
                     }}
-                    className={`rounded-xl p-3 text-left transition ${
+                    className={`phenom-feature-tile flex w-full items-start gap-3 ${
                       activeTool === tool.id
-                        ? "bg-gold text-navy-deep"
-                        : "bg-white/5 text-cream hover:bg-white/10"
+                        ? "ring-2 ring-gold bg-gold/15"
+                        : ""
                     }`}
                   >
                     <Icon className="size-5" />
@@ -1420,34 +1477,29 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             </Button>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto_auto]">
-            <div className="rounded-2xl border border-line bg-white p-3">
-              <p className="text-[11px] uppercase tracking-widest text-muted">Expression</p>
-              <textarea
-                value={expr}
-                onChange={(e) => setExpr(e.target.value)}
-                
-                onKeyDown={(e) => { if (e.key === "Enter") calculate(); }}
-                className="mt-2 min-h-16 w-full resize-y border-0 bg-transparent p-0 text-right font-mono text-2xl font-semibold outline-none sm:text-3xl"
-                placeholder="12 × 4 + 5"
-                aria-label="Calculator expression"
-              />
-              <p className="mt-2 text-right text-xs text-muted">Ans = {ans} · Memory = {memory}</p>
+          <div className="mt-3 overflow-hidden rounded-2xl bg-[#1f2937] p-4 text-right text-cream shadow-inner">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider text-cream/60">
+              <span>{angleMode} · {mode === "scientific" ? "SCI" : "BASIC"} · MATH</span>
+              <span>Ans {ans} · M {memory}</span>
             </div>
-            <Button variant={mode === "basic" ? "default" : "outline"} onClick={() => setMode("basic")}>Basic</Button>
-            <Button variant={mode === "scientific" ? "default" : "outline"} onClick={() => setMode("scientific")}>Scientific</Button>
-            <select className="rounded-md border border-line bg-white px-3 py-2 text-sm" value={angleMode} onChange={(e) => setAngleMode(e.target.value as AngleMode)}>
+            <textarea
+              value={expr}
+              onChange={(e) => setExpr(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") calculate(); }}
+              className="min-h-[3.5rem] w-full resize-none border-0 bg-transparent p-0 text-right font-mono text-xl font-semibold text-cream outline-none sm:text-2xl"
+              placeholder="0"
+              aria-label="Calculator expression"
+            />
+            <p className="mt-3 font-mono text-3xl font-bold tabular-nums text-cream sm:text-4xl">{result || "0"}</p>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" className={`rounded-xl px-4 py-2 text-sm font-bold ${mode === "basic" ? "bg-navy-deep text-gold" : "border border-line bg-white"}`} onClick={() => setMode("basic")}>Basic 300+</button>
+            <button type="button" className={`rounded-xl px-4 py-2 text-sm font-bold ${mode === "scientific" ? "bg-navy-deep text-gold" : "border border-line bg-white"}`} onClick={() => setMode("scientific")}>Scientific 991+</button>
+            <select className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold" value={angleMode} onChange={(e) => setAngleMode(e.target.value as AngleMode)}>
               <option>DEG</option><option>RAD</option><option>GRAD</option>
             </select>
           </div>
-
-          <button
-            type="button"
-            className="mt-3 block w-full rounded-2xl bg-navy-deep p-4 text-right text-3xl font-bold text-gold shadow-inner sm:text-5xl"
-            aria-label="Calculator result"
-          >
-            {result || "0"}
-          </button>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => useMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
@@ -1495,7 +1547,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
               </div>
 
               {mode === "scientific" ? (
-                <div className="mt-2 grid max-h-[34vh] grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-7">
+                <div className="mt-2 grid grid-cols-4 gap-1.5 sm:grid-cols-7">
                   {[
                     ["sin", "sin"], ["cos", "cos"], ["tan", "tan"], ["asin", "sin⁻¹"], ["acos", "cos⁻¹"], ["atan", "tan⁻¹"], ["sinh", "sinh"],
                     ["cosh", "cosh"], ["tanh", "tanh"], ["asinh", "sinh⁻¹"], ["acosh", "cosh⁻¹"], ["atanh", "tanh⁻¹"], ["log", "log"],
@@ -1506,7 +1558,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                       key={key}
                       type="button"
                       onClick={() => applyScientific(key)}
-                      className="min-h-11 rounded-xl border border-line bg-white px-2 py-2 text-xs font-bold hover:bg-paper sm:text-sm"
+                      className="phenom-calc-key phenom-calc-key-fn"
                     >
                       {label}
                     </button>
@@ -1516,7 +1568,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                 </div>
               ) : null}
 
-              <div className="mt-2 grid grid-cols-5 gap-2">
+              <div className="mt-2 grid grid-cols-5 gap-1.5">
                 {[
                   ["AC", "clear"], ["⌫", "backspace"], ["(", "input"], [")", "input"], ["mod", "input"],
                   ["7", "input"], ["8", "input"], ["9", "input"], ["÷", "input"], ["×", "input"],
@@ -1535,12 +1587,14 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                       else if (action === "equals") calculate();
                       else insert(key === "mod" ? " mod " : key);
                     }}
-                    className={`min-h-12 rounded-xl border border-line px-2 py-2 text-sm font-bold shadow-sm transition hover:-translate-y-px ${
+                    className={`phenom-calc-key ${
                       key === "="
-                        ? "bg-orange text-white"
+                        ? "phenom-calc-key-eq"
                         : key === "AC"
-                          ? "bg-red-50 text-red-700"
-                          : "bg-white text-navy-deep"
+                          ? "phenom-calc-key-clr"
+                          : (key === "÷" || key === "×" || key === "−" || key === "+")
+                            ? "phenom-calc-key-op"
+                            : ""
                     }`}
                   >
                     {key}
@@ -1578,7 +1632,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <SelectField label="To" value={unitTo} onChange={setUnitTo} options={selectedCategory.units.map((unit) => unit.symbol)} labels={selectedCategory.units.map((unit) => unit.label)} />
             <label className="text-sm font-semibold">Value<input className="mt-1 w-full rounded-xl border border-line bg-white p-3 text-lg" value={unitValue} onChange={(e) => setUnitValue(e.target.value)} inputMode="decimal" /></label>
           </div>
-          <div className="mt-5 rounded-2xl bg-navy-deep p-5 text-cream">
+          <div className="mt-5 rounded-2xl bg-navy-deep p-5 text-on-navy">
             <p className="text-xs uppercase tracking-widest text-gold">Converted value</p>
             <p className="mt-2 text-3xl font-bold">{convertedUnit === null ? "—" : `${Number(convertedUnit.toPrecision(12))} ${selectedToUnit.symbol}`}</p>
           </div>
@@ -1598,7 +1652,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
       {activeTool === "formulas" ? (
         <ToolCard title="Formula & Units" icon={<FlaskConical className="text-green" />} description="From primary-school foundations to university and professional formulas. Enter values directly and get a result plus an explanation.">
           <div className="grid gap-3 sm:grid-cols-3">
-            <SelectField label="Subject" value={formulaSubject} onChange={setFormulaSubject} options={["Mathematics", "Statistics", "Physics", "Chemistry"]} />
+            <SelectField label="Subject" value={formulaSubject} onChange={setFormulaSubject} options={["Mathematics", "Statistics", "Business Mathematics", "Physics", "Chemistry"]} />
             <SelectField label="Level" value={formulaLevel} onChange={setFormulaLevel} options={["Primary", "Secondary", "University", "Professional"]} />
             <SelectField label="Formula" value={selectedFormula.name} onChange={setFormulaId} options={filteredFormulas.map((formula) => formula.name)} />
           </div>

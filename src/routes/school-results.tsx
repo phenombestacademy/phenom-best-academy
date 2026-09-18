@@ -16,7 +16,7 @@ function SchoolResultsPage() {
       <div className="rounded-3xl bg-navy-deep p-6 text-cream sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">School Results & Report Cards</p>
         <h1 className="mt-3 max-w-4xl font-display text-4xl font-bold sm:text-6xl">A complete, configurable result system for every class and subject.</h1>
-        <p className="mt-5 max-w-3xl text-cream/80">Schools control the assessment structure, maximum marks, columns, attendance and publication. The master setup can apply consistently across the class and future academic sessions, while scores remain private until the school publishes them.</p>
+        <p className="mt-5 max-w-3xl text-on-navy">Schools control the assessment structure, maximum marks, columns, attendance and publication. The master setup can apply consistently across the class and future academic sessions, while scores remain private until the school publishes them.</p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Button asChild><Link to="/schools">School platform</Link></Button>
           <Button asChild variant="cream"><Link to="/account">Sign in</Link></Button>

@@ -151,7 +151,14 @@ function About() {
             <Info label="Registered company name" value={academy.legalName} />
             <Info label="Registration number (RC)" value={academy.rc} />
             <Info label="Tax identification number" value={academy.tin} />
-            <Info label="Registered business address" value={academy.registeredAddress} />
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wider text-muted">Registered business address</dt>
+              <dd className="mt-1">
+                <a href={academy.mapsUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-ink underline-offset-2 hover:underline hover:text-blue">
+                  {academy.registeredAddress}
+                </a>
+              </dd>
+            </div>
             <Info label="Legal form" value="Private company limited by shares, incorporated under CAMA" />
           </dl>
           <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted">
@@ -196,3 +203,6 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+Phenom Best Calc — The Calculation Tool of Phenom Best Academy
+Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
