@@ -100,7 +100,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
                   isActive(pathname, item.to)
                     ? "bg-navy-mid text-cream"
-                    : "text-ivory/80 hover:bg-navy-mid/70 hover:text-cream",
+                    : "text-on-navy-muted hover:bg-navy-mid/70 hover:text-cream",
                 )}
               >
                 {item.label}
@@ -113,10 +113,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               <Bell className="size-5" />
               {(notifications.some(n=>!n.readAt)||announcements.length>0) ? <span className="absolute right-1 top-1 flex size-2.5 rounded-full bg-orange" /> : null}
             </button>
-            <div className="hidden gap-2 sm:flex"><Button asChild size="sm" variant="cream"><Link to="/account">Account</Link></Button><Button asChild size="sm"><Link to="/enquire">Make an enquiry</Link></Button></div>
+            <div className="hidden gap-2 sm:flex">
+              <Button asChild size="sm" variant="cream"><Link to="/account">Login / Sign up</Link></Button>
+              <Button asChild size="sm"><Link to="/enquire">Make an enquiry</Link></Button>
+            </div>
             <div className="flex gap-1.5 sm:hidden">
               <Button asChild size="sm" variant="cream">
-                <Link to="/account">Account</Link>
+                <Link to="/account">Login</Link>
               </Button>
               <Button asChild size="sm">
                 <Link to="/enquire">Enquire</Link>
@@ -165,13 +168,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <ul className="mt-3 space-y-2 text-sm">
               {desktopNav.map((item) => (
                 <li key={item.to}>
-                  <Link to={item.to} className="text-ivory/80 hover:text-cream">
+                  <Link to={item.to} className="text-on-navy-muted hover:text-cream">
                     {item.label}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link to="/path" className="text-ivory/80 hover:text-cream">
+                <Link to="/path" className="text-on-navy-muted hover:text-cream">
                   Find your path
                 </Link>
               </li>
@@ -186,7 +189,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </form>
             {subscribeStatus?<p className="mt-2 text-xs text-gold">{subscribeStatus}</p>:null}
             <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-gold">Contact</p>
-            <ul className="mt-3 space-y-2 text-sm text-ivory/80">
+            <ul className="mt-3 space-y-2 text-sm text-on-navy-muted">
               {academy.emails.map((email) => (
                 <li key={email}>
                   <a href={`mailto:${email}`} className="hover:text-cream">
@@ -201,7 +204,17 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   </a>
                 </li>
               ))}
-              <li>{academy.location}</li><li>{academy.registeredAddress}</li>
+              <li>{academy.location}</li>
+              <li>
+                <a
+                  href={academy.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cream underline-offset-2 hover:underline"
+                >
+                  {academy.registeredAddress}
+                </a>
+              </li>
             </ul>
           </div>
         </div>
