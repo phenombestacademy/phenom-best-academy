@@ -203,6 +203,3 @@ function Info({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-Phenom Best Calc — The Calculation Tool of Phenom Best Academy
-Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
