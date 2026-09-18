@@ -45,6 +45,3 @@ function MediaIcon({ kind }: { kind: MediaItem["kind"] }) {
   if (kind === "video") return <Play className="size-12 text-blue" />;
   return <FileText className="size-12 text-gold" />;
 }
-
-Phenom Best Calc — The Calculation Tool of Phenom Best Academy
-Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
