@@ -12,7 +12,7 @@ export const academy = {
   ],
   location: "Lagos, Nigeria",
   registeredAddress: "4 Zamba St, Ikate, Lagos 101283, Lagos, Nigeria",
-  mapsUrl: "https://maps.app.goo.gl/ZVHN85Urfkeiraob6?g_st=ac",
+  mapsUrl: "https://maps.app.goo.gl/c8zTGNpaxAcpude59?g_st=ac",
   serviceDeliveryNote:
     "The Academy operates primarily online and can also provide in-person services by arrangement, including at a client’s location, an agreed venue, or an available office arrangement.",
   brands: [
@@ -953,3 +953,6 @@ export const strategicPartners = [
   "Industry, corporate, NGO, and community partners",
   "Qualified specialists and professional networks",
 ] as const;
+
+Phenom Best Calc — The Calculation Tool of Phenom Best Academy
+Phenom Best Core — The Intelligent Technology Core of Phenom Best Academy
