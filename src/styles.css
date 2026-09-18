@@ -6,11 +6,11 @@
   --font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
 
   --color-ink: #152238;
-  --color-ink-soft: #2c4060;
+  --color-ink-soft: #0a0a0a;
   --color-paper: #f4efe6;
   --color-paper-deep: #e8e0d2;
   --color-cream: #fbf8f2;
-  --color-muted: #4c5d73;
+  --color-muted: #0a0a0a;
   --color-line: #d4cbb9;
   --color-navy: #152238;
   --color-navy-deep: #0d1522;
@@ -63,7 +63,7 @@
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 1.1rem;
+    font-size: 1.125rem;
     line-height: 1.55;
   }
 
@@ -153,3 +153,19 @@ body { background-color: var(--cms-background); }
 .bg-cream { background-color: var(--cms-surface) !important; }
 [data-cms-animation="minimal"] * { animation-duration: 0.12s !important; transition-duration: 0.12s !important; }
 [data-cms-animation="off"] * { animation: none !important; transition: none !important; }
+
+
+@layer utilities {
+  .text-on-navy {
+    color: #ffffff !important;
+  }
+  .text-on-navy-muted {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+  .text-accent-green {
+    color: #4ADE80 !important;
+  }
+  .text-body {
+    color: #0a0a0a !important;
+  }
+}
