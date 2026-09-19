@@ -70,7 +70,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [subscriberEmail, setSubscriberEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState("");
-  const [locale, setCurrentLocale] = useState<SupportedLocale>("en-NG");
+  const [locale, setCurrentLocale] =
+    useState<SupportedLocale>("en-NG");
 
   useEffect(() => {
     setCurrentLocale(initLocale());
@@ -81,7 +82,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
     window.addEventListener("phenom-locale-change", onChange);
 
     return () =>
-      window.removeEventListener("phenom-locale-change", onChange);
+      window.removeEventListener(
+        "phenom-locale-change",
+        onChange,
+      );
   }, []);
 
   useEffect(() => {
@@ -166,6 +170,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <label className="block">
               <span className="sr-only">Language</span>
+
               <select
                 aria-label="Language"
                 value={locale}
@@ -174,7 +179,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   setLocale(v);
                   setCurrentLocale(v);
                 }}
-                className="w-[5.5rem] sm:w-auto max-w-[11rem] rounded-md border border-navy-mid bg-navy-mid px-2 py-2 text-xs text-cream"
+                className="w-[5.5rem] max-w-[11rem] rounded-md border border-navy-mid bg-navy-mid px-2 py-2 text-xs text-cream sm:w-auto"
               >
                 {supportedLocales.map(([code, label]) => (
                   <option key={code} value={code}>
@@ -192,8 +197,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
             >
               <Bell className="size-5" />
 
-              {(notifications.some((n) => !n.readAt) ||
-                announcements.length > 0) ? (
+              {notifications.some((n) => !n.readAt) ||
+              announcements.length > 0 ? (
                 <span className="absolute right-1 top-1 flex size-2.5 rounded-full bg-orange" />
               ) : null}
             </button>
@@ -229,7 +234,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
             return (
               <div className="flex items-start gap-3">
                 <div className="flex-1">
-                  <p className="font-semibold text-gold">{a.title}</p>
+                  <p className="font-semibold text-gold">
+                    {a.title}
+                  </p>
 
                   <p className="mt-1 text-sm text-cream/80">
                     {a.body}
@@ -251,7 +258,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   onClick={() =>
                     setAnnouncements((prev) =>
                       prev.map((x) =>
-                        x.id === a.id ? { ...x, floating: false } : x,
+                        x.id === a.id
+                          ? { ...x, floating: false }
+                          : x,
                       ),
                     )
                   }
@@ -282,16 +291,22 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="mt-3 max-h-[60vh] space-y-2 overflow-auto">
-            {notifications.length === 0 && announcements.length === 0 ? (
+            {notifications.length === 0 &&
+            announcements.length === 0 ? (
               <p className="py-4 text-sm text-muted">
                 No new notifications.
               </p>
             ) : null}
 
             {announcements.map((a) => (
-              <div key={a.id} className="rounded-xl bg-paper p-3">
+              <div
+                key={a.id}
+                className="rounded-xl bg-paper p-3"
+              >
                 <p className="font-semibold">{a.title}</p>
-                <p className="mt-1 text-sm text-muted">{a.body}</p>
+                <p className="mt-1 text-sm text-muted">
+                  {a.body}
+                </p>
               </div>
             ))}
 
@@ -305,7 +320,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   setNotifications((prev) =>
                     prev.map((x) =>
                       x.id === n.id
-                        ? { ...x, readAt: new Date().toISOString() }
+                        ? {
+                            ...x,
+                            readAt: new Date().toISOString(),
+                          }
                         : x,
                     ),
                   );
@@ -395,7 +413,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </p>
 
             <p className="mt-3 text-sm text-ivory/75">
-              Subscribe for Academy news, learning updates and announcements.
+              Subscribe for Academy news, learning updates and
+              announcements.
             </p>
 
             <form
@@ -421,7 +440,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 type="email"
                 required
                 value={subscriberEmail}
-                onChange={(e) => setSubscriberEmail(e.target.value)}
+                onChange={(e) =>
+                  setSubscriberEmail(e.target.value)
+                }
                 placeholder="Your email"
                 className="min-w-0 flex-1 rounded-md border border-navy-mid bg-white px-3 py-2 text-sm text-ink"
               />
@@ -455,7 +476,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
               {academy.phones.map((p) => (
                 <li key={p.href}>
-                  <a href={p.href} className="hover:text-cream">
+                  <a
+                    href={p.href}
+                    className="hover:text-cream"
+                  >
                     {p.display}
                   </a>
                 </li>
@@ -486,7 +510,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 A multidisciplinary education and professional services
                 academy.
               </p>
-              <span className="text-ivory/40">Academy</span>
+
+              <span className="text-ivory/40">
+                Academy
+              </span>
             </div>
           </div>
         </div>
@@ -494,4 +521,136 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
       <nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-cream/95 backdrop-blur-md lg:hidden"
-        style={{ paddingBottom: "env
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+        aria-label="App"
+      >
+        <ul className="mx-auto grid max-w-lg grid-cols-5">
+          <Tab
+            to="/"
+            icon={Home}
+            label="Home"
+            active={pathname === "/"}
+          />
+
+          <Tab
+            to="/services"
+            icon={BookOpen}
+            label="Services"
+            active={pathname.startsWith("/services")}
+          />
+
+          <Tab
+            to="/path"
+            icon={Compass}
+            label="Path"
+            active={pathname === "/path"}
+          />
+
+          <Tab
+            to="/enquire"
+            icon={Send}
+            label="Enquire"
+            active={pathname === "/enquire"}
+          />
+
+          <li>
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={cn(
+                "flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium",
+                moreOpen ? "text-orange" : "text-muted",
+              )}
+            >
+              <Menu
+                className="size-5"
+                strokeWidth={1.7}
+              />
+              More
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      {moreOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-navy-deep/55"
+            onClick={() => setMoreOpen(false)}
+          />
+
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="More"
+            className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-cream px-5 pb-28 pt-4 shadow-card"
+          >
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
+
+            <div className="mb-3 flex items-center justify-between">
+              <p className="font-display text-xl font-semibold">
+                Explore the Academy
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setMoreOpen(false)}
+                className="flex size-11 items-center justify-center rounded-md text-ink"
+                aria-label="Close"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <ul className="divide-y divide-line">
+              {moreLinks.map((item) => (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    className="flex min-h-14 items-center text-base font-medium text-ink"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Tab({
+  to,
+  icon: Icon,
+  label,
+  active,
+}: {
+  to: string;
+  icon: typeof Home;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        to={to}
+        className={cn(
+          "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
+          active ? "text-orange" : "text-muted",
+        )}
+      >
+        <Icon
+          className="size-5"
+          strokeWidth={1.7}
+        />
+        {label}
+      </Link>
+    </li>
+  );
+}
