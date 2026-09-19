@@ -1309,9 +1309,9 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
               <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "#FBBF24" }}>
                 Phenom Best Academy
               </p>
-              <h1 className="mt-1 font-display text-3xl font-bold sm:text-5xl" style={{ color: "#4ADE80" }}>
-                Phenom Calculator
-              </h1>
+              <h1 className="mt-1 font-display text-3xl font-bold text-white sm:text-5xl">
+  Phenom Tool Hub
+</h1>
               <p className="mt-2 max-w-3xl text-sm text-on-navy sm:text-base">
                 The Academy Tool Hub — mathematics, science, engineering, finance, language, scanning and creation in one beautiful workspace.
               </p>
