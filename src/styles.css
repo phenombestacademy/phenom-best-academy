@@ -1,0 +1,171 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+
+  --color-ink: #152238;
+  --color-ink-soft: #0a0a0a;
+  --color-paper: #f4efe6;
+  --color-paper-deep: #e8e0d2;
+  --color-cream: #fbf8f2;
+  --color-muted: #0a0a0a;
+  --color-line: #d4cbb9;
+  --color-navy: #152238;
+  --color-navy-deep: #0d1522;
+  --color-navy-mid: #1c2e4a;
+  --color-blue: #1a4a8c;
+  --color-blue-bright: #2b6cb0;
+  --color-orange: #c94b16;
+  --color-orange-deep: #a63c10;
+  --color-green: #2a6a38;
+  --color-gold: #c4a035;
+  --color-purple: #6b4aa1;
+  --color-ivory: #f7f1e6;
+
+  --color-bg: #f4efe6;
+  --color-fg: #152238;
+  --color-primary: #c94b16;
+  --color-primary-fg: #fbf8f2;
+  --color-border: #d4cbb9;
+  --color-ring: #1a4a8c;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 1.75rem;
+
+  --shadow-border:
+    0 0 0 1px rgb(21 34 56 / 0.07),
+    0 1px 2px -1px rgb(21 34 56 / 0.06),
+    0 8px 24px -12px rgb(21 34 56 / 0.12);
+  --shadow-border-hover:
+    0 0 0 1px rgb(21 34 56 / 0.1),
+    0 2px 6px -2px rgb(21 34 56 / 0.1),
+    0 14px 32px -14px rgb(21 34 56 / 0.18);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1.125rem;
+    line-height: 1.55;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-orange) 28%, white);
+    color: var(--color-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.shadow-card {
+  box-shadow: var(--shadow-border);
+}
+
+.shadow-card-hover {
+  box-shadow: var(--shadow-border-hover);
+}
+
+
+@layer utilities {
+  .text-readable { color: var(--color-muted); }
+  .service-accent-blue { border-top-color: var(--color-blue); border-left-color: var(--color-blue); }
+  .service-accent-green { border-top-color: var(--color-green); border-left-color: var(--color-green); }
+  .service-accent-orange { border-top-color: var(--color-orange); border-left-color: var(--color-orange); }
+  .service-accent-purple { border-top-color: var(--color-purple); border-left-color: var(--color-purple); }
+  .service-accent-gold { border-top-color: var(--color-gold); border-left-color: var(--color-gold); }
+  .service-icon-blue { color: var(--color-blue); }
+  .service-icon-green { color: var(--color-green); }
+  .service-icon-orange { color: var(--color-orange); }
+  .service-icon-purple { color: var(--color-purple); }
+  .service-icon-gold { color: #9b7b16; }
+}
+
+@media (max-width: 639px) {
+  body { font-size: 1.075rem; }
+  .font-display { letter-spacing: -0.015em; }
+}
+
+@layer base {
+  summary::-webkit-details-marker { display: none; }
+}
+
+@media (max-width: 639px) {
+  .prose-mobile-readable { font-size: 1.05rem; line-height: 1.7; }
+}
+
+/* CMS-controlled visual layer: safe defaults preserve the approved brand. */
+:root {
+  --cms-background: #f4efe6;
+  --cms-surface: #fbf8f2;
+  --cms-accent: #c94b16;
+}
+body { background-color: var(--cms-background); }
+.bg-paper { background-color: var(--cms-background) !important; }
+.bg-cream { background-color: var(--cms-surface) !important; }
+[data-cms-animation="minimal"] * { animation-duration: 0.12s !important; transition-duration: 0.12s !important; }
+[data-cms-animation="off"] * { animation: none !important; transition: none !important; }
+
+
+@layer utilities {
+  .text-on-navy {
+    color: #ffffff !important;
+  }
+  .text-on-navy-muted {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+  .text-accent-green {
+    color: #4ADE80 !important;
+  }
+  .text-body {
+    color: #0a0a0a !important;
+  }
+}
