@@ -187,7 +187,10 @@ function AccountPage() {
               >
                 <UserRound className="text-gold" />
 
-                <h2 className="mt-3 font-display text-2xl font-semibold text-white">
+                <h2
+                  className="mt-3 font-display text-2xl font-semibold"
+                  style={{ color: '#FFFFFF' }}
+                >
                   Individual account
                 </h2>
 
@@ -227,7 +230,10 @@ function AccountPage() {
               >
                 <Building2 className="text-gold" />
 
-                <h2 className="mt-3 font-display text-2xl font-semibold text-white">
+                <h2
+                  className="mt-3 font-display text-2xl font-semibold"
+                  style={{ color: '#FFFFFF' }}
+                >
                   School account
                 </h2>
 
