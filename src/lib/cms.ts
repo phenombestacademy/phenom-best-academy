@@ -79,6 +79,7 @@ export function getSupabase(): SupabaseClient | null {
 
 export function getLocalMedia(): MediaItem[] {
   if (typeof window === "undefined") return [];
+
   try {
     return JSON.parse(
       localStorage.getItem(MEDIA_KEY) || "[]",
@@ -116,6 +117,7 @@ export function applySettings(settings: SiteSettings) {
   if (typeof document === "undefined") return;
 
   const root = document.documentElement;
+
   root.style.setProperty("--cms-background", settings.background);
   root.style.setProperty("--cms-surface", settings.surface);
   root.style.setProperty("--cms-accent", settings.accent);
@@ -163,6 +165,7 @@ export function applySettings(settings: SiteSettings) {
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const supabase = getSupabase();
+
   if (!supabase) return getLocalSettings();
 
   const { data, error } = await supabase
@@ -205,7 +208,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
 export async function saveSiteSettings(settings: SiteSettings) {
   saveLocalSettings(settings);
+
   const supabase = getSupabase();
+
   if (!supabase) return;
 
   const { error } = await supabase.from("site_settings").upsert({
@@ -242,13 +247,17 @@ export type PaymentProviderPublic = {
   directInstructions?: string | null;
 };
 
-function mapPaymentProvider(r: Record<string, unknown>): PaymentProviderPublic {
+function mapPaymentProvider(
+  r: Record<string, unknown>,
+): PaymentProviderPublic {
   return {
     provider: String(r.provider),
     enabled: Boolean(r.enabled),
     publicLabel: String(r.public_label || r.provider),
     publicNote: r.public_note ? String(r.public_note) : null,
-    directBankName: r.direct_bank_name ? String(r.direct_bank_name) : null,
+    directBankName: r.direct_bank_name
+      ? String(r.direct_bank_name)
+      : null,
     directAccountName: r.direct_account_name
       ? String(r.direct_account_name)
       : null,
@@ -265,6 +274,7 @@ export async function listAllPaymentProviders(): Promise<
   PaymentProviderPublic[]
 > {
   const supabase = getSupabase();
+
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -273,14 +283,20 @@ export async function listAllPaymentProviders(): Promise<
     .order("provider");
 
   if (error) throw error;
+
   return (data ?? []).map((row) =>
     mapPaymentProvider(row as Record<string, unknown>),
   );
 }
 
-export async function savePaymentProvider(input: PaymentProviderPublic) {
+export async function savePaymentProvider(
+  input: PaymentProviderPublic,
+) {
   const supabase = getSupabase();
-  if (!supabase) throw new Error("Connect Supabase first.");
+
+  if (!supabase) {
+    throw new Error("Connect Supabase first.");
+  }
 
   const { error } = await supabase
     .from("payment_provider_settings")
@@ -299,8 +315,11 @@ export async function savePaymentProvider(input: PaymentProviderPublic) {
   if (error) throw error;
 }
 
-export async function listPaymentProviders(): Promise<PaymentProviderPublic[]> {
+export async function listPaymentProviders(): Promise<
+  PaymentProviderPublic[]
+> {
   const supabase = getSupabase();
+
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -310,52 +329,107 @@ export async function listPaymentProviders(): Promise<PaymentProviderPublic[]> {
     .order("provider");
 
   if (error) throw error;
+
   return (data ?? []).map((row) =>
     mapPaymentProvider(row as Record<string, unknown>),
   );
 }
 
-export function makeMediaId() {
-  return `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+/**
+ * Generate a valid PostgreSQL UUID.
+ *
+ * media_items.id is a UUID column, so do not use IDs such as
+ * "media-123456789".
+ */
+export function makeMediaId(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+
+  throw new Error(
+    "Secure UUID generation is unavailable in this browser.",
+  );
 }
 
+/**
+ * Convert the application's MediaItem shape to the actual
+ * Supabase media_items table shape.
+ *
+ * Actual database columns:
+ * id
+ * title
+ * description
+ * media_url
+ * media_type
+ * category
+ * published
+ * created_at
+ * updated_at
+ *
+ * Do not send UI-only fields that do not exist in the table.
+ */
 function toRow(item: MediaItem) {
   return {
     id: item.id,
     title: item.title,
     description: item.description,
-    kind: item.kind,
-    source: item.source,
-    url: item.url,
-    thumbnail_url: item.thumbnailUrl ?? null,
-    download_url: item.downloadUrl ?? null,
+    media_url: item.url,
+    media_type: item.kind,
+    category: item.kind,
     published: item.published,
-    featured: item.featured,
     created_at: item.createdAt,
+    updated_at: new Date().toISOString(),
   };
 }
 
+/**
+ * Convert the actual Supabase media_items row back into
+ * the application's MediaItem shape.
+ */
 function fromRow(row: Record<string, unknown>): MediaItem {
+  const mediaType = String(row.media_type ?? "resource");
+
+  const validKinds: MediaKind[] = [
+    "picture",
+    "video",
+    "song",
+    "sound",
+    "resource",
+    "learning",
+    "news",
+    "link",
+  ];
+
+  const kind: MediaKind = validKinds.includes(
+    mediaType as MediaKind,
+  )
+    ? (mediaType as MediaKind)
+    : "resource";
+
   return {
     id: String(row.id),
     title: String(row.title ?? ""),
     description: String(row.description ?? ""),
-    kind: row.kind as MediaKind,
-    source: row.source as "upload" | "external",
-    url: String(row.url ?? ""),
-    thumbnailUrl: row.thumbnail_url
-      ? String(row.thumbnail_url)
-      : undefined,
-    downloadUrl: row.download_url ? String(row.download_url) : undefined,
+    kind,
+    source: "external",
+    url: String(row.media_url ?? ""),
     published: Boolean(row.published),
-    featured: Boolean(row.featured),
-    createdAt: String(row.created_at ?? new Date().toISOString()),
+    featured: false,
+    createdAt: String(
+      row.created_at ?? new Date().toISOString(),
+    ),
   };
 }
 
 export async function listPublishedMedia(): Promise<MediaItem[]> {
   const supabase = getSupabase();
-  if (!supabase) return getLocalMedia().filter((item) => item.published);
+
+  if (!supabase) {
+    return getLocalMedia().filter((item) => item.published);
+  }
 
   const { data, error } = await supabase
     .from("media_items")
@@ -364,11 +438,15 @@ export async function listPublishedMedia(): Promise<MediaItem[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map(fromRow);
+
+  return (data ?? []).map((row) =>
+    fromRow(row as Record<string, unknown>),
+  );
 }
 
 export async function listAllMedia(): Promise<MediaItem[]> {
   const supabase = getSupabase();
+
   if (!supabase) return getLocalMedia();
 
   const { data, error } = await supabase
@@ -377,7 +455,10 @@ export async function listAllMedia(): Promise<MediaItem[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map(fromRow);
+
+  return (data ?? []).map((row) =>
+    fromRow(row as Record<string, unknown>),
+  );
 }
 
 export async function saveMedia(item: MediaItem) {
@@ -386,12 +467,19 @@ export async function saveMedia(item: MediaItem) {
   if (!supabase) {
     saveLocalMedia([
       item,
-      ...getLocalMedia().filter((existing) => existing.id !== item.id),
+      ...getLocalMedia().filter(
+        (existing) => existing.id !== item.id,
+      ),
     ]);
     return;
   }
 
-  const { error } = await supabase.from("media_items").upsert(toRow(item));
+  const row = toRow(item);
+
+  const { error } = await supabase
+    .from("media_items")
+    .upsert(row, { onConflict: "id" });
+
   if (error) throw error;
 }
 
@@ -399,7 +487,9 @@ export async function deleteMedia(id: string) {
   const supabase = getSupabase();
 
   if (!supabase) {
-    saveLocalMedia(getLocalMedia().filter((item) => item.id !== id));
+    saveLocalMedia(
+      getLocalMedia().filter((item) => item.id !== id),
+    );
     return;
   }
 
@@ -415,10 +505,16 @@ export type UploadProgress = {
   percentage: number;
   bytesUploaded: number;
   bytesTotal: number;
-  phase: "starting" | "uploading" | "finalizing" | "complete";
+  phase:
+    | "starting"
+    | "uploading"
+    | "finalizing"
+    | "complete";
 };
 
-export type UploadProgressCallback = (progress: UploadProgress) => void;
+export type UploadProgressCallback = (
+  progress: UploadProgress,
+) => void;
 
 /**
  * Permanent Academy media upload.
@@ -471,12 +567,16 @@ export async function uploadMediaFile(
     );
   }
 
-  const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL as
+    | string
+    | undefined;
+
   if (!projectUrl) {
     throw new Error("Supabase project configuration is missing.");
   }
 
   let projectId = "";
+
   try {
     projectId = new URL(projectUrl).hostname.split(".")[0];
   } catch {
@@ -484,7 +584,9 @@ export async function uploadMediaFile(
   }
 
   if (!projectId) {
-    throw new Error("Supabase project reference could not be determined.");
+    throw new Error(
+      "Supabase project reference could not be determined.",
+    );
   }
 
   onProgress?.({
@@ -494,8 +596,9 @@ export async function uploadMediaFile(
     phase: "starting",
   });
 
-  const publicUrl = supabase.storage.from("media").getPublicUrl(path).data
-    .publicUrl;
+  const publicUrl = supabase.storage
+    .from("media")
+    .getPublicUrl(path).data.publicUrl;
 
   await new Promise<void>((resolve, reject) => {
     const upload = new tus.Upload(file, {
@@ -511,7 +614,8 @@ export async function uploadMediaFile(
       metadata: {
         bucketName: "media",
         objectName: path,
-        contentType: file.type || "application/octet-stream",
+        contentType:
+          file.type || "application/octet-stream",
         cacheControl: "3600",
       },
       onError: (error) => reject(error),
@@ -519,7 +623,10 @@ export async function uploadMediaFile(
         onProgress?.({
           percentage:
             bytesTotal > 0
-              ? Math.min(99, (bytesUploaded / bytesTotal) * 100)
+              ? Math.min(
+                  99,
+                  (bytesUploaded / bytesTotal) * 100,
+                )
               : 0,
           bytesUploaded,
           bytesTotal,
@@ -533,6 +640,7 @@ export async function uploadMediaFile(
           bytesTotal: file.size,
           phase: "finalizing",
         });
+
         resolve();
       },
     });
@@ -541,8 +649,11 @@ export async function uploadMediaFile(
       .findPreviousUploads()
       .then((previousUploads) => {
         if (previousUploads.length > 0) {
-          upload.resumeFromPreviousUpload(previousUploads[0]);
+          upload.resumeFromPreviousUpload(
+            previousUploads[0],
+          );
         }
+
         upload.start();
       })
       .catch(reject);
