@@ -1,4 +1,4 @@
-# Phenom LMS V6 Enterprise Expansion
+# Phenom Best LMS V6 Expansion
 
 This is a **non-destructive expansion** of the existing Phenom Best Academy LMS. Existing programme structures, school LMS tables, RLS policies, routes and Tool Hub functionality remain in place.
 
