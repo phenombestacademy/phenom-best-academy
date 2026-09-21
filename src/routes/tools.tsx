@@ -987,7 +987,7 @@ function ToolsPage() {
 
   async function runAi(prompt: string) {
     const supabase = getSupabase();
-    if (!supabase) throw new Error("Connect the Academy AI service first.");
+    if (!supabase) throw new Error("Connect Phenom Best Core first.");
     const { data, error } = await supabase.functions.invoke("ai-router", {
       body: { mode: "reasoning", prompt },
     });
@@ -1008,7 +1008,7 @@ ${input}`,
       );
       setEnglishOutput(response);
     } catch (error) {
-      setEnglishOutput(error instanceof Error ? error.message : "English service failed.");
+      setEnglishOutput(error instanceof Error ? error.message : "Phenom Best Core could not complete the language task.");
     } finally {
       setEnglishBusy(false);
     }
@@ -1037,7 +1037,7 @@ ${input}`,
       const sentences = (input.match(/[.!?]+(?=\s|$)/g) || []).length || 1;
       if (!translationPremium && sentences > 5) {
         throw new Error(
-          "Free translation supports up to 5 sentences per request. Tools Premium removes this sentence limit, subject to fair-use and provider limits.",
+          "Free translation supports up to 5 sentences per request. Tools Premium removes this sentence limit, subject to fair-use limits.",
         );
       }
       const label =
@@ -1050,7 +1050,7 @@ ${input}`,
       );
       setTranslationOutput(response);
     } catch (error) {
-      setTranslationOutput(error instanceof Error ? error.message : "Translation failed.");
+      setTranslationOutput(error instanceof Error ? error.message : "Phenom Best Core could not complete the translation.");
     } finally {
       setTranslationBusy(false);
     }
@@ -1061,7 +1061,7 @@ ${input}`,
     try {
       const dataUrl = await fileToDataUrl(file);
       const supabase = getSupabase();
-      if (!supabase) throw new Error("Connect the Academy AI service first.");
+      if (!supabase) throw new Error("Connect Phenom Best Core first.");
       const { data: output, error } = await supabase.functions.invoke("ai-router", {
         body: {
           mode: "reasoning",
@@ -1078,7 +1078,7 @@ The user may combine up to 10 snapshots into one document.`,
       );
       setOcrResult(text);
     } catch (error) {
-      setOcrResult(error instanceof Error ? error.message : "Image processing failed.");
+      setOcrResult(error instanceof Error ? error.message : "Phenom Best Core could not complete the image/document task.");
     } finally {
       setOcrBusy(false);
     }
