@@ -164,3 +164,6 @@ Machine instructions are in "Machine-Instructions/".
 Vercel private-repository connection test
 
 This line was added only to verify that the private GitHub repository can still trigger a Vercel deployment.
+
+## V6 Enterprise LMS expansion
+The V6 expansion foundation is documented in `docs/PHENOM-LMS-V6-EXPANSION.md` and `supabase/031_phenom_enterprise_lms_foundation.sql`. It is additive and preserves the existing LMS, school platform, curriculum catalogue and security policies.
