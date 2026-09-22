@@ -79,7 +79,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setCurrentLocale(initLocale());
-    startAutoTranslation();
+    // Defer translation boot so the first paint and first navigation remain immediate.
+    window.setTimeout(() => startAutoTranslation(), 0);
 
     const onChange = () => setCurrentLocale(getLocale());
 
@@ -103,19 +104,24 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
     let active = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setIsAuthenticated(Boolean(data.session));
       if (!data.session) {
         setIsSuperAdmin(false);
         return;
       }
-      try {
-        const profile = await getMyProfile();
-        if (active) setIsSuperAdmin(profile?.role === 'super_admin');
-      } catch {
-        if (active) setIsSuperAdmin(false);
-      }
+
+      window.setTimeout(() => {
+        if (!active) return;
+        void getMyProfile()
+          .then((profile) => {
+            if (active) setIsSuperAdmin(profile?.role === "super_admin");
+          })
+          .catch(() => {
+            if (active) setIsSuperAdmin(false);
+          });
+      }, 0);
     });
 
     const {
