@@ -21,6 +21,7 @@ import {
   logAnalytics,
   saveAccountChoice,
   saveChildSafetySettings,
+  saveLearningLanguage,
   sendEmailOtp,
   sendWelcomeEmail,
   setAccountPassword,
@@ -113,6 +114,8 @@ function AccountPage() {
           setRole(p.onboardingRole);
           setAccountType(p.accountType);
           setParentEmail(p.parentEmail || '');
+          setLearningLocale((p.learningLocale as SupportedLocale | null) || '');
+          setSupportLocale((p.supportLocale as SupportedLocale | null) || getLocale());
         }
       })
       .catch(() =>
@@ -635,6 +638,30 @@ function AccountPage() {
                 </div>
               </div>
             ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-green/30 bg-cream p-6 lg:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[.16em] text-green">Language learning settings</p>
+            <h2 className="mt-2 font-display text-2xl font-semibold">Interface language and learning language are separate</h2>
+            <p className="mt-2 text-sm text-muted">Your interface language controls Phenom. Your learning language is the language you are studying. Explanations and support can remain in your familiar language.</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <label className="block text-sm font-semibold">Interface language
+                <select value={locale} onChange={(e) => { const v=e.target.value as SupportedLocale; setAccountLocale(v); setLocale(v); setSupportLocale(v); void savePreferredLocale(v).catch(()=>undefined); }} className="mt-1 w-full rounded-xl border border-line bg-white p-3">
+                  {supportedLocales.map(([code,label]) => <option key={code} value={code}>{label}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-semibold">Language I am studying
+                <select value={learningLocale} onChange={(e) => { const v=e.target.value as SupportedLocale | ''; setLearningLocale(v); void saveLearningLanguage(v || null, supportLocale); }} className="mt-1 w-full rounded-xl border border-line bg-white p-3">
+                  <option value="">Not selected</option>
+                  {supportedLocales.map(([code,label]) => <option key={code} value={code}>{label}</option>)}
+                </select>
+              </label>
+              <label className="block text-sm font-semibold">Support / explanation language
+                <select value={supportLocale} onChange={(e) => { const v=e.target.value as SupportedLocale; setSupportLocale(v); void saveLearningLanguage(learningLocale || null, v); }} className="mt-1 w-full rounded-xl border border-line bg-white p-3">
+                  {supportedLocales.map(([code,label]) => <option key={code} value={code}>{label}</option>)}
+                </select>
+              </label>
+            </div>
           </div>
 
           <div className="rounded-2xl border border-line bg-cream p-6">
