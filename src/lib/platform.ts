@@ -234,7 +234,22 @@ export async function saveChildSafetySettings(input: { accountType: 'adult' | 't
   }).eq('id', session.user.id);
   if (error) throw error;
   if (input.parentEmail) {
-    await supabase.from('parent_links').upsert({ child_id: session.user.id, parent_email: input.parentEmail.trim().toLowerCase(), status: 'pending' }, { onConflict: 'child_id,parent_email' });
+    const parentEmail = input.parentEmail.trim().toLowerCase();
+    const { data: parent } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', parentEmail)
+      .maybeSingle();
+
+    if (parent?.id && parent.id !== session.user.id) {
+      const { error: linkError } = await supabase
+        .from('parent_links')
+        .upsert(
+          { child_id: session.user.id, parent_id: parent.id, status: 'pending' },
+          { onConflict: 'parent_id,child_id' },
+        );
+      if (linkError) throw linkError;
+    }
   }
 }
 
@@ -245,7 +260,7 @@ export async function logAnalytics(event: string, metadata: Record<string, unkno
   await supabase.from('analytics_events').insert({
     user_id: session?.user.id ?? null,
     event_name: event,
-    metadata,
+    payload: metadata,
   });
 }
 
@@ -253,7 +268,7 @@ export async function submitSuggestion(subject: string, message: string) {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Connect Supabase before submitting platform feedback.');
   const session = await getSession();
-  const { error } = await supabase.from('suggestions').insert({ user_id: session?.user.id ?? null, subject, message });
+  const { error } = await supabase.from('suggestions').insert({ user_id: session?.user.id ?? null, subject, body: message });
   if (error) throw error;
 }
 
