@@ -895,7 +895,7 @@ export const founder = {
     "These experiences have shaped a practical leadership philosophy centred on excellence, people development, continuous improvement, purposeful learning, and the responsible use of knowledge and technology to strengthen individuals and institutions."
   ],
   educationSummary:
-    "A graduate of Mathematics Education from the University of Nigeria, Nsukka, who is currently pursuing a Master of Education (M.Ed.) in Guidance and Counselling to deepen his expertise in learner development, human behaviour, and educational guidance, and has undertaken a range of professional certifications, continuing professional development programmes, and specialised training.",
+    "He holds a Mathematics Education degree, backed by extensive practical expertise in educational leadership, school administration, and institutional management. His professional formation combines this strong analytical foundation with a deep commitment to learner development, human development, and institutional leadership. His background in Guidance and Counselling further strengthens his understanding of human behaviour, student support systems, personal development, and the broader pastoral dimensions of education.",
   highlights: [
     {
       role: "Head of School",
