@@ -74,7 +74,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [subscribeStatus, setSubscribeStatus] = useState("");
   const [locale, setCurrentLocale] =
     useState<SupportedLocale>("en-NG");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);\n  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     setCurrentLocale(initLocale());
@@ -96,19 +97,42 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
     if (!supabase) {
       setIsAuthenticated(false);
+      setIsSuperAdmin(false);
       return;
     }
 
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setIsAuthenticated(Boolean(data.session));
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      setIsAuthenticated(Boolean(data.session));
+      if (!data.session) {
+        setIsSuperAdmin(false);
+        return;
+      }
+      try {
+        const profile = await getMyProfile();
+        if (active) setIsSuperAdmin(profile?.role === 'super_admin');
+      } catch {
+        if (active) setIsSuperAdmin(false);
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setIsAuthenticated(Boolean(session));
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!active) return;
+      setIsAuthenticated(Boolean(session));
+      if (!session) {
+        setIsSuperAdmin(false);
+        return;
+      }
+      try {
+        const profile = await getMyProfile();
+        if (active) setIsSuperAdmin(profile?.role === 'super_admin');
+      } catch {
+        if (active) setIsSuperAdmin(false);
+      }
     });
 
     return () => {
@@ -247,6 +271,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </Button>
               )}
 
+              {isSuperAdmin ? (
+                <Button asChild size="sm" variant="cream">
+                  <Link to="/admin">Super Admin</Link>
+                </Button>
+              ) : null}
+
               <Button asChild size="sm">
                 <Link to="/enquire">Make an enquiry</Link>
               </Button>
@@ -266,6 +296,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   <Link to="/account">Sign in</Link>
                 </Button>
               )}
+
+              {isSuperAdmin ? (
+                <Button asChild size="sm" variant="cream">
+                  <Link to="/admin">Admin</Link>
+                </Button>
+              ) : null}
 
               <Button asChild size="sm">
                 <Link to="/enquire">Enquire</Link>
