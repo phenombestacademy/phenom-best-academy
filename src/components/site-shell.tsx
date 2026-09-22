@@ -207,7 +207,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
+                  "touch-manipulation rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150",
                   isActive(pathname, item.to)
                     ? "bg-navy-mid text-cream"
                     : "text-on-navy-muted hover:bg-navy-mid/70 hover:text-cream",
@@ -658,7 +658,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => setMoreOpen(true)}
               className={cn(
-                "flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium",
+                "touch-manipulation flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium",
                 moreOpen ? "text-orange" : "text-muted",
               )}
             >
@@ -709,18 +709,18 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 <li key={item.to}>
                   <Link
                     to={item.to}
-                    className="flex min-h-14 items-center text-base font-medium text-ink"
+                    className="touch-manipulation flex min-h-14 items-center text-base font-medium text-ink"
                   >
                     {item.label}
                   </Link>
                 </li>
               ))}
               <li>
-                <Link to="/account" className="flex min-h-14 items-center text-base font-semibold text-ink">Your Phenom access points</Link>
+                <Link to="/account" className="touch-manipulation flex min-h-14 items-center text-base font-semibold text-ink">Your Phenom access points</Link>
               </li>
               {isSuperAdmin ? (
                 <li>
-                  <Link to="/admin" className="flex min-h-14 items-center text-base font-semibold text-green hover:text-green-deep">Super Admin Studio</Link>
+                  <Link to="/admin" className="touch-manipulation flex min-h-14 items-center text-base font-semibold text-green hover:text-green-deep">Super Admin Studio</Link>
                 </li>
               ) : null}
             </ul>
@@ -747,7 +747,7 @@ function Tab({
       <Link
         to={to}
         className={cn(
-          "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
+          "touch-manipulation flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
           active ? "text-orange" : "text-muted",
         )}
       >
