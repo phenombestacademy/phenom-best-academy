@@ -22,7 +22,9 @@ import {
   saveAccountChoice,
   saveChildSafetySettings,
   sendEmailOtp,
+  sendWelcomeEmail,
   setAccountPassword,
+  signInWithEmailPassword,
   signInWithGoogle,
   verifyEmailOtp,
   signOut,
@@ -91,11 +93,12 @@ function AccountPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [authStep, setAuthStep] = useState<'method' | 'otp' | 'password'>('method');
+  const [authStep, setAuthStep] = useState<'method' | 'password' | 'otp' | 'emailPassword'>('method');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [welcomeSent, setWelcomeSent] = useState(false);
   const [locale, setAccountLocale] = useState<SupportedLocale>(
     () => getLocale(),
   );
@@ -184,10 +187,16 @@ function AccountPage() {
       setMessage('');
       if (password !== passwordConfirm) throw new Error('The passwords do not match.');
       await setAccountPassword(password);
+      try {
+        await sendWelcomeEmail();
+        setWelcomeSent(true);
+      } catch {
+        setWelcomeSent(false);
+      }
       const p = await getMyProfile();
       setProfile(p);
       setAuthStep('method');
-      setMessage('Your Phenom account is ready.');
+      setMessage(welcomeSent ? 'Your Phenom account is ready. A welcome email has been sent.' : 'Your Phenom account is ready.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Your password could not be created.');
     } finally {
@@ -224,7 +233,7 @@ function AccountPage() {
           <div role="dialog" aria-modal="true" aria-labelledby="phenom-auth-title" className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
             <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">
-              {authStep === 'method' ? 'Sign in or create your account' : authStep === 'otp' ? 'Verify your email' : 'Create your password'}
+              {authStep === 'method' ? 'Sign in or create your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with email and password' : 'Create your password'}
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               {authStep === 'method'
@@ -275,6 +284,27 @@ function AccountPage() {
                 <input id="phenom-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} className="mt-2 w-full rounded-xl border border-line bg-white p-4 text-center text-2xl tracking-[.35em]" />
                 <Button className="mt-4 w-full" onClick={verifyEmail} disabled={busy || otp.length !== 6}>{busy ? 'Verifying…' : 'Verify email'}</Button>
                 <button type="button" onClick={() => setAuthStep('method')} className="mt-3 w-full text-sm font-semibold text-green">Use a different email or sign-in method</button>
+              </div>
+            ) : null}
+
+            {authStep === 'emailPassword' ? (
+              <div className="mt-5">
+                <label htmlFor="phenom-login-email" className="text-sm font-semibold">Email address</label>
+                <input id="phenom-login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <label htmlFor="phenom-login-password" className="mt-3 block text-sm font-semibold">Password</label>
+                <input id="phenom-login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <Button className="mt-4 w-full" onClick={async () => {
+                  try {
+                    setBusy(true); setMessage('');
+                    const p = await signInWithEmailPassword(email, password);
+                    setProfile(p);
+                    if (p) { setCategory(p.accountCategory); setRole(p.onboardingRole); }
+                    setAuthStep('method');
+                    setMessage('Signed in successfully.');
+                  } catch (e) {
+                    setMessage(e instanceof Error ? e.message : 'Email and password sign-in failed.');
+                  } finally { setBusy(false); }
+                }} disabled={busy || !email.trim() || !password}>{busy ? 'Signing in…' : 'Sign in'}</Button>
               </div>
             ) : null}
 
