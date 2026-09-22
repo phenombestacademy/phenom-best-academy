@@ -59,6 +59,56 @@ export async function signInWithGoogle() {
   if (error) throw error;
 }
 
+export async function sendEmailOtp(email: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) throw new Error('Enter your email address.');
+  const { error } = await supabase.auth.signInWithOtp({
+    email: cleanEmail,
+    options: { shouldCreateUser: true },
+  });
+  if (error) throw error;
+}
+
+export async function verifyEmailOtp(email: string, token: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanToken = token.replace(/\D/g, '');
+  if (cleanToken.length !== 6) throw new Error('Enter the 6-digit code from your email.');
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: 'email',
+  });
+  if (error) throw error;
+  if (!data.session) throw new Error('Your code was accepted, but the secure session was not created. Please try again.');
+  return data.session;
+}
+
+export async function setAccountPassword(password: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+  if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
+export async function getPhenomUserId(): Promise<string | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const session = await getSession();
+  if (!session) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('phenom_user_id')
+    .eq('id', session.user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.phenom_user_id ? String(data.phenom_user_id) : null;
+}
+
 export async function signOut() {
   const supabase = getSupabase();
   if (!supabase) return;
