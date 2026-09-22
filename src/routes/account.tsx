@@ -307,93 +307,16 @@ function AccountPage() {
 
         {!profile ? (
           <>
-            <div className="mt-7 grid gap-5">
-              <button
-                onClick={() => selectRole('adult')}
-                className={`rounded-2xl border p-6 text-left ${
-                  category === 'individual'
-                    ? 'border-gold bg-white/10 ring-2 ring-gold/30'
-                    : 'border-white/15 bg-white/5'
-                }`}
-              >
-                <UserRound className="text-gold" />
+            <div className="mt-7 rounded-2xl border border-white/15 bg-white/5 p-5">
+              <label className="text-sm font-semibold text-cream">Choose account type</label>
+              <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-white/15 bg-white/10 p-3 text-cream">
+                {accountChoices.map((choice) => <option key={choice.value} value={choice.value} className="text-navy-deep">{choice.label}</option>)}
+              </select>
+              <p className="mt-2 text-sm text-cream/60">{accountChoices.find((x) => x.value === role)?.description}</p>
+              <p className="mt-3 text-xs text-cream/50">Choosing School means you are registering as the school administrator for that school workspace. It does not create or grant Super Admin access.</p>
+            </div>
 
-                <h2
-                  className="mt-3 font-display text-2xl font-semibold"
-                  style={{ color: '#FFFFFF' }}
-                >
-                  Individual account
-                </h2>
-
-                <p className="mt-2 text-on-navy">
-                  For students, professionals, teachers, parents, adults,
-                  young people, researchers, creatives and anyone using
-                  Academy services independently.
-                </p>
-
-                <div className="mt-4 grid gap-2 text-sm text-on-navy">
-                  <span>
-                    Free: selected Phenom Calculator, learning resources,
-                    free programmes and Academy information.
-                  </span>
-
-                  <span>
-                    Premium: expanded learning, premium resources, specialist
-                    programmes and paid Academy services.
-                  </span>
-                </div>
-
-                {category === 'individual' && (
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-gold">
-                    <CheckCircle2 className="size-4" />
-                    Selected
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => selectRole('school_admin')}
-                className={`rounded-2xl border p-6 text-left ${
-                  category === 'school'
-                    ? 'border-gold bg-white/10 ring-2 ring-gold/30'
-                    : 'border-white/15 bg-white/5'
-                }`}
-              >
-                <Building2 className="text-gold" />
-
-                <h2
-                  className="mt-3 font-display text-2xl font-semibold"
-                  style={{ color: '#FFFFFF' }}
-                >
-                  School account
-                </h2>
-
-                <p className="mt-2 text-on-navy">
-                  For an authorised school using a controlled school
-                  workspace for administration, teachers, learners and
-                  parents.
-                </p>
-
-                <div className="mt-4 grid gap-2 text-sm text-on-navy">
-                  <span>
-                    School services: classes, students, attendance, learning,
-                    CBT, assignments, results, report cards, fees, HR,
-                    elections and ID cards.
-                  </span>
-
-                  <span>
-                    Premium: expanded school platform access, seats and
-                    administration features according to the selected plan.
-                  </span>
-                </div>
-
-                {category === 'school' && (
-                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-gold">
-                    <CheckCircle2 className="size-4" />
-                    Selected
-                  </span>
-                )}
-              </button>
+             </button>
             </div>
 
             {category === 'school' && (
