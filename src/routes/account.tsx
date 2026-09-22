@@ -159,7 +159,50 @@ function AccountPage() {
     )?.label || 'Individual';
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <>
+      {!profile ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-deep/70 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="phenom-auth-title"
+            className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">
+              Phenom Best Academy
+            </p>
+
+            <h2
+              id="phenom-auth-title"
+              className="mt-2 font-display text-3xl font-bold"
+            >
+              Sign in to continue
+            </h2>
+
+            <p className="mt-3 text-sm leading-relaxed text-muted">
+              Sign in or create your Phenom account securely with Google.
+              There is no separate sign-up form to scroll down to.
+            </p>
+
+            <Button
+              className="mt-6 w-full"
+              onClick={login}
+              disabled={busy}
+            >
+              {busy
+                ? 'Opening secure Google sign-in…'
+                : 'Continue with Google'}
+            </Button>
+
+            <p className="mt-3 text-center text-xs text-muted">
+              Google handles authentication. Phenom Best Academy does not
+              receive your Google password.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="rounded-3xl bg-navy-deep p-6 text-cream sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[.18em] text-gold">
           Phenom Best Academy account centre
@@ -341,20 +384,7 @@ function AccountPage() {
               </span>
             </label>
 
-            <Button
-              className="mt-4"
-              onClick={login}
-              disabled={busy}
-            >
-              {busy
-                ? 'Opening secure Google sign-in…'
-                : 'Continue with Google'}
-            </Button>
 
-            <p className="mt-3 text-xs text-cream/55">
-              Google handles authentication. Phenom Best Academy does not
-              receive your Google password.
-            </p>
           </>
         ) : (
           <div className="mt-6 flex flex-wrap items-center gap-3">
