@@ -95,12 +95,12 @@ async function libreTranslate(items: Item[], target: string): Promise<Candidate[
   return items.map((_, i) => ({ text: lines[i] || items[i].text, provider: 'D' }));
 }
 
-\nasync function azureTranslate(items: Item[], target: string): Promise<Candidate[]> {
+async function azureTranslate(items: Item[], target: string): Promise<Candidate[]> {
   const key = Deno.env.get('AZURE_TRANSLATOR_KEY');
   const endpoint = Deno.env.get('AZURE_TRANSLATOR_ENDPOINT');
   const region = Deno.env.get('AZURE_TRANSLATOR_REGION');
   if (!key || !endpoint) throw new Error('provider unavailable');
-  const url = `${endpoint.replace(/\\/$/,'')}/translate?api-version=3.0&from=en&to=${encodeURIComponent(localeCode(target))}`;
+  const url = `${endpoint.replace(/\/$/,'')}/translate?api-version=3.0&from=en&to=${encodeURIComponent(localeCode(target))}`;
   const r = await fetch(url, { method:'POST', headers:{'Ocp-Apim-Subscription-Key':key, ...(region?{'Ocp-Apim-Subscription-Region':region}:{}),'Content-Type':'application/json'}, body:JSON.stringify(items.map(i=>({Text:i.text}))) });
   const p = await r.json(); if(!r.ok) throw new Error('provider failed');
   return items.map((_,i)=>({text:String(p[i]?.translations?.[0]?.text || items[i].text),provider:'F'}));
