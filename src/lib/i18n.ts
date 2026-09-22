@@ -1,4 +1,4 @@
-export const supportedLocales = [
+const rawSupportedLocales = [
   // Existing Phenom regional/interface locales — preserved.
   ['en-NG','English — Nigeria'],['en-GB','English — United Kingdom'],['en-US','English — United States'],['en-AU','English — Australia'],['en-CA','English — Canada'],['pcm-NG','Nigerian Pidgin English'],
   ['fr-FR','Français'],['es-ES','Español'],['zh-CN','中文（简体）'],['pt-PT','Português — Portugal'],['ar','العربية'],['de-DE','Deutsch'],['it-IT','Italiano'],['ru-RU','Русский'],['yo-NG','Yorùbá'],['ig-NG','Igbo'],['ha-NG','Hausa'],
@@ -18,9 +18,12 @@ export const supportedLocales = [
   ['ss','siSwati'],['tg','Тоҷикӣ'],['ta','தமிழ்'],['tt','Татарча'],['te','తెలుగు'],['tet','Tetum'],['ti','ትግርኛ'],['ts','Xitsonga'],['tn','Setswana'],['tk','Türkmençe'],['ak','Akan'],['uz','Oʻzbekcha'],['cy','Cymraeg'],['yi','ייִדיש'],['yua','Maya Yucatec'],
   ['zh-TW','中文（繁體）'],['zh-HK','粵語（香港）'],['zh-Hans','简体中文'],['zh-Hant','繁體中文'],['en-NZ','English — New Zealand'],['en-PH','English — Philippines'],['en-ZA','English — South Africa'],['et-EE','Eesti — Eesti'],['fr-CA','Français — Canada'],['fr-CH','Français — Suisse'],['nl-BE','Nederlands — België'],['pt-BR','Português — Brasil'],
   ['es-MX','Español — México'],['es-AR','Español — Argentina'],['es-419','Español — Latinoamérica'],['nb','Norsk bokmål'],['nb-NO','Norsk bokmål — Norge'],['he','עברית'],['iw','עברית']
-] as const;
+ ] as const;
 
-export type SupportedLocale = typeof supportedLocales[number][0];
+// One canonical, duplicate-free, alphabetically ordered registry for the whole platform.
+const uniqueSupportedLocales = Array.from(new Map(rawSupportedLocales.map(([code, label]) => [code, [code, label] as const])).values());
+export const supportedLocales = uniqueSupportedLocales.sort((a, b) => a[1].localeCompare(b[1], 'en', { sensitivity: 'base' }));
+export type SupportedLocale = typeof rawSupportedLocales[number][0];
 const KEY = 'phenom-locale-v4';
 
 function localeFromTag(tag: string): SupportedLocale | null {
