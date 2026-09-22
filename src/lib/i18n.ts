@@ -48,8 +48,13 @@ export function setLocale(locale:SupportedLocale){
   window.localStorage.setItem(KEY,locale);
   window.localStorage.setItem(ONBOARDING_KEY,locale);
   document.documentElement.lang=locale;
+  if(locale.startsWith('en-')){
+    if(observer){ observer.disconnect(); observer=null; }
+    translating=false;
+  }
   window.dispatchEvent(new Event('phenom-locale-change'));
   void translateVisibleContent(locale);
+  if(!locale.startsWith('en-')) startAutoTranslation();
 }
 export function initLocale(){const locale=getLocale();if(typeof document!=='undefined')document.documentElement.lang=locale;return locale;}
 function isExcluded(node:Text){const parent=node.parentElement;if(!parent)return true;if(parent.closest('script,style,noscript,textarea,input,select,option,[data-no-translate],[contenteditable="true"]'))return true;const text=node.nodeValue?.trim()||'';if(text.length<2||/^https?:\/\//i.test(text)||/^mailto:/i.test(text)||/^\+?\d[\d\s().-]{5,}$/.test(text))return true;return false;}
@@ -57,4 +62,10 @@ function collect(){const nodes:Text[]=[];const walker=document.createTreeWalker(
 function restore(){const nodes=collect();for(const n of nodes){const o=ORIGINAL.get(n);if(o!==undefined)n.nodeValue=o;}}
 async function translateBatch(locale:SupportedLocale,texts:string[]):Promise<string[]>{const supabaseUrl=import.meta.env.VITE_SUPABASE_URL as string|undefined;const anon=import.meta.env.VITE_SUPABASE_ANON_KEY as string|undefined;if(!supabaseUrl||!anon)return texts;const r=await fetch(`${supabaseUrl}/functions/v1/translate-ui`,{method:'POST',headers:{'Content-Type':'application/json','apikey':anon},body:JSON.stringify({locale,texts})});if(!r.ok)return texts;const p=await r.json();return Array.isArray(p.translations)?p.translations:texts;}
 export async function translateVisibleContent(locale:SupportedLocale=getLocale()){if(typeof document==='undefined'||locale.startsWith('en-')){restore();return;}if(translating)return;translating=true;try{const nodes=collect();const unique=[...new Set(nodes.map(n=>(ORIGINAL.get(n)||n.nodeValue||'').trim()).filter(Boolean))];const map=new Map<string,string>();for(let i=0;i<unique.length;i+=45){const batch=unique.slice(i,i+45);const out=await translateBatch(locale,batch);batch.forEach((x,j)=>map.set(x,out[j]||x));}for(const n of nodes){const o=(ORIGINAL.get(n)||n.nodeValue||'').trim();const translated=map.get(o);if(translated&&translated!==o)n.nodeValue=(n.nodeValue||'').replace(o,translated);}}finally{translating=false;}}
-export function startAutoTranslation(){if(typeof window==='undefined'||observer)return;const run=()=>{if(queued||translating)return;queued=true;window.setTimeout(()=>{queued=false;void translateVisibleContent(getLocale());},120);};observer=new MutationObserver(run);observer.observe(document.body,{childList:true,subtree:true});run();}
+export function startAutoTranslation(){
+  if(typeof window==='undefined'||observer||getLocale().startsWith('en-'))return;
+  const run=()=>{if(queued||translating)return;queued=true;window.setTimeout(()=>{queued=false;void translateVisibleContent(getLocale());},180);};
+  observer=new MutationObserver(run);
+  observer.observe(document.body,{childList:true,subtree:true});
+  run();
+}
