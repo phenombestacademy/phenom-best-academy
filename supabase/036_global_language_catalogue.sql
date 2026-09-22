@@ -1,0 +1,5 @@
+-- Phenom Best LMS V7: canonical global language catalogue.
+-- The frontend registry is the canonical list; this table records interface,
+-- learning and translation-provider capability metadata. Runtime navigation
+-- remains pretranslated-resource based; translation engines operate in the back room.
+-- Deployed to Supabase as migration 036_global_language_catalogue.
