@@ -41,7 +41,7 @@ export function CurriculumBrowser({ onTopicSelected }: Props) {
 
   useEffect(()=>{
     const supabase=getSupabase(); if(!supabase||!levelId||!subjectId) { setTopics([]); return; }
-    supabase.from('lms_curriculum_topics').select('id,topic_title,parent_topic_id').eq('curriculum_id',curriculumId).eq('level_id',levelId).eq('subject_id',subjectId).eq('active',true).is('parent_topic_id',null).order('topic_title')
+    supabase.from('lms_curriculum_topics').select('id,topic_title,parent_topic_id').eq('curriculum_id',curriculumId).eq('level_id',levelId).eq('subject_id',subjectId).eq('active',true).eq('source_status','verified').is('parent_topic_id',null).order('topic_title')
       .then(({data})=>{const rows=(data||[]) as Topic[];setTopics(rows);setTopicId(rows[0]?.id||'');});
   },[curriculumId,levelId,subjectId]);
 
@@ -56,7 +56,7 @@ export function CurriculumBrowser({ onTopicSelected }: Props) {
   return <div className="rounded-2xl border border-line bg-cream p-5">
     <div className="mb-4">
       <h3 className="font-display text-xl font-semibold">Curriculum pathway</h3>
-      <p className="mt-1 text-sm text-muted">Choose the curriculum, level/stage, subject and official curriculum topic. Location does not restrict the curriculum you may study.</p>
+      <p className="mt-1 text-sm text-muted">Choose the curriculum, level/stage, subject and verified official curriculum topic. Location does not restrict the curriculum you may study.</p>
     </div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <label className="text-sm font-semibold">Curriculum
@@ -80,7 +80,7 @@ export function CurriculumBrowser({ onTopicSelected }: Props) {
         </select>
       </label>
     </div>
-    {!topics.length && <p className="mt-3 text-xs text-muted">This pathway is connected to the official curriculum catalogue. Topic content is only published after its authoritative curriculum source has been imported and verified; Phenom does not invent curriculum topics.</p>}
+    {!topics.length && <p className="mt-3 text-xs text-muted">This pathway is connected to the official curriculum catalogue. Only topics extracted from an authoritative source and verified by Phenom are shown; pending source material is never presented as verified curriculum content.</p>}
     <p className="mt-3 text-xs text-muted">Pathway: {curriculum.name} → {selectedLevel || 'level'} → {selectedSubject || 'subject'} → {selectedTopic || 'topic'}</p>
   </div>;
 }
