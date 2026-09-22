@@ -13,6 +13,8 @@ import { BrandFull, BrandWordmark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
 import { cn } from "@/lib/utils";
+import { getSupabase } from "@/lib/cms";
+import { signOut } from "@/lib/platform";
 import {
   getLocale,
   initLocale,
@@ -72,6 +74,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [subscribeStatus, setSubscribeStatus] = useState("");
   const [locale, setCurrentLocale] =
     useState<SupportedLocale>("en-NG");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     setCurrentLocale(initLocale());
@@ -86,6 +89,32 @@ export function SiteShell({ children }: { children: ReactNode }) {
         "phenom-locale-change",
         onChange,
       );
+  }, []);
+
+  useEffect(() => {
+    const supabase = getSupabase();
+
+    if (!supabase) {
+      setIsAuthenticated(false);
+      return;
+    }
+
+    let active = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setIsAuthenticated(Boolean(data.session));
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setIsAuthenticated(Boolean(session));
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -204,9 +233,19 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </button>
 
             <div className="hidden gap-2 sm:flex">
-              <Button asChild size="sm" variant="cream">
-                <Link to="/account">Login / Sign up</Link>
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  size="sm"
+                  variant="cream"
+                  onClick={() => void signOut()}
+                >
+                  Logout
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="cream">
+                  <Link to="/account">Login / Sign up</Link>
+                </Button>
+              )}
 
               <Button asChild size="sm">
                 <Link to="/enquire">Make an enquiry</Link>
@@ -214,9 +253,19 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex gap-1.5 sm:hidden">
-              <Button asChild size="sm" variant="cream">
-                <Link to="/account">Login</Link>
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  size="sm"
+                  variant="cream"
+                  onClick={() => void signOut()}
+                >
+                  Logout
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="cream">
+                  <Link to="/account">Login</Link>
+                </Button>
+              )}
 
               <Button asChild size="sm">
                 <Link to="/enquire">Enquire</Link>
