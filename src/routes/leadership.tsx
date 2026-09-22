@@ -71,9 +71,10 @@ function Leadership() {
 
             <h3 className="mt-10 font-display text-2xl font-semibold">Professional experience</h3>
             <p className="mt-3 leading-relaxed text-muted">
-              His professional journey spans teaching, school leadership, quality assurance, administration,
-              human-capital development, and educational consultancy, reflecting a progression from classroom
-              practice to institutional leadership. Selected roles and areas of responsibility include:
+              His professional journey reflects a broad progression through teaching, school leadership,
+              quality assurance, administration, human-capital development, and educational consultancy,
+              reflecting a progression from classroom practice to institutional leadership. Selected roles
+              and areas of responsibility include:
             </p>
             <ol className="mt-5 space-y-5">
               {founder.highlights.map((h) => (
