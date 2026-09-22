@@ -524,6 +524,10 @@ function AccountPage() {
                 : 'Individual'}
             </span>
 
+            <span className="rounded-full bg-white/10 px-4 py-2 text-sm">
+              Phenom User ID: {profile.phenomUserId || 'Being prepared'}
+            </span>
+
             <Button
               variant="cream"
               onClick={() =>
