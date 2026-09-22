@@ -219,15 +219,12 @@ function AccountPage() {
 
             {authStep === 'method' ? (
               <>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => selectRole('adult')} className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
-                    <strong className="block">Individual</strong>
-                    <span className="mt-1 block text-xs text-muted">Personal learning, tools and services.</span>
-                  </button>
-                  <button type="button" onClick={() => selectRole('school_admin')} className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
-                    <strong className="block">School</strong>
-                    <span className="mt-1 block text-xs text-muted">For authorised school users.</span>
-                  </button>
+                <div className="mt-5 rounded-xl border border-line bg-white p-4">
+                  <label className="text-sm font-semibold">Account type</label>
+                  <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm">
+                    {accountChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                  </select>
+                  <p className="mt-2 text-xs text-muted">{accountChoices.find((x) => x.value === role)?.description}</p>
                 </div>
                 
                 <Button className="mt-6 w-full" onClick={loginWithGoogle} disabled={busy}>
