@@ -87,6 +87,24 @@ export async function verifyEmailOtp(email: string, token: string) {
   return data.session;
 }
 
+export async function signInWithEmailPassword(email: string, password: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+  if (error) throw error;
+  return getMyProfile();
+}
+
+export async function sendWelcomeEmail() {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+  const { error } = await supabase.functions.invoke('send-welcome-email');
+  if (error) throw error;
+}
+
 export async function setAccountPassword(password: string) {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
