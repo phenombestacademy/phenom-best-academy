@@ -150,27 +150,25 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
     const load = async () => {
       try {
-        const [a, n] = await Promise.all([
-          listActiveAnnouncements(),
-          listMyNotifications(),
-        ]);
+        const announcements = await listActiveAnnouncements();
+        if (active) setAnnouncements(announcements);
 
-        if (active) {
-          setAnnouncements(a);
-          setNotifications(n);
+        if (isAuthenticated) {
+          const notifications = await listMyNotifications();
+          if (active) setNotifications(notifications);
+        } else if (active) {
+          setNotifications([]);
         }
       } catch {}
+
     };
 
     void load();
 
-    const timer = window.setInterval(load, 30000);
-
     return () => {
       active = false;
-      window.clearInterval(timer);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -491,7 +489,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
               </li>
               <li>
                 <Link to="/account" className="text-on-navy-muted hover:text-cream">
-                  Account & access
+                  Your Phenom access points
                 </Link>
               </li>
               {isSuperAdmin ? (
@@ -718,11 +716,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </li>
               ))}
               <li>
-                <Link to="/account" className="flex min-h-14 items-center text-base font-semibold text-ink">Account & access</Link>
+                <Link to="/account" className="flex min-h-14 items-center text-base font-semibold text-ink">Your Phenom access points</Link>
               </li>
               {isSuperAdmin ? (
                 <li>
-                  <Link to="/admin" className="flex min-h-14 items-center text-base font-semibold text-purple">Super Admin Studio</Link>
+                  <Link to="/admin" className="flex min-h-14 items-center text-base font-semibold text-green hover:text-green-deep">Super Admin Studio</Link>
                 </li>
               ) : null}
             </ul>
