@@ -90,6 +90,19 @@ const CORE_LABELS: Record<string, Partial<Record<SupportedLocale, string>>> = {
   'No new notifications.': { 'fr-FR':'Aucune nouvelle notification.', 'es-ES':'No hay nuevas notificaciones.', 'pt-PT':'Não há novas notificações.', 'de-DE':'Keine neuen Benachrichtigungen.', 'it-IT':'Nessuna nuova notifica.' },
 };
 
+/**
+ * Backward-compatible no-op for older builds that imported this symbol.
+ * Runtime page translation is intentionally disabled: reviewed locale
+ * resources and the explicit interface/learning-language choices are the
+ * platform's translation boundary.
+ *
+ * The cleanup function keeps older callers safe while preventing a stale
+ * deployment from failing compilation because of a removed export.
+ */
+export function startAutoTranslation(..._args: unknown[]): () => void {
+  return () => undefined;
+}
+
 export function t(text: string, locale: SupportedLocale = getLocale()): string {
   if (locale.startsWith('en-')) return text;
   return CORE_LABELS[text]?.[locale] || text;
