@@ -104,7 +104,9 @@ async function azureTranslate(items: Item[], target: string): Promise<Candidate[
   const r = await fetch(url, { method:'POST', headers:{'Ocp-Apim-Subscription-Key':key, ...(region?{'Ocp-Apim-Subscription-Region':region}:{}),'Content-Type':'application/json'}, body:JSON.stringify(items.map(i=>({Text:i.text}))) });
   const p = await r.json(); if(!r.ok) throw new Error('provider failed');
   return items.map((_,i)=>({text:String(p[i]?.translations?.[0]?.text || items[i].text),provider:'F'}));
-}\nasync function myMemoryTranslate(items: Item[], target: string): Promise<Candidate[]> {
+}
+
+async function myMemoryTranslate(items: Item[], target: string): Promise<Candidate[]> {
   const results: Candidate[] = [];
   for (const item of items) {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.text)}&langpair=en|${encodeURIComponent(localeCode(target))}`;
