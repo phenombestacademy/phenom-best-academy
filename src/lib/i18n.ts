@@ -16,15 +16,16 @@ function localeFromTag(tag: string): SupportedLocale | null {
 }
 
 /**
- * Nigerian English is the product-wide default. Browser/device language is
- * deliberately NOT allowed to override it. A learner may change the locale
- * at any time and the preference persists locally and, when signed in, in
- * the user's Phenom profile.
+ * Browser/device language is used only for the first visit when no explicit
+ * preference exists. Location is deliberately never consulted and can never
+ * override a language the learner has chosen.
  */
 export function getLocale(): SupportedLocale {
   if (typeof window === 'undefined') return 'en-NG';
   const saved = window.localStorage.getItem(KEY);
-  return saved ? localeFromTag(saved) || 'en-NG' : 'en-NG';
+  if (saved) return localeFromTag(saved) || 'en-NG';
+  const browser = typeof navigator !== 'undefined' ? localeFromTag(navigator.language || '') : null;
+  return browser || 'en-NG';
 }
 
 export function setLocale(locale: SupportedLocale) {
