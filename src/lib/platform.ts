@@ -14,6 +14,7 @@ export type Profile = {
   parentEmail?: string | null;
   avatarUrl?: string | null;
   createdAt?: string;
+  phenomUserId?: string | null;
 };
 
 const CATEGORY_KEY = 'phenom-pending-account-category-v1';
@@ -263,6 +264,7 @@ function fromProfileRow(row: Record<string, unknown>): Profile {
     accountType: (row.account_type as Profile['accountType']) || 'adult',
     parentEmail: row.parent_email ? String(row.parent_email) : null,
     avatarUrl: row.avatar_url ? String(row.avatar_url) : null,
+    phenomUserId: row.phenom_user_id ? String(row.phenom_user_id) : null,
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
