@@ -49,8 +49,6 @@ function SchoolResultsPage() {
             <li>• Carry approved previous-term results forward automatically into cumulative calculations.</li>
             <li>• Remove any assessment column the school does not use and set its own maximum marks/weights.</li>
             <li>• Save master-sheet changes across the applicable classes and future academic sessions.</li>
-            <li>• Remove any assessment column the school does not use and set its own maximum marks/weights.</li>
-            <li>• Save master-sheet changes across the applicable classes and future academic sessions.</li>
           </ul>
         </article>
 
