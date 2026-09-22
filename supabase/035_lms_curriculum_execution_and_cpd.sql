@@ -1,0 +1,5 @@
+-- Phenom Best LMS V7: curriculum execution + CPD foundation.
+-- Adds normalized curriculum levels/topics, scheduled programmes/resources,
+-- and an extensible professional CPD taxonomy. Existing curricula remain
+-- authoritative; topic content is imported only from official sources.
+-- Deployed to Supabase as migration 035_lms_curriculum_execution_and_cpd.
