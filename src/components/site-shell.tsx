@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/cms";
-import { getMyProfile, signOut } from "@/lib/platform";
+import { getMyProfile, savePreferredLocale, signOut } from "@/lib/platform";
 import {
   getLocale,
   initLocale,
@@ -22,6 +22,7 @@ import {
   supportedLocales,
   startAutoTranslation,
   type SupportedLocale,
+  t,
 } from "@/lib/i18n";
 import {
   listActiveAnnouncements,
@@ -163,6 +164,17 @@ export function SiteShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    void getMyProfile().then((profile) => {
+      const saved = profile?.preferredLocale as SupportedLocale | undefined;
+      if (saved && saved !== getLocale()) {
+        setLocale(saved);
+        setCurrentLocale(saved);
+      }
+    }).catch(() => undefined);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     let active = true;
 
     const load = async () => {
@@ -230,7 +242,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     : "text-on-navy-muted hover:bg-navy-mid/70 hover:text-cream",
                 )}
               >
-                {item.label}
+                {t(item.label, locale)}
               </Link>
             ))}
           </nav>
@@ -240,12 +252,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               <span className="sr-only">Language</span>
 
               <select
-                aria-label="Language"
+                aria-label={t("Language", locale)}
                 value={locale}
                 onChange={(e) => {
                   const v = e.target.value as SupportedLocale;
                   setLocale(v);
                   setCurrentLocale(v);
+                  void savePreferredLocale(v).catch(() => undefined);
                 }}
                 className="w-[5.5rem] max-w-[11rem] rounded-md border border-navy-mid bg-navy-mid px-2 py-2 text-xs text-cream sm:w-auto"
               >
@@ -282,18 +295,18 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">Sign in</Link>
+                  <Link to="/account">{t("Sign in", locale)}</Link>
                 </Button>
               )}
 
               {isSuperAdmin ? (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/admin">Super Admin</Link>
+                  <Link to="/admin">{t("Super Admin", locale)}</Link>
                 </Button>
               ) : null}
 
               <Button asChild size="sm">
-                <Link to="/enquire">Make an enquiry</Link>
+                <Link to="/enquire">{t("Make an enquiry", locale)}</Link>
               </Button>
             </div>
 
@@ -314,12 +327,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
               {isSuperAdmin ? (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/admin">Admin</Link>
+                  <Link to="/admin">{t("Admin", locale)}</Link>
                 </Button>
               ) : null}
 
               <Button asChild size="sm">
-                <Link to="/enquire">Enquire</Link>
+                <Link to="/enquire">{t("Enquire", locale)}</Link>
               </Button>
             </div>
           </div>
@@ -491,7 +504,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     to={item.to}
                     className="text-on-navy-muted hover:text-cream"
                   >
-                    {item.label}
+                    {t(item.label, locale)}
                   </Link>
                 </li>
               ))}
@@ -728,7 +741,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     to={item.to}
                     className="touch-manipulation flex min-h-14 items-center text-base font-medium text-ink"
                   >
-                    {item.label}
+                    {t(item.label, locale)}
                   </Link>
                 </li>
               ))}
