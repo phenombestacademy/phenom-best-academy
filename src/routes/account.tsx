@@ -313,32 +313,8 @@ function AccountPage() {
                 {accountChoices.map((choice) => <option key={choice.value} value={choice.value} className="text-navy-deep">{choice.label}</option>)}
               </select>
               <p className="mt-2 text-sm text-cream/60">{accountChoices.find((x) => x.value === role)?.description}</p>
-              <p className="mt-3 text-xs text-cream/50">Choosing School means you are registering as the school administrator for that school workspace. It does not create or grant Super Admin access.</p>
+              <p className="mt-3 text-xs text-cream/50">Choosing School registers you as the administrator for that school workspace. It never creates or grants Super Admin access.</p>
             </div>
-
-             </button>
-            </div>
-
-            {category === 'school' && (
-              <div className="mt-5 rounded-2xl bg-white/5 p-5">
-                <h2 className="font-display text-xl font-semibold">
-                  Choose your school role
-                </h2>
-
-                <p className="mt-1 text-sm text-cream/65">
-                  This tells the Academy what type of school access you are
-                  requesting. It does not grant administrative privileges by
-                  itself.
-                </p>
-
-                <div className="mt-4">
-                  <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="w-full rounded-xl border border-white/15 bg-white/10 p-3 text-cream">
-                    {accountChoices.map((choice) => <option key={choice.value} value={choice.value} className="text-navy-deep">{choice.label}</option>)}
-                  </select>
-                  <p className="mt-2 text-xs text-cream/55">{accountChoices.find((x) => x.value === role)?.description}</p>
-                </div>
-              </div>
-            )}
 
             <label className="mt-6 block max-w-sm text-sm font-semibold text-cream">
               Academy language
