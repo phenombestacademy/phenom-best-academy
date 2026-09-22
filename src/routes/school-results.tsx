@@ -62,7 +62,7 @@ function SchoolResultsPage() {
             <li>• School admin: the school's authorised records.</li>
             <li>• Student: own results after publication.</li>
             <li>• Parent: linked child's authorised results.</li>
-            <li>• Phenom Academy staff: appropriate school oversight, auditing and support.</li>
+            <li>• Phenom Best LMS Super Admin: appropriate school oversight, auditing and support.</li>
             <li>• Self-directed personal learning remains outside school-result reporting unless deliberately assigned into a school workflow.</li>
           </ul>
         </article>
