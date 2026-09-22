@@ -51,6 +51,29 @@ alter table public.school_assignment_targets enable row level security;
 revoke select on table public.school_assignment_items from authenticated,anon;
 grant insert,update,delete on table public.school_assignment_items to authenticated;
 
+create or replace function public.assignment_student_is_target(p_task_id uuid,p_student_id uuid) returns boolean language sql security definer set search_path=public as $$
+ select exists(select 1 from public.school_assignment_tasks t where t.id=p_task_id and (
+   exists(select 1 from public.school_assignment_targets x where x.task_id=t.id and x.student_id=p_student_id and x.target_mode='include')
+   or (not exists(select 1 from public.school_assignment_targets x where x.task_id=t.id and x.student_id=p_student_id and x.target_mode='exclude')
+       and exists(select 1 from public.class_members cm where cm.class_id=t.class_id and cm.user_id=p_student_id and cm.role='student'))
+ ));
+$$;
+revoke execute on function public.assignment_student_is_target(uuid,uuid) from public,anon;
+grant execute on function public.assignment_student_is_target(uuid,uuid) to authenticated;
+
+drop policy if exists "assignment items teacher manage" on public.school_assignment_items;
+create policy "assignment items teacher manage" on public.school_assignment_items for all to authenticated
+using (exists(select 1 from public.school_assignment_tasks t where t.id=task_id and (public.is_super_admin() or t.teacher_id=auth.uid() or public.is_school_admin_for(t.school_id))))
+with check (exists(select 1 from public.school_assignment_tasks t where t.id=task_id and (public.is_super_admin() or t.teacher_id=auth.uid() or public.is_school_admin_for(t.school_id))));
+
+drop policy if exists "assignment targets authorised" on public.school_assignment_targets;
+create policy "assignment targets authorised" on public.school_assignment_targets for all to authenticated
+using (exists(select 1 from public.school_assignment_tasks t where t.id=task_id and (public.is_super_admin() or t.teacher_id=auth.uid() or public.is_school_admin_for(t.school_id))))
+with check (exists(select 1 from public.school_assignment_tasks t where t.id=task_id and (public.is_super_admin() or t.teacher_id=auth.uid() or public.is_school_admin_for(t.school_id))));
+
+drop policy if exists "assignment submissions student insert" on public.school_assignment_submissions;
+create policy "assignment submissions student insert" on public.school_assignment_submissions for insert to authenticated
+with check (student_id=auth.uid() and public.assignment_student_is_target(task_id,auth.uid()) and score is null and graded_at is null);
 create or replace function public.list_school_lms_assessment_sources(p_school_id uuid,p_subject text default null,p_topic text default null,p_level integer default null)
 returns table(id uuid,subject text,topic text,level integer,language text,question_count integer,duration_minutes integer,generation_source text)
 language sql security definer set search_path=public as $$
