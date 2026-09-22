@@ -317,7 +317,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">Sign in</Link>
+                  <Link to="/account">{t("Sign in", locale)}</Link>
                 </Button>
               )}
 
@@ -742,7 +742,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </li>
               ))}
               <li>
-                <Link to="/account" className="touch-manipulation flex min-h-14 items-center text-base font-semibold text-ink">Your Phenom access points</Link>
+                <Link to="/account" className="touch-manipulation flex min-h-14 items-center text-base font-semibold text-ink">{t("Your Phenom access points", locale)}</Link>
               </li>
               {isSuperAdmin ? (
                 <li>
