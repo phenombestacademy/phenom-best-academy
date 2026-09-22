@@ -187,8 +187,10 @@ function AccountPage() {
       setMessage('');
       if (password !== passwordConfirm) throw new Error('The passwords do not match.');
       await setAccountPassword(password);
+      let welcomeDelivered = false;
       try {
         await sendWelcomeEmail();
+        welcomeDelivered = true;
         setWelcomeSent(true);
       } catch {
         setWelcomeSent(false);
@@ -196,7 +198,7 @@ function AccountPage() {
       const p = await getMyProfile();
       setProfile(p);
       setAuthStep('method');
-      setMessage(welcomeSent ? 'Your Phenom account is ready. A welcome email has been sent.' : 'Your Phenom account is ready.');
+      setMessage(welcomeDelivered ? 'Your Phenom account is ready. A welcome email has been sent.' : 'Your Phenom account is ready.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Your password could not be created.');
     } finally {
