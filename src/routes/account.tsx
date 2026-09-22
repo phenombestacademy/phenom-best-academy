@@ -567,5 +567,6 @@ function AccountPage() {
         </p>
       )}
     </section>
+    </>
   );
 }
