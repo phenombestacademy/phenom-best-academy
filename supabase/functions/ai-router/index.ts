@@ -1,5 +1,126 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type"};
-async function openai(prompt:string,web:boolean,image?:string){const key=Deno.env.get('OPENAI_API_KEY');if(!key)throw new Error('Academy AI is not configured.');const tools=web?[{type:'web_search'}]:undefined;const r=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({model:Deno.env.get('OPENAI_MODEL')||'gpt-5.6-luna',input:image?[{role:'user',content:[{type:'input_text',text:prompt},{type:'input_image',image_url:image}]}]:prompt,tools})});const p=await r.json();if(!r.ok)throw new Error(p.error?.message||'Academy AI request failed');return {text:String(p.output_text||p.output?.flatMap((x:any)=>x.content||[]).find((c:any)=>c.type==='output_text')?.text||'')};}
-async function gemini(prompt:string,web:boolean,image?:string){const key=Deno.env.get('GEMINI_API_KEY');if(!key)throw new Error('Academy AI is not configured.');const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${Deno.env.get('GEMINI_MODEL')||'gemini-3.8-flash'}:generateContent`,{method:'POST',headers:{'x-goog-api-key':key,'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt},...(image?[{inline_data:{mime_type:String(image.match(/^data:([^;]+);/)?.[1]||'image/jpeg'),data:image.split(',')[1]||''}}]:[])]}],...(web?{tools:[{google_search:{}}]}:{})})});const p=await r.json();if(!r.ok)throw new Error(p.error?.message||'Academy AI request failed');return {text:String(p.candidates?.[0]?.content?.parts?.map((x:any)=>x.text||'').join('')||'')};}
-serve(async(req)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});try{const body=await req.json();const prompt=String(body.prompt||'');const mode=String(body.mode||'auto');const image=typeof body.image==='string'&&body.image.startsWith('data:image/')?body.image:undefined;const web=Boolean(body.web||mode==='research');if(!prompt)throw new Error('A question is required.');const configured=[Deno.env.get('OPENAI_API_KEY')?'openai':null,Deno.env.get('GEMINI_API_KEY')?'gemini':null].filter(Boolean) as string[];if(!configured.length)throw new Error('No live AI provider is configured. The Academy fallback can still operate for supported local tools.');const order=mode==='creative'||mode==='reasoning'?['openai','gemini']:mode==='research'?['gemini','openai']:configured;for(const provider of order){try{return Response.json(provider==='gemini'?await gemini(prompt,web,image):await openai(prompt,web,image),{headers:cors})}catch{}}throw new Error('Configured AI providers did not return a usable response.');}catch(e){return new Response(JSON.stringify({error:e instanceof Error?e.message:'AI request failed'}),{status:400,headers:{...cors,'Content-Type':'application/json'}})}});
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+type Candidate = { text: string; provider: string; latency: number };
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+
+async function openai(prompt: string, web: boolean, image?: string): Promise<string> {
+  const key = Deno.env.get('OPENAI_API_KEY');
+  if (!key) throw new Error('not configured');
+  const model = Deno.env.get('OPENAI_MODEL') || 'gpt-5.6-luna';
+  const tools = web ? [{ type: 'web_search' }] : undefined;
+  const input = image
+    ? [{ role: 'user', content: [{ type: 'input_text', text: prompt }, { type: 'input_image', image_url: image }] }]
+    : prompt;
+  const r = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, input, tools }),
+  });
+  const p = await r.json();
+  if (!r.ok) throw new Error(p.error?.message || 'provider failed');
+  return String(p.output_text || p.output?.flatMap((x: any) => x.content || []).find((c: any) => c.type === 'output_text')?.text || '');
+}
+
+async function gemini(prompt: string, web: boolean, image?: string): Promise<string> {
+  const key = Deno.env.get('GEMINI_API_KEY');
+  if (!key) throw new Error('not configured');
+  const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
+  const parts: any[] = [{ text: prompt }];
+  if (image) parts.push({ inline_data: { mime_type: String(image.match(/^data:([^;]+);/)?.[1] || 'image/jpeg'), data: image.split(',')[1] || '' } });
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }], ...(web ? { tools: [{ google_search: {} }] } : {}) }),
+  });
+  const p = await r.json();
+  if (!r.ok) throw new Error(p.error?.message || 'provider failed');
+  return String(p.candidates?.[0]?.content?.parts?.map((x: any) => x.text || '').join('') || '');
+}
+
+async function azure(prompt: string, web: boolean): Promise<string> {
+  const key = Deno.env.get('AZURE_OPENAI_API_KEY');
+  const endpoint = Deno.env.get('AZURE_OPENAI_ENDPOINT');
+  const deployment = Deno.env.get('AZURE_OPENAI_DEPLOYMENT');
+  if (!key || !endpoint || !deployment) throw new Error('not configured');
+  const api = Deno.env.get('AZURE_OPENAI_API_VERSION') || '2025-04-01-preview';
+  const url = `${endpoint.replace(/\/$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=${api}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'api-key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], temperature: 0.2, ...(web ? {} : {}) }),
+  });
+  const p = await r.json();
+  if (!r.ok) throw new Error(p.error?.message || 'provider failed');
+  return String(p.choices?.[0]?.message?.content || '');
+}
+
+function score(text: string, prompt: string, mode: string) {
+  if (!text.trim()) return -Infinity;
+  let s = 50;
+  const words = text.trim().split(/\s+/).length;
+  if (words >= 15) s += 10;
+  if (words <= 3 && prompt.split(/\s+/).length > 8) s -= 15;
+  if (mode === 'creative' && words > 80) s += 5;
+  if (mode === 'fast' && words < 700) s += 5;
+  if (/provider|model|api key|internal system/i.test(text)) s -= 30;
+  return s;
+}
+
+async function route(body: any): Promise<{ text: string; providers: number }> {
+  const prompt = String(body.prompt || '');
+  const mode = String(body.mode || 'auto');
+  const web = Boolean(body.web || mode === 'research');
+  const image = typeof body.image === 'string' && body.image.startsWith('data:image/') ? body.image : undefined;
+
+  const jobs: Promise<Candidate>[] = [];
+  const run = async (provider: string, fn: () => Promise<string>) => {
+    const started = Date.now();
+    try {
+      const text = await fn();
+      return { text, provider, latency: Date.now() - started };
+    } catch {
+      return { text: '', provider, latency: Date.now() - started };
+    }
+  };
+
+  if (Deno.env.get('OPENAI_API_KEY')) jobs.push(run('core-a', () => openai(prompt, web, image)));
+  if (Deno.env.get('GEMINI_API_KEY')) jobs.push(run('core-b', () => gemini(prompt, web, image)));
+  if (Deno.env.get('AZURE_OPENAI_API_KEY') && Deno.env.get('AZURE_OPENAI_ENDPOINT') && Deno.env.get('AZURE_OPENAI_DEPLOYMENT')) {
+    jobs.push(run('core-c', () => azure(prompt, web)));
+  }
+
+  const candidates = (await Promise.all(jobs)).filter(x => x.text.trim());
+  if (!candidates.length) throw new Error('No intelligence engine is currently available.');
+
+  // Engines work together rather than competing publicly. The response returned
+  // to the user is always branded as Phenom Best Core; provider identities never surface.
+  const winner = candidates
+    .map(c => ({ ...c, quality: score(c.text, prompt, mode) }))
+    .sort((a, b) => b.quality - a.quality || a.latency - b.latency)[0];
+
+  return { text: winner.text, providers: candidates.length };
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  try {
+    const body = await req.json();
+    const prompt = String(body.prompt || '').trim();
+    if (!prompt) return json({ error: 'A question is required.' }, 400);
+    const result = await route(body);
+    return json({
+      text: result.text,
+      engine: 'Phenom Best Core',
+      providersUsed: result.providers,
+    });
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : 'Phenom Best Core could not complete the request.' }, 400);
+  }
+});
