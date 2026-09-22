@@ -22,6 +22,7 @@ import {
   saveAccountChoice,
   saveChildSafetySettings,
   saveLearningLanguage,
+  savePreferredLocale,
   sendEmailOtp,
   sendWelcomeEmail,
   setAccountPassword,
@@ -100,9 +101,9 @@ function AccountPage() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [welcomeSent, setWelcomeSent] = useState(false);
-  const [locale, setAccountLocale] = useState<SupportedLocale>(
-    () => getLocale(),
-  );
+  const [locale, setAccountLocale] = useState<SupportedLocale>(() => getLocale());
+  const [learningLocale, setLearningLocale] = useState<SupportedLocale | ''>('');
+  const [supportLocale, setSupportLocale] = useState<SupportedLocale>(() => getLocale());
 
   useEffect(() => {
     getMyProfile()
