@@ -50,7 +50,7 @@ export const Route = createRootRoute({
 function RootDocument() {
   useEffect(() => { applySettings(getLocalSettings()); void getSiteSettings().catch(() => undefined); }, []);
   return (
-    <html lang="en" className="antialiased" suppressHydrationWarning>
+    <html lang="en-NG" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
