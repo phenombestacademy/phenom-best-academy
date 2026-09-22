@@ -454,44 +454,47 @@ function AccountPage() {
 
       {profile && (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-line bg-cream p-6 lg:col-span-2">
+          <div className="rounded-2xl border border-green/30 bg-cream p-6 lg:col-span-2">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h2 className="font-display text-2xl font-semibold">Your available entry points</h2>
+                <p className="text-xs font-semibold uppercase tracking-[.16em] text-green">
+                  Your Phenom access
+                </p>
+                <h2 className="mt-1 font-display text-2xl font-semibold">Your Phenom Entry Points</h2>
                 <p className="mt-2 max-w-3xl text-sm text-muted">
-                  Your account type and authorised role determine which Academy workspaces you can enter. Free access remains available where applicable; premium and administrative areas require the appropriate entitlement or authorisation.
+                  These are the Academy areas you can enter from your account. Each entry point means a specific workspace, service or control area available to you based on your account type, authorised role and access entitlement.
                 </p>
               </div>
-              <span className="rounded-full bg-navy-deep px-3 py-1 text-xs font-semibold text-cream">
+              <span className="rounded-full border border-green/30 bg-green/10 px-3 py-1 text-xs font-semibold text-green">
                 {profile.accountCategory === 'school' ? 'School · ' + roleLabel : 'Individual account'}
               </span>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Link className="rounded-xl border border-line bg-white p-4 font-semibold hover:border-purple/40" to="/learning">
-                <GraduationCap className="mb-2 size-5 text-purple" />
+              <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/learning">
+                <GraduationCap className="mb-2 size-5 text-green" />
                 Learning Centre
                 <span className="mt-1 block text-xs font-normal text-muted">Free learning and authorised premium learning.</span>
               </Link>
-              <Link className="rounded-xl border border-line bg-white p-4 font-semibold hover:border-purple/40" to="/tools">
-                <Compass className="mb-2 size-5 text-purple" />
+              <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/tools">
+                <Compass className="mb-2 size-5 text-green" />
                 Phenom Tool Hub
                 <span className="mt-1 block text-xs font-normal text-muted">Free tools with premium features controlled by entitlement.</span>
               </Link>
-              <Link className="rounded-xl border border-line bg-white p-4 font-semibold hover:border-purple/40" to="/subscriptions">
-                <ShieldCheck className="mb-2 size-5 text-purple" />
+              <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/subscriptions">
+                <ShieldCheck className="mb-2 size-5 text-green" />
                 Plans & Premium
                 <span className="mt-1 block text-xs font-normal text-muted">View plans and your current access status.</span>
               </Link>
-              <Link className="rounded-xl border border-line bg-white p-4 font-semibold hover:border-purple/40" to="/enquire">
-                <Send className="mb-2 size-5 text-purple" />
+              <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/enquire">
+                <Send className="mb-2 size-5 text-green" />
                 Request a Service
                 <span className="mt-1 block text-xs font-normal text-muted">Consultancy, training and other Academy services.</span>
               </Link>
 
               {profile.accountCategory === 'school' || profile.role === 'super_admin' ? (
-                <Link className="rounded-xl border border-line bg-white p-4 font-semibold hover:border-purple/40" to="/schools">
-                  <Building2 className="mb-2 size-5 text-purple" />
+                <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/schools">
+                  <Building2 className="mb-2 size-5 text-green" />
                   School Platform
                   <span className="mt-1 block text-xs font-normal text-muted">Available to authorised school users and Super Admin.</span>
                 </Link>
@@ -499,18 +502,18 @@ function AccountPage() {
 
               {profile.role === 'super_admin' ? (
                 <>
-                  <Link className="rounded-xl border border-purple/30 bg-purple/5 p-4 font-semibold hover:border-purple/50" to="/admin">
-                    <Settings className="mb-2 size-5 text-purple" />
+                  <Link className="rounded-xl border border-green/30 bg-green/5 p-4 font-semibold text-green hover:border-green" to="/admin">
+                    <Settings className="mb-2 size-5 text-green" />
                     Super Admin Studio
                     <span className="mt-1 block text-xs font-normal text-muted">Private control centre for content, media, payments, announcements and platform administration.</span>
                   </Link>
-                  <Link className="rounded-xl border border-purple/30 bg-purple/5 p-4 font-semibold hover:border-purple/50" to="/schools">
-                    <UsersRound className="mb-2 size-5 text-purple" />
+                  <Link className="rounded-xl border border-green/30 bg-green/5 p-4 font-semibold text-green hover:border-green" to="/schools">
+                    <UsersRound className="mb-2 size-5 text-green" />
                     All School Workspaces
                     <span className="mt-1 block text-xs font-normal text-muted">Super Admin can enter and manage authorised school environments.</span>
                   </Link>
-                  <Link className="rounded-xl border border-purple/30 bg-purple/5 p-4 font-semibold hover:border-purple/50" to="/subscriptions">
-                    <ShieldCheck className="mb-2 size-5 text-purple" />
+                  <Link className="rounded-xl border border-green/30 bg-green/5 p-4 font-semibold text-green hover:border-green" to="/subscriptions">
+                    <ShieldCheck className="mb-2 size-5 text-green" />
                     Premium & Entitlements
                     <span className="mt-1 block text-xs font-normal text-muted">Review plans and administer authorised premium access from the protected controls.</span>
                   </Link>
