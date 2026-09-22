@@ -11,10 +11,10 @@ type Candidate = { text: string; provider: string };
 
 const localeCode = (locale: string) => locale.split('-')[0];
 const SUPPORTED = new Set([
-  'en-NG','en-GB','en-US','en-AU','en-CA','pcm-NG','fr-FR','es-ES','zh-CN','pt-PT','ar','de-DE','it-IT','ru-RU',
-  'yo-NG','ig-NG','ha-NG','sw-KE','sw-TZ','nl-NL','pl-PL','tr-TR','ko-KR','ja-JP','hi-IN','bn-BD','ur-PK','fa-IR',
-  'he-IL','id-ID','ms-MY','th-TH','vi-VN','fil-PH','uk-UA','ro-RO','cs-CZ','el-GR','da-DK','sv-SE','no-NO','fi-FI',
-  'hu-HU','am-ET','so-SO','zu-ZA','xh-ZA'
+  'en-NG','en-GB','en-US','en-AU','en-CA','pcm-NG','fr-FR','es-ES','zh-CN','pt-PT','ar','de-DE','it-IT','ru-RU','yo-NG','ig-NG','ha-NG',
+  'sw-KE','sw-TZ','nl-NL','pl-PL','tr-TR','ko-KR','ja-JP','hi-IN','bn-BD','ur-PK','fa-IR','he-IL','id-ID','ms-MY','th-TH','vi-VN','fil-PH','uk-UA','ro-RO','cs-CZ','el-GR','da-DK','sv-SE','no-NO','fi-FI','hu-HU','am-ET','so-SO','zu-ZA','xh-ZA',
+  'ab','ace','ach','af','sq','alz','as','awa','ay','az','ban','bm','ba','eu','be','bem','bn','bho','bik','bs','br','bg','bua','yue','ca','ceb','ny','cv','co','crh','hr','din','dv','doi','dov','dz','eo','et','ee','fj','ff','gaa','gl','lg','ka','gn','gu','ht','haw','hil','hmn','ilo','ga','jv','kn','pam','kk','cgg','rw','ktu','gom','kri','ku','ckb','ky','lo','ltg','la','lij','li','ln','lt','lmo','luo','lb','mk','mai','mak','mg','ml','mt','mi','chm','mni-Mtei','min','lus','mn','my','nr','new','nso','nus','oc','or','om','pag','pap','ps','pa','pa-Arab','qu','rom','rn','gd','sr','sk','sl','st','crs','shn','sn','scn','szl','sd','si','ss','tg','ta','tt','te','tet','ti','ts','tn','tk','ak','uz','cy','yi','yua',
+  'zh-TW','zh-HK','zh-Hans','zh-Hant','en-NZ','en-PH','en-ZA','fr-CA','fr-CH','nl-BE','pt-BR','es-MX','es-AR','es-419','nb','nb-NO','he','iw'
 ]);
 
 async function openaiTranslate(items: Item[], target: string): Promise<Candidate[]> {
