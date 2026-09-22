@@ -186,6 +186,45 @@ function AccountPage() {
               There is no separate sign-up form to scroll down to.
             </p>
 
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => selectCategory('individual')}
+                className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}
+              >
+                <strong className="block">Individual</strong>
+                <span className="mt-1 block text-xs text-muted">Free access, learning, tools and personal services; premium features follow entitlement.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => selectCategory('school')}
+                className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}
+              >
+                <strong className="block">School</strong>
+                <span className="mt-1 block text-xs text-muted">For authorised school administrators, teachers, learners and parents.</span>
+              </button>
+            </div>
+
+            {category === 'school' ? (
+              <div className="mt-4 rounded-xl border border-line bg-white p-4">
+                <label className="text-sm font-semibold">School role</label>
+                <select
+                  value={role}
+                  onChange={(e) => {
+                    const value = e.target.value as OnboardingRole;
+                    setRole(value);
+                    void saveAccountChoice('school', value);
+                  }}
+                  className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm"
+                >
+                  {schoolRoles.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-muted">Selecting a role requests that pathway; it does not grant administrative privileges. School administration remains subject to authorisation.</p>
+              </div>
+            ) : null}
+
             <Button
               className="mt-6 w-full"
               onClick={login}
