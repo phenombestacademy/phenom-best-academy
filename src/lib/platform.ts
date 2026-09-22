@@ -181,15 +181,20 @@ export async function ensureProfile(user: { id: string; email?: string; user_met
   const supabase = getSupabase();
   if (!supabase) return null;
   const choice = getPendingAccountChoice();
+  const invitedCategory = user.user_metadata?.account_category === 'school' ? 'school' : user.user_metadata?.account_category === 'individual' ? 'individual' : null;
+  const invitedRole = typeof user.user_metadata?.onboarding_role === 'string' ? user.user_metadata.onboarding_role as OnboardingRole : null;
+  const effectiveCategory = invitedCategory ?? choice.category;
+  const effectiveRole = invitedRole ?? choice.role;
   const fullName = String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Phenom User');
   const { data, error } = await supabase.from('profiles').upsert({
     id: user.id,
     email: user.email ?? '',
     full_name: fullName,
-    account_category: choice.category,
-    onboarding_role: choice.role,
+    account_category: effectiveCategory,
+    onboarding_role: effectiveRole,
   }, { onConflict: 'id' }).select().single();
   if (error) throw error;
+  await supabase.rpc('activate_school_membership_for_current_user');
   clearPendingAccountChoice();
   return fromProfileRow(data);
 }
