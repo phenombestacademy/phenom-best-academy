@@ -76,10 +76,10 @@ function localQuestions(subject: string, topic: string, count: number, level: nu
 export async function generatePracticeQuiz(input: { subject: string; topic: string; level: number; questionCount: number; language?: string; schoolId?: string | null; mode?: 'self_directed' | 'teacher_assigned' }) {
   const s = getSupabase();
   if (!s) {
-    const local = localQuestions(input.subject, input.topic, Math.min(20, Math.max(1, input.questionCount)), input.level);
+    const local = localQuestions(input.subject, input.topic, Math.max(1, Math.floor(input.questionCount)), input.level);
     return { id: `local-quiz-${Date.now()}`, subject: input.subject, topic: input.topic, level: input.level, language: input.language || 'English', questionCount: local.length, questions: local.map(({ _answer, ...q }) => q), brandName: 'Phenom Best Academy', watermarkText: 'Phenom Best Academy' } as PracticeQuiz;
   }
-  const { data, error } = await s.functions.invoke('generate-quiz', { body: { ...input, questionCount: Math.min(20, Math.max(1, input.questionCount)), mode: input.mode || 'self_directed' } });
+  const { data, error } = await s.functions.invoke('generate-quiz', { body: { ...input, questionCount: Math.max(1, Math.floor(input.questionCount)), mode: input.mode || 'self_directed' } });
   if (error) throw error;
   const quizId = data?.id;
   if (!quizId) throw new Error(data?.error || 'Questions could not be prepared.');
