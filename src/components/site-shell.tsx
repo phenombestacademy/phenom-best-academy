@@ -120,19 +120,30 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
+
       setIsAuthenticated(Boolean(session));
+
       if (!session) {
         setIsSuperAdmin(false);
         return;
       }
-      try {
-        const profile = await getMyProfile();
-        if (active) setIsSuperAdmin(profile?.role === 'super_admin');
-      } catch {
-        if (active) setIsSuperAdmin(false);
-      }
+
+      // Keep the auth callback synchronous so Supabase can finish the
+      // auth event immediately. Profile work happens outside the callback
+      // and therefore cannot hold up navigation or touch interaction.
+      window.setTimeout(() => {
+        if (!active) return;
+
+        void getMyProfile()
+          .then((profile) => {
+            if (active) setIsSuperAdmin(profile?.role === "super_admin");
+          })
+          .catch(() => {
+            if (active) setIsSuperAdmin(false);
+          });
+      }, 0);
     });
 
     return () => {
