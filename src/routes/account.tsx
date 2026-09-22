@@ -21,7 +21,10 @@ import {
   logAnalytics,
   saveAccountChoice,
   saveChildSafetySettings,
+  sendEmailOtp,
+  setAccountPassword,
   signInWithGoogle,
+  verifyEmailOtp,
   signOut,
   type AccountCategory,
   type OnboardingRole,
@@ -88,6 +91,11 @@ function AccountPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [authStep, setAuthStep] = useState<'method' | 'otp' | 'password'>('method');
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [locale, setAccountLocale] = useState<SupportedLocale>(
     () => getLocale(),
   );
@@ -122,17 +130,66 @@ function AccountPage() {
     void saveAccountChoice(c, r);
   };
 
-  const login = async () => {
+  const loginWithGoogle = async () => {
     try {
       setBusy(true);
       await saveAccountChoice(category, role);
       await signInWithGoogle();
     } catch (e) {
-      setMessage(
-        e instanceof Error
-          ? e.message
-          : 'Secure sign-in could not start.',
-      );
+      setMessage(e instanceof Error ? e.message : 'Google sign-in could not start.');
+      setBusy(false);
+    }
+  };
+
+  const requestEmailOtp = async () => {
+    try {
+      setBusy(true);
+      setMessage('');
+      await saveAccountChoice(category, role);
+      await sendEmailOtp(email);
+      setAuthStep('otp');
+      setMessage('A 6-digit verification code has been sent to your email address.');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'We could not send the verification code.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyEmail = async () => {
+    try {
+      setBusy(true);
+      setMessage('');
+      await verifyEmailOtp(email, otp);
+      const p = await getMyProfile();
+      setProfile(p);
+      if (p) {
+        setCategory(p.accountCategory);
+        setRole(p.onboardingRole);
+        setAccountType(p.accountType);
+        setParentEmail(p.parentEmail || '');
+      }
+      setAuthStep('password');
+      setMessage('Email verified. Create your password to complete your Phenom account.');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'The verification code could not be accepted.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createPassword = async () => {
+    try {
+      setBusy(true);
+      setMessage('');
+      if (password !== passwordConfirm) throw new Error('The passwords do not match.');
+      await setAccountPassword(password);
+      const p = await getMyProfile();
+      setProfile(p);
+      setAuthStep('method');
+      setMessage('Your Phenom account is ready.');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Your password could not be created.');
     } finally {
       setBusy(false);
     }
@@ -164,81 +221,77 @@ function AccountPage() {
     <>
       {!profile ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-deep/70 p-4 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="phenom-auth-title"
-            className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">
-              Phenom Best Academy
-            </p>
-
-            <h2
-              id="phenom-auth-title"
-              className="mt-2 font-display text-3xl font-bold"
-            >
-              Sign in to continue
+          <div role="dialog" aria-modal="true" aria-labelledby="phenom-auth-title" className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
+            <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">
+              {authStep === 'method' ? 'Sign in or create your account' : authStep === 'otp' ? 'Verify your email' : 'Create your password'}
             </h2>
-
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              Sign in or create your Phenom account securely with Google.
-              There is no separate sign-up form to scroll down to.
+              {authStep === 'method'
+                ? 'Choose how you want to continue. Email verification does not require your phone.'
+                : authStep === 'otp'
+                  ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</>
+                  : 'Your email has been verified. Create a password so you can also sign in with your Phenom User ID or email address.'}
             </p>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => selectCategory('individual')}
-                className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}
-              >
-                <strong className="block">Individual</strong>
-                <span className="mt-1 block text-xs text-muted">Free access, learning, tools and personal services; premium features follow entitlement.</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => selectCategory('school')}
-                className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}
-              >
-                <strong className="block">School</strong>
-                <span className="mt-1 block text-xs text-muted">For authorised school administrators, teachers, learners and parents.</span>
-              </button>
-            </div>
+            {authStep === 'method' ? (
+              <>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button type="button" onClick={() => selectCategory('individual')} className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
+                    <strong className="block">Individual</strong>
+                    <span className="mt-1 block text-xs text-muted">Personal learning, tools and services.</span>
+                  </button>
+                  <button type="button" onClick={() => selectCategory('school')} className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
+                    <strong className="block">School</strong>
+                    <span className="mt-1 block text-xs text-muted">For authorised school users.</span>
+                  </button>
+                </div>
+                {category === 'school' ? (
+                  <div className="mt-4 rounded-xl border border-line bg-white p-4">
+                    <label className="text-sm font-semibold">School role</label>
+                    <select value={role} onChange={(e) => { const value=e.target.value as OnboardingRole; setRole(value); void saveAccountChoice('school', value); }} className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm">
+                      {schoolRoles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  </div>
+                ) : null}
+                <Button className="mt-6 w-full" onClick={loginWithGoogle} disabled={busy}>
+                  {busy ? 'Opening Google sign-in…' : 'Continue with Google'}
+                </Button>
+                <div className="my-3 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" /><span>or</span><span className="h-px flex-1 bg-line" /></div>
+                <div className="rounded-xl border border-line bg-white p-4">
+                  <label htmlFor="phenom-email" className="text-sm font-semibold">Email address</label>
+                  <input id="phenom-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm" />
+                  <Button className="mt-3 w-full" onClick={requestEmailOtp} disabled={busy || !email.trim()}>
+                    {busy ? 'Sending verification code…' : 'Continue with email address'}
+                  </Button>
+                  <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit code to this email. No phone is required.</p>
+                </div>
+              </>
+            ) : null}
 
-            {category === 'school' ? (
-              <div className="mt-4 rounded-xl border border-line bg-white p-4">
-                <label className="text-sm font-semibold">School role</label>
-                <select
-                  value={role}
-                  onChange={(e) => {
-                    const value = e.target.value as OnboardingRole;
-                    setRole(value);
-                    void saveAccountChoice('school', value);
-                  }}
-                  className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm"
-                >
-                  {schoolRoles.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
-                <p className="mt-2 text-xs text-muted">Selecting a role requests that pathway; it does not grant administrative privileges. School administration remains subject to authorisation.</p>
+            {authStep === 'otp' ? (
+              <div className="mt-5">
+                <label htmlFor="phenom-otp" className="text-sm font-semibold">6-digit verification code</label>
+                <input id="phenom-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0,6))} className="mt-2 w-full rounded-xl border border-line bg-white p-4 text-center text-2xl tracking-[.35em]" />
+                <Button className="mt-4 w-full" onClick={verifyEmail} disabled={busy || otp.length !== 6}>{busy ? 'Verifying…' : 'Verify email'}</Button>
+                <button type="button" onClick={() => setAuthStep('method')} className="mt-3 w-full text-sm font-semibold text-green">Use a different email or sign-in method</button>
               </div>
             ) : null}
 
-            <Button
-              className="mt-6 w-full"
-              onClick={login}
-              disabled={busy}
-            >
-              {busy
-                ? 'Opening secure Google sign-in…'
-                : 'Continue with Google'}
-            </Button>
+            {authStep === 'password' ? (
+              <div className="mt-5">
+                <label htmlFor="phenom-password" className="text-sm font-semibold">Create password</label>
+                <input id="phenom-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <label htmlFor="phenom-password-confirm" className="mt-3 block text-sm font-semibold">Confirm password</label>
+                <input id="phenom-password-confirm" type="password" autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <Button className="mt-4 w-full" onClick={createPassword} disabled={busy || password.length < 8 || password !== passwordConfirm}>{busy ? 'Creating password…' : 'Create password & continue'}</Button>
+              </div>
+            ) : null}
 
-            <p className="mt-3 text-center text-xs text-muted">
-              Google handles authentication. Phenom Best Academy does not
-              receive your Google password.
-            </p>
+            {message ? <p className="mt-4 rounded-xl bg-paper p-3 text-sm text-muted">{message}</p> : null}
+
+            {authStep !== 'method' ? <button type="button" onClick={() => setAuthStep('method')} className="mt-3 w-full text-xs text-muted">Back to sign-in options</button> : null}
+            <p className="mt-4 text-center text-xs text-muted">Phenom Best Academy keeps your authentication secure. Your password is never shown to the Academy.</p>
           </div>
         </div>
       ) : null}
@@ -470,6 +523,17 @@ function AccountPage() {
               </span>
             </div>
 
+            <Link className="group rounded-2xl border-2 border-green bg-green/5 p-5 font-semibold text-green transition-colors hover:bg-green/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green sm:col-span-2 lg:col-span-4" to={profile.accountCategory === 'school' ? '/schools' : '/learning'}>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <span className="block text-lg">Phenom Best Academy Access</span>
+                  <span className="mt-2 inline-flex rounded-full border border-green/40 bg-green/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green">
+                    {profile.role === 'super_admin' ? 'SUPER ADMIN' : profile.onboardingRole === 'school_admin' ? 'SCHOOL ADMINISTRATOR' : profile.onboardingRole === 'teacher' ? 'TEACHER' : profile.onboardingRole === 'student' ? 'STUDENT' : profile.role === 'staff' ? 'STAFF' : 'FREE'}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold">Enter →</span>
+              </div>
+            </Link>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Link className="group rounded-xl border border-green/25 bg-white p-4 font-semibold text-green transition-colors hover:border-green hover:bg-green/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green" to="/learning">
                 <GraduationCap className="mb-2 size-5 text-green" />
