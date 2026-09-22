@@ -519,11 +519,14 @@ export const services: Service[] = [
     title: "Educational Consultancy & Advisory",
     kicker: "Better decisions. Better systems.",
     summary:
-      "Professional educational planning, school improvement, curriculum, teacher-development, quality, and academic pathway advisory for individuals and institutions.",
+      "Professional educational planning, school improvement, institutional policy development, compliance and risk assessment, safeguarding, curriculum, teacher-development, quality, and academic pathway advisory for schools and institutions.",
     audience:
       "Schools, education companies, training organisations, parents and families, learners, educational institutions, NGOs, and organisations requiring educational expertise.",
     offerings: [
       "Educational planning and academic programme advice",
+      "School and institutional policy development, review, and documentation",
+      "Institutional Information, Compliance & Risk Assessment",
+      "Safeguarding and child-protection policy frameworks",
       "School improvement and educational management support",
       "Curriculum-related consultancy and learning-system development",
       "Teacher-development and instructional improvement consultancy",
@@ -533,6 +536,10 @@ export const services: Service[] = [
     enquiryOptions: [
   "Educational planning",
   "Academic programme advice",
+  "School / institutional policy development",
+  "Institutional Information, Compliance & Risk Assessment",
+  "Safeguarding / child-protection policy development",
+  "Policy review, gap analysis and documentation",
   "School improvement",
   "School management / educational management",
   "Curriculum consultancy",
@@ -541,6 +548,7 @@ export const services: Service[] = [
   "Instructional improvement",
   "Quality assurance / quality improvement",
   "Educational governance support",
+  "Compliance and institutional risk assessment",
   "Educational resource development",
   "Academic pathway advisory",
   "Educational technology consultancy",
@@ -812,6 +820,7 @@ export const needs = [
   { id: "leadership", label: "Leadership or human-capital development", service: "leadership-human-capital" as ServiceId },
   { id: "certification", label: "Professional certification or CPD", service: "professional-development" as ServiceId },
   { id: "education-consultancy", label: "Educational consultancy or school improvement", service: "educational-consultancy" as ServiceId },
+  { id: "school-policy-compliance", label: "School / institutional policy, compliance, safeguarding, or risk assessment", service: "educational-consultancy" as ServiceId },
   { id: "research", label: "Research, knowledge, or report support", service: "research-knowledge" as ServiceId },
   { id: "digital-learning", label: "Digital courses or educational resources", service: "digital-learning" as ServiceId },
   { id: "music", label: "Music, songwriting, production, or a custom music project", service: "music-creative-development" as ServiceId },
