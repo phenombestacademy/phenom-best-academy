@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/cms";
-import { signOut } from "@/lib/platform";
+import { getMyProfile, signOut } from "@/lib/platform";
 import {
   getLocale,
   initLocale,
@@ -74,7 +74,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [subscribeStatus, setSubscribeStatus] = useState("");
   const [locale, setCurrentLocale] =
     useState<SupportedLocale>("en-NG");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);\n  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     setCurrentLocale(initLocale());
