@@ -198,10 +198,7 @@ function AccountPage() {
     }
   };
 
-  const roleLabel =
-    schoolRoles.find(
-      (x) => x.value === profile?.onboardingRole,
-    )?.label || 'Individual';
+  const roleLabel = accountChoices.find((x) => x.value === profile?.onboardingRole)?.label || 'Individual';
 
   return (
     <>
@@ -315,7 +312,7 @@ function AccountPage() {
           <>
             <div className="mt-7 grid gap-5">
               <button
-                onClick={() => selectCategory('individual')}
+                onClick={() => selectRole('adult')}
                 className={`rounded-2xl border p-6 text-left ${
                   category === 'individual'
                     ? 'border-gold bg-white/10 ring-2 ring-gold/30'
@@ -358,7 +355,7 @@ function AccountPage() {
               </button>
 
               <button
-                onClick={() => selectCategory('school')}
+                onClick={() => selectRole('school_admin')}
                 className={`rounded-2xl border p-6 text-left ${
                   category === 'school'
                     ? 'border-gold bg-white/10 ring-2 ring-gold/30'
@@ -414,35 +411,11 @@ function AccountPage() {
                   itself.
                 </p>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {schoolRoles.map((r) => {
-                    const I = r.icon;
-
-                    return (
-                      <button
-                        key={r.value}
-                        onClick={() => {
-                          setRole(r.value);
-                          void saveAccountChoice(category, r.value);
-                        }}
-                        className={`rounded-xl border p-4 text-left ${
-                          role === r.value
-                            ? 'border-gold bg-gold/10'
-                            : 'border-white/15 bg-white/5'
-                        }`}
-                      >
-                        <I className="text-gold" />
-
-                        <strong className="mt-2 block">
-                          {r.label}
-                        </strong>
-
-                        <span className="mt-1 block text-xs text-cream/60">
-                          {r.description}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div className="mt-4">
+                  <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="w-full rounded-xl border border-white/15 bg-white/10 p-3 text-cream">
+                    {accountChoices.map((choice) => <option key={choice.value} value={choice.value} className="text-navy-deep">{choice.label}</option>)}
+                  </select>
+                  <p className="mt-2 text-xs text-cream/55">{accountChoices.find((x) => x.value === role)?.description}</p>
                 </div>
               </div>
             )}
