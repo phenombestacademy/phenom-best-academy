@@ -1,4 +1,4 @@
--- Phenom Enterprise LMS Foundation v6.0
+-- Phenom Best LMS Foundation v6.0
 -- Non-destructive expansion: preserves existing programmes, school LMS tables and RLS.
 -- Adds standards-ready LMS capabilities and normalized global subject/curriculum coverage.
 
@@ -397,7 +397,7 @@ cross join lateral unnest(c.subjects) cs(subject_name)
 join public.global_subject_catalogue s on s.name=trim(cs.subject_name)
 on conflict(curriculum_id,subject_id,stage) do update set country_code=excluded.country_code,source_note=excluded.source_note,active=true;
 
--- RLS: deny-by-default for the new enterprise LMS tables. Existing helper functions are reused.
+-- RLS: deny-by-default for the new Phenom Best LMS tables. Existing helper functions are reused.
 alter table public.lms_courses enable row level security;
 alter table public.lms_course_modules enable row level security;
 alter table public.lms_activities enable row level security;
