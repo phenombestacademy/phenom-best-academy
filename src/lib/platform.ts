@@ -1,7 +1,7 @@
 import { getSupabase } from './cms';
 
 export type AccountCategory = 'individual' | 'school';
-export type OnboardingRole = 'individual' | 'school_admin' | 'teacher' | 'student' | 'parent';
+export type OnboardingRole = 'individual' | 'teacher' | 'non_teaching_staff' | 'student' | 'child' | 'teenager' | 'adult' | 'professional' | 'parent' | 'school_admin';
 
 export type Profile = {
   id: string;
@@ -27,9 +27,8 @@ export function getPendingAccountChoice() {
   if (typeof window === 'undefined') return { category: 'individual' as AccountCategory, role: 'individual' as OnboardingRole };
   const category = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
   const savedRole = window.localStorage.getItem(ROLE_KEY) as OnboardingRole | null;
-  const role = category === 'school' && ['school_admin', 'teacher', 'student', 'parent'].includes(savedRole || '')
-    ? savedRole!
-    : 'individual';
+  const validRoles: OnboardingRole[] = ['school_admin','teacher','non_teaching_staff','student','child','teenager','adult','professional','parent'];
+  const role = validRoles.includes(savedRole as OnboardingRole) ? savedRole as OnboardingRole : category === 'school' ? 'school_admin' : 'individual';
   return { category, role };
 }
 
@@ -291,7 +290,7 @@ export async function sendMessage(conversationId: string, body: string) {
 
 function fromProfileRow(row: Record<string, unknown>): Profile {
   const category = row.account_category === 'school' ? 'school' : 'individual';
-  const validRoles: OnboardingRole[] = ['individual', 'school_admin', 'teacher', 'student', 'parent'];
+  const validRoles: OnboardingRole[] = ['individual', 'school_admin', 'teacher', 'non_teaching_staff', 'student', 'child', 'teenager', 'adult', 'professional', 'parent'];
   const onboardingRole = validRoles.includes(row.onboarding_role as OnboardingRole) ? row.onboarding_role as OnboardingRole : category === 'school' ? 'school_admin' : 'individual';
   return {
     id: String(row.id),
