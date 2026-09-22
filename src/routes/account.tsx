@@ -45,40 +45,16 @@ export const Route = createFileRoute('/account')({
   component: AccountPage,
 });
 
-const schoolRoles: Array<{
-  value: Exclude<OnboardingRole, 'individual'>;
-  label: string;
-  icon: typeof GraduationCap;
-  description: string;
-}> = [
-  {
-    value: 'school_admin',
-    label: 'School Administrator',
-    icon: Building2,
-    description:
-      'For an authorised school owner, administrator or designated school manager.',
-  },
-  {
-    value: 'teacher',
-    label: 'Teacher / School Staff',
-    icon: BriefcaseBusiness,
-    description:
-      'For teaching and authorised school staff joining an existing school.',
-  },
-  {
-    value: 'student',
-    label: 'Student / Learner',
-    icon: GraduationCap,
-    description:
-      'For a learner whose school or personal learning needs are being supported.',
-  },
-  {
-    value: 'parent',
-    label: 'Parent / Guardian',
-    icon: UsersRound,
-    description:
-      'For a parent or guardian connected to a learner in a school.',
-  },
+const accountChoices: Array<{ value: OnboardingRole; label: string; description: string; category: AccountCategory }> = [
+  { value: 'teacher', label: 'Teacher', description: 'Teacher or teaching professional joining a school.', category: 'individual' },
+  { value: 'non_teaching_staff', label: 'Non-teaching staff', description: 'Administrative, operations, finance, HR or support staff.', category: 'individual' },
+  { value: 'student', label: 'Student', description: 'Learner in a school or independent programme.', category: 'individual' },
+  { value: 'child', label: 'Child', description: 'Child account, including parent-supported access.', category: 'individual' },
+  { value: 'teenager', label: 'Teenager', description: 'Teen learner account.', category: 'individual' },
+  { value: 'adult', label: 'Adult', description: 'Adult individual account.', category: 'individual' },
+  { value: 'professional', label: 'Professional', description: 'Professional learning, career and service account.', category: 'individual' },
+  { value: 'parent', label: 'Parent / Guardian', description: 'Parent or guardian account.', category: 'individual' },
+  { value: 'school_admin', label: 'School', description: 'Creates a school workspace and is the school administrator. This does not create a Super Admin.', category: 'school' },
 ];
 
 function AccountPage() {
@@ -124,17 +100,12 @@ function AccountPage() {
       );
   }, []);
 
-  const selectCategory = (c: AccountCategory) => {
-    const r =
-      c === 'school'
-        ? role === 'individual'
-          ? 'school_admin'
-          : role
-        : 'individual';
-
-    setCategory(c);
+  const selectRole = (r: OnboardingRole) => {
+    const choice = accountChoices.find((x) => x.value === r);
+    const nextCategory = choice?.category ?? 'individual';
+    setCategory(nextCategory);
     setRole(r);
-    void saveAccountChoice(c, r);
+    void saveAccountChoice(nextCategory, r);
   };
 
   const loginWithGoogle = async () => {
@@ -252,23 +223,16 @@ function AccountPage() {
             {authStep === 'method' ? (
               <>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => selectCategory('individual')} className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
+                  <button type="button" onClick={() => selectRole('adult')} className={`rounded-xl border p-4 text-left ${category === 'individual' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
                     <strong className="block">Individual</strong>
                     <span className="mt-1 block text-xs text-muted">Personal learning, tools and services.</span>
                   </button>
-                  <button type="button" onClick={() => selectCategory('school')} className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
+                  <button type="button" onClick={() => selectRole('school_admin')} className={`rounded-xl border p-4 text-left ${category === 'school' ? 'border-orange bg-orange/10 ring-2 ring-orange/20' : 'border-line bg-white'}`}>
                     <strong className="block">School</strong>
                     <span className="mt-1 block text-xs text-muted">For authorised school users.</span>
                   </button>
                 </div>
-                {category === 'school' ? (
-                  <div className="mt-4 rounded-xl border border-line bg-white p-4">
-                    <label className="text-sm font-semibold">School role</label>
-                    <select value={role} onChange={(e) => { const value=e.target.value as OnboardingRole; setRole(value); void saveAccountChoice('school', value); }} className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm">
-                      {schoolRoles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </select>
-                  </div>
-                ) : null}
+                
                 <Button className="mt-6 w-full" onClick={loginWithGoogle} disabled={busy}>
                   {busy ? 'Opening Google sign-in…' : 'Continue with Google'}
                 </Button>
@@ -349,7 +313,7 @@ function AccountPage() {
 
         {!profile ? (
           <>
-            <div className="mt-7 grid gap-5 lg:grid-cols-2">
+            <div className="mt-7 grid gap-5">
               <button
                 onClick={() => selectCategory('individual')}
                 className={`rounded-2xl border p-6 text-left ${
