@@ -119,3 +119,5 @@ for each row execute function public.validate_student_result_entry();
 
 revoke all on function public.validate_student_attendance() from public;
 revoke all on function public.validate_student_result_entry() from public;
+revoke execute on function public.validate_student_attendance() from anon, authenticated;
+revoke execute on function public.validate_student_result_entry() from anon, authenticated;
