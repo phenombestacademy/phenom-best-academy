@@ -489,6 +489,18 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   Find your path
                 </Link>
               </li>
+              <li>
+                <Link to="/account" className="text-on-navy-muted hover:text-cream">
+                  Account & access
+                </Link>
+              </li>
+              {isSuperAdmin ? (
+                <li>
+                  <Link to="/admin" className="font-semibold text-gold hover:text-cream">
+                    Super Admin Studio
+                  </Link>
+                </li>
+              ) : null}
             </ul>
           </div>
 
@@ -538,9 +550,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </form>
 
             {subscribeStatus ? (
-              <p className="mt-2 text-xs text-gold">
-                {subscribeStatus}
-              </p>
+              <div className="mt-2 text-xs text-gold">
+                <p>{subscribeStatus}</p>
+                {subscribeStatus === "Subscribed successfully." ? (
+                  <Link to="/account" className="mt-1 inline-block font-semibold text-cream underline">Create or access your Phenom account →</Link>
+                ) : null}
+              </div>
             ) : null}
 
             <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-gold">
@@ -702,6 +717,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link to="/account" className="flex min-h-14 items-center text-base font-semibold text-ink">Account & access</Link>
+              </li>
+              {isSuperAdmin ? (
+                <li>
+                  <Link to="/admin" className="flex min-h-14 items-center text-base font-semibold text-purple">Super Admin Studio</Link>
+                </li>
+              ) : null}
             </ul>
           </div>
         </div>
