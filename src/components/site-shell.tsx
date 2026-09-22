@@ -20,7 +20,6 @@ import {
   initLocale,
   setLocale,
   supportedLocales,
-  startAutoTranslation,
   type SupportedLocale,
   t,
 } from "@/lib/i18n";
@@ -80,9 +79,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setCurrentLocale(initLocale());
-    // Defer translation boot so the first paint and first navigation remain immediate.
-    window.setTimeout(() => startAutoTranslation(), 0);
-
     const onChange = () => setCurrentLocale(getLocale());
 
     window.addEventListener("phenom-locale-change", onChange);
@@ -291,7 +287,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                   variant="cream"
                   onClick={() => void signOut()}
                 >
-                  Logout
+                  {t("Logout", locale)}
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
