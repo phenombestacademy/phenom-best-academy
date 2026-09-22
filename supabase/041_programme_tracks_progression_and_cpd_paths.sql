@@ -1,0 +1,4 @@
+-- 041: hierarchical programme tracks, duration bands, progression and authority
+-- Production schema/seed is applied directly; this file documents the committed model.
+-- Categories are hierarchical: domain/category -> subject/course -> programme -> level -> topic/resource.
+-- Duration is provisional until authoritative curriculum volume and awarding arrangements are verified.
