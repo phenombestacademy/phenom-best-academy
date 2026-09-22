@@ -116,3 +116,6 @@ drop trigger if exists trg_validate_student_result_entry on public.student_resul
 create trigger trg_validate_student_result_entry
 before insert or update on public.student_result_entries
 for each row execute function public.validate_student_result_entry();
+
+revoke all on function public.validate_student_attendance() from public;
+revoke all on function public.validate_student_result_entry() from public;
