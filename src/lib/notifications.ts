@@ -75,7 +75,7 @@ export async function subscribeEmail(email: string) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error('Please enter a valid email address.');
   const supabase = getSupabase();
   if (!supabase) throw new Error('Email subscriptions will activate after Supabase is connected.');
-  const { error } = await supabase.from('email_subscribers').upsert({ email: normalized, active: true, marketing_opt_in: true }, { onConflict: 'email' });
+  const { error } = await supabase.rpc('subscribe_email', { p_email: normalized });
   if (error) throw error;
 }
 
