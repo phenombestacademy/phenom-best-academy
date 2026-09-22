@@ -15,6 +15,9 @@ export type Profile = {
   avatarUrl?: string | null;
   createdAt?: string;
   phenomUserId?: string | null;
+  preferredLocale?: string;
+  learningLocale?: string | null;
+  supportLocale?: string | null;
 };
 
 const CATEGORY_KEY = 'phenom-pending-account-category-v1';
@@ -111,6 +114,27 @@ export async function setAccountPassword(password: string) {
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
   if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
   const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
+export async function savePreferredLocale(locale: string) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const session = await getSession();
+  if (!session) return;
+  const { error } = await supabase.from('profiles').update({ preferred_locale: locale }).eq('id', session.user.id);
+  if (error) throw error;
+}
+
+export async function saveLearningLanguage(learningLocale: string | null, supportLocale?: string | null) {
+  const supabase = getSupabase();
+  if (!supabase) return;
+  const session = await getSession();
+  if (!session) return;
+  const { error } = await supabase.from('profiles').update({
+    learning_locale: learningLocale,
+    support_locale: supportLocale ?? null,
+  }).eq('id', session.user.id);
   if (error) throw error;
 }
 
@@ -265,6 +289,9 @@ function fromProfileRow(row: Record<string, unknown>): Profile {
     parentEmail: row.parent_email ? String(row.parent_email) : null,
     avatarUrl: row.avatar_url ? String(row.avatar_url) : null,
     phenomUserId: row.phenom_user_id ? String(row.phenom_user_id) : null,
+    preferredLocale: row.preferred_locale ? String(row.preferred_locale) : 'en-NG',
+    learningLocale: row.learning_locale ? String(row.learning_locale) : null,
+    supportLocale: row.support_locale ? String(row.support_locale) : null,
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
