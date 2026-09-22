@@ -243,7 +243,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">Login / Sign up</Link>
+                  <Link to="/account">Sign in</Link>
                 </Button>
               )}
 
@@ -263,7 +263,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">Login</Link>
+                  <Link to="/account">Sign in</Link>
                 </Button>
               )}
 
