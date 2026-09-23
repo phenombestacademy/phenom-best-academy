@@ -237,7 +237,7 @@ function AccountPage() {
                   <Button className="mt-3 w-full" onClick={requestEmailOtp} disabled={busy || !email.trim()}>
                     {busy ? 'Sending verification code…' : 'Continue with email address'}
                   </Button>
-                  <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit code to this email. No phone is required.</p>
+                  <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit verification code to this email. You only need access to this email address to receive your code.</p>
                 </div>
               </>
             ) : null}
