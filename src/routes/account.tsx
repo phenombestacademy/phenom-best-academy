@@ -207,7 +207,7 @@ function AccountPage() {
           <div role="dialog" aria-modal="true" aria-labelledby="phenom-auth-title" className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
             <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">
-              {authStep === 'method' ? 'Sign in or create your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with email and password' : 'Create your password'}
+              {authStep === 'method' ? 'Create your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with email and password' : 'Create your password'}
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               {authStep === 'method'
