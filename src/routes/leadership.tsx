@@ -11,7 +11,7 @@ function Leadership() {
     <>
       <PageHero
         kicker="Leadership"
-        title="The Academy is built by a practitioner of educational leadership."
+        title="The Academy is built on practical experience in educational and organisational leadership."
         lede="Phenom Best Academy is led from lived experience — over two decades of school leadership, quality assurance, human capital, and operations across British and Nigerian educational environments."
       />
 
