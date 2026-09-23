@@ -50,7 +50,7 @@ const accountChoices: Array<{ value: OnboardingRole; label: string; description:
   { value: 'non_teaching_staff', label: 'Non-teaching staff', description: 'Administrative, operations, finance, HR or support staff.', category: 'individual' },
   { value: 'student', label: 'Student', description: 'Learner in a school or independent programme.', category: 'individual' },
   { value: 'child', label: 'Child', description: 'Child account, including parent-supported access.', category: 'individual' },
-  { value: 'teenager', label: 'Teenager', description: 'Teen learner account.', category: 'individual' },
+  { value: 'teenager', label: 'Teenager / Youth (Young Adult)', description: 'Teenager, youth or young adult learner account.', category: 'individual' },
   { value: 'adult', label: 'Adult', description: 'Adult individual account.', category: 'individual' },
   { value: 'professional', label: 'Professional', description: 'Professional learning, career and service account.', category: 'individual' },
   { value: 'parent', label: 'Parent / Guardian', description: 'Parent or guardian account.', category: 'individual' },
