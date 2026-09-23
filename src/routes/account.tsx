@@ -367,9 +367,14 @@ function AccountPage() {
 
             <Button
               variant="cream"
-              onClick={() =>
-                signOut().then(() => location.reload())
-              }
+              onClick={async () => {
+                const confirmed = window.confirm(
+                  "Are you sure you want to sign out?\n\nYour Phenom Best Academy account and profile will remain saved. Only this active session will be signed out.",
+                );
+                if (!confirmed) return;
+                await signOut();
+                location.reload();
+              }}
             >
               <LogOut className="mr-2 size-4" />
               Sign out
