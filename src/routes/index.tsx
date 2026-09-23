@@ -89,7 +89,7 @@ function Home() {
         <HeaderBlock
           kicker="What we do"
           title="Interconnected service areas"
-          lede="One academy. The person as learner, professional, leader, and developing human being — and the organisations that need them to grow."
+          lede="One academy. One connected ecosystem for learning, professional growth, leadership, personal development, and organisational excellence."
         />
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
