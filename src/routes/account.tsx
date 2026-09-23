@@ -217,7 +217,7 @@ function AccountPage() {
                   : 'Your email has been verified. Create a password so you can also sign in with your Phenom User ID or email address.'}
             </p>
 
-            {authStep === 'method' ? (
+            {authStep === 'method' ? (\n              <>\n                <p className="mt-2 text-xs leading-relaxed text-muted">Signing in with your Google account may require phone verification.</p>
               <>
                 <div className="mt-5 rounded-xl border border-line bg-white p-4">
                   <label className="text-sm font-semibold">Account type</label>
