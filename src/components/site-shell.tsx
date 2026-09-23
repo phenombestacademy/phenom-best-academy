@@ -75,6 +75,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [locale, setCurrentLocale] =
     useState<SupportedLocale>("en-NG");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasAccountHistory, setHasAccountHistory] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
@@ -91,6 +92,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setHasAccountHistory(window.localStorage.getItem("phenom-account-history-v1") === "true");
+  }, []);
+
+  useEffect(() => {
     const supabase = getSupabase();
 
     if (!supabase) {
@@ -103,7 +108,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
-      setIsAuthenticated(Boolean(data.session));
+      const signedIn = Boolean(data.session);
+      setIsAuthenticated(signedIn);
+      if (signedIn) {
+        window.localStorage.setItem("phenom-account-history-v1", "true");
+        setHasAccountHistory(true);
+        if (data.session?.user.email) window.localStorage.setItem("phenom-last-email-v1", data.session.user.email);
+      }
       if (!data.session) {
         setIsSuperAdmin(false);
         return;
@@ -285,13 +296,21 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 <Button
                   size="sm"
                   variant="cream"
-                  onClick={() => void signOut()}
+                  onClick={async () => {
+                    const confirmed = window.confirm(
+                      "Are you sure you want to sign out?\n\nYour Phenom Best Academy account and profile will remain saved. Only this active session will be signed out.",
+                    );
+                    if (!confirmed) return;
+                    await signOut();
+                  }}
                 >
-                  {t("Logout", locale)}
+                  {t("Sign out", locale)}
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">{t("Sign in", locale)}</Link>
+                  <Link to="/account">
+                    {hasAccountHistory ? t("Sign in", locale) : t("Sign up", locale)}
+                  </Link>
                 </Button>
               )}
 
@@ -311,13 +330,21 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 <Button
                   size="sm"
                   variant="cream"
-                  onClick={() => void signOut()}
+                  onClick={async () => {
+                    const confirmed = window.confirm(
+                      "Are you sure you want to sign out?\n\nYour Phenom Best Academy account and profile will remain saved. Only this active session will be signed out.",
+                    );
+                    if (!confirmed) return;
+                    await signOut();
+                  }}
                 >
-                  Logout
+                  Sign out
                 </Button>
               ) : (
                 <Button asChild size="sm" variant="cream">
-                  <Link to="/account">{t("Sign in", locale)}</Link>
+                  <Link to="/account">
+                    {hasAccountHistory ? "Sign in" : "Sign up"}
+                  </Link>
                 </Button>
               )}
 
