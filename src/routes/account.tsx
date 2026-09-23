@@ -220,7 +220,6 @@ function AccountPage() {
             {authStep === 'method' ? (
               <>
                 <p className="mt-2 text-xs leading-relaxed text-muted">Signing in with your Google account may require phone verification.</p>
-              <>
                 <div className="mt-5 rounded-xl border border-line bg-white p-4">
                   <label className="text-sm font-semibold">Account type</label>
                   <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm">
