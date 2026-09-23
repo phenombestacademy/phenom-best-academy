@@ -167,3 +167,16 @@ This line was added only to verify that the private GitHub repository can still 
 
 ## V6 Phenom Best LMS expansion
 The V6 expansion foundation is documented in `docs/PHENOM-LMS-V6-EXPANSION.md` and `supabase/031_phenom_enterprise_lms_foundation.sql`. It is additive and preserves the existing LMS, school platform, curriculum catalogue and security policies.
+
+
+## Phenom Best LMS — curriculum content standard
+
+The curriculum content model is defined in `docs/PHENOM-BEST-LMS-CURRICULUM-CONTENT-STANDARD.md`.
+
+For source-verified Nigerian secondary curriculum ingestion, the required scope is JSS1–JSS3 and SS1–SS3. Each topic must retain its level, subject, term, sequence/week, topic, source-derived subtopic/content and source reference. The learning layer is structured to support learning materials, objectives, expected learning outcomes, lesson materials, study notes, explanations, worked examples where applicable, practice activities, CBT assessment, answer keys, revision materials, teacher guides, audio scripts, video scripts and downloadable resources.
+
+CBT supports both teacher-authored questions and professionally prepared questions from the Phenom Best LMS Question Bank/Marketplace. Objective CBT attempts are automatically scored from stored answer keys for immediate learner feedback and authorised staff result signals.
+
+Existing Nursery, Pre-Primary, Primary, Technical Education and tertiary curriculum records are retained until authoritative replacement materials are supplied; they are not to be deleted merely because new source materials are still being collected.
+
+The supplied NERDC secondary structured dataset is retained in the Academy Library as the source-ingestion reference for this work.
