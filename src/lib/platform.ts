@@ -67,10 +67,22 @@ export async function sendEmailOtp(email: string) {
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
   const cleanEmail = email.trim().toLowerCase();
   if (!cleanEmail) throw new Error('Enter your email address.');
-  const { error } = await supabase.auth.signInWithOtp({
+  const otpRequest = supabase.auth.signInWithOtp({
     email: cleanEmail,
     options: { shouldCreateUser: true },
   });
+
+  const timeout = new Promise<never>((_, reject) => {
+    window.setTimeout(() => {
+      reject(
+        new Error(
+          'The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.',
+        ),
+      );
+    }, 20_000);
+  });
+
+  const { error } = await Promise.race([otpRequest, timeout]);
   if (error) throw error;
 }
 
