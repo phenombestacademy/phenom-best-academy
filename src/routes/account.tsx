@@ -211,7 +211,7 @@ function AccountPage() {
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               {authStep === 'method'
-                ? 'Choose how you want to continue. Email verification does not require your phone.'
+                ? 'Choose how you want to continue.'
                 : authStep === 'otp'
                   ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</>
                   : 'Your email has been verified. Create a password so you can also sign in with your Phenom User ID or email address.'}
