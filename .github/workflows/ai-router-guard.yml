@@ -1,0 +1,36 @@
+name: AI Router Architecture Guard
+
+on:
+  push:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/ai-router-guard.yml'
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/ai-router-guard.yml'
+
+jobs:
+  direct-provider-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject direct model-provider calls outside ai-router
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d supabase/functions ]; then
+            echo "No supabase/functions directory; nothing to scan."
+            exit 0
+          fi
+          matches="$(
+            grep -RInE               --exclude-dir='node_modules'               --exclude='deno.lock'               -e 'api\.openai\.com'               -e 'generativelanguage\.googleapis\.com'               -e 'api\.anthropic\.com'               -e 'api\.cohere\.com'               -e 'api\.mistral\.ai'               supabase/functions             | grep -v '^supabase/functions/ai-router/' || true
+          )"
+          if [ -n "$matches" ]; then
+            echo "Direct model-provider calls detected outside ai-router:"
+            echo "$matches"
+            echo
+            echo "Route model/provider access through supabase/functions/ai-router."
+            exit 1
+          fi
+          echo "AI provider boundary check passed."
