@@ -88,6 +88,11 @@ const MediaRoute = MediaRouteImport.update({
   path: '/media',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountRoute = AccountRouteImport.update({ id: '/account', path: '/account', getParentRoute: () => rootRouteImport } as any)
 const ToolsRoute = ToolsRouteImport.update({ id: '/tools', path: '/tools', getParentRoute: () => rootRouteImport } as any)
 const PlatformRoute = PlatformRouteImport.update({ id: '/platform', path: '/platform', getParentRoute: () => rootRouteImport } as any)
