@@ -23,6 +23,21 @@ export type Profile = {
 const CATEGORY_KEY = 'phenom-pending-account-category-v1';
 const ROLE_KEY = 'phenom-pending-account-role-v1';
 
+// Authentication methods are mutually exclusive. This prevents a Google OAuth
+// redirect and an email OTP request from ever being started at the same time.
+let activeAuthFlow: 'google' | 'emailOtp' | null = null;
+
+function beginAuthFlow(flow: 'google' | 'emailOtp') {
+  if (activeAuthFlow) {
+    throw new Error('Another sign-in method is already running. Please wait for it to finish or return to the sign-in options and try again.');
+  }
+  activeAuthFlow = flow;
+}
+
+function endAuthFlow(flow: 'google' | 'emailOtp') {
+  if (activeAuthFlow === flow) activeAuthFlow = null;
+}
+
 export function getPendingAccountChoice() {
   if (typeof window === 'undefined') return { category: 'individual' as AccountCategory, role: 'individual' as OnboardingRole };
   const category = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
@@ -52,38 +67,52 @@ export async function getSession() {
 }
 
 export async function signInWithGoogle() {
-  const supabase = getSupabase();
-  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
-  const redirectTo = `${window.location.origin}/account`;
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo },
-  });
-  if (error) throw error;
+  beginAuthFlow('google');
+  try {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+    const redirectTo = `${window.location.origin}/account`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+    if (error) throw error;
+    // In the browser Supabase redirects away from this page. If the provider
+    // does not redirect, release the guard so another method remains usable.
+    window.setTimeout(() => endAuthFlow('google'), 5000);
+  } catch (error) {
+    endAuthFlow('google');
+    throw error;
+  }
 }
 
 export async function sendEmailOtp(email: string) {
-  const supabase = getSupabase();
-  if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) throw new Error('Enter your email address.');
-  const otpRequest = supabase.auth.signInWithOtp({
-    email: cleanEmail,
-    options: { shouldCreateUser: true },
-  });
+  beginAuthFlow('emailOtp');
+  try {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) throw new Error('Enter your email address.');
+    const otpRequest = supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { shouldCreateUser: true },
+    });
 
-  const timeout = new Promise<never>((_, reject) => {
-    window.setTimeout(() => {
-      reject(
-        new Error(
-          'The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.',
-        ),
-      );
-    }, 20_000);
-  });
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => {
+        reject(
+          new Error(
+            'The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.',
+          ),
+        );
+      }, 20_000);
+    });
 
-  const { error } = await Promise.race([otpRequest, timeout]);
-  if (error) throw error;
+    const { error } = await Promise.race([otpRequest, timeout]);
+    if (error) throw error;
+  } finally {
+    endAuthFlow('emailOtp');
+  }
 }
 
 export async function verifyEmailOtp(email: string, token: string) {
@@ -225,7 +254,6 @@ export async function getMyProfile(): Promise<Profile | null> {
   }
   return fromProfileRow(data);
 }
-
 
 export type ActiveSubscription = { id: string; planCode: string; status: string; provider: string; amount: number | null; currency: string | null; startedAt: string | null; endsAt: string | null };
 
