@@ -63,7 +63,7 @@ function LibraryHub() {
           <div className="mt-4 flex flex-wrap gap-2">
             {item.storagePath ? <Button size="sm" variant="navy" disabled={opening !== ""} onClick={() => void openItem(item, "view")}><Eye className="size-4" />{opening === item.id + "view" ? "Opening…" : "View"}</Button> : null}
             {item.canDownload && item.storagePath ? <Button size="sm" variant="outline" disabled={opening !== ""} onClick={() => void openItem(item, "download")}><Download className="size-4" />{opening === item.id + "download" ? "Preparing…" : "Download"}</Button> : null}
-            {item.externalResourceId && !item.storagePath ? <span className="inline-flex items-center gap-1 rounded-lg border border-line px-3 py-2 text-xs text-muted"><ExternalLink className="size-3.5" />External resource</span> : null}
+            {item.externalUrl && !item.storagePath ? <Button size="sm" variant="outline" onClick={() => window.open(item.externalUrl!, "_blank", "noopener,noreferrer")}><ExternalLink className="size-4" />Open source</Button> : null}
           </div>
         </article>)}
       </div>
