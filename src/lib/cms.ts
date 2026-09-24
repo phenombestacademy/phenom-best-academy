@@ -752,3 +752,125 @@ export async function getCurriculumAssetUrl(item: CurriculumLibraryItem, mode: "
   if (error) throw error;
   return data?.signedUrl ?? null;
 }
+
+export async function uploadCurriculumLibraryFile(
+  file: File,
+  options: { title?: string; curriculumId?: string; itemType?: string } = {},
+  onProgress?: UploadProgressCallback,
+): Promise<{ assetId: string; libraryItemId: string; url: string }> {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error("Connect Supabase first.");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Please sign in before uploading a Library resource.");
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (profile?.role !== "super_admin") {
+    throw new Error("Only Super Admin can add or replace authoritative Library resources.");
+  }
+
+  const safe = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
+  const assetId = makeMediaId();
+  const path = `nigeria-nerdc/supplied/${assetId}/${safe}`;
+  const bucketName = "phenom-curriculum-assets";
+  const projectUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!projectUrl) throw new Error("Supabase project configuration is missing.");
+  const projectId = new URL(projectUrl).hostname.split(".")[0];
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Please sign in again before uploading.");
+
+  onProgress?.({ percentage: 0, bytesUploaded: 0, bytesTotal: file.size, phase: "starting" });
+
+  await new Promise<void>((resolve, reject) => {
+    const upload = new tus.Upload(file, {
+      endpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: { authorization: `Bearer ${session.access_token}`, "x-upsert": "false" },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      chunkSize: 6 * 1024 * 1024,
+      metadata: {
+        bucketName,
+        objectName: path,
+        contentType: file.type || "application/octet-stream",
+        cacheControl: "31536000",
+      },
+      onError: reject,
+      onProgress: (bytesUploaded, bytesTotal) => onProgress?.({
+        percentage: bytesTotal ? Math.min(99, bytesUploaded / bytesTotal * 100) : 0,
+        bytesUploaded, bytesTotal, phase: "uploading",
+      }),
+      onSuccess: () => {
+        onProgress?.({ percentage: 100, bytesUploaded: file.size, bytesTotal: file.size, phase: "finalizing" });
+        resolve();
+      },
+    });
+    void upload.findPreviousUploads().then(previous => {
+      if (previous.length) upload.resumeFromPreviousUpload(previous[0]);
+      upload.start();
+    }).catch(reject);
+  });
+
+  const now = new Date().toISOString();
+  const { data: asset, error: assetError } = await supabase
+    .from("lms_curriculum_assets")
+    .insert({
+      id: assetId,
+      curriculum_id: options.curriculumId || "nigeria-nerdc",
+      asset_type: "source_document",
+      format: file.name.split(".").pop()?.toLowerCase() || "bin",
+      title: options.title || file.name,
+      status: "published",
+      storage_bucket: bucketName,
+      storage_path: path,
+      mime_type: file.type || "application/octet-stream",
+      file_size: file.size,
+      version: 1,
+      visibility: "public",
+      downloadable: true,
+      viewable: true,
+      editable: false,
+      generation_source: "verified_user_supplied",
+      generator_metadata: { original_name: file.name, uploaded_by: user.id },
+      generated_at: now,
+      stored_at: now,
+      published_at: now,
+      updated_at: now,
+    })
+    .select("id")
+    .single();
+  if (assetError) {
+    await supabase.storage.from(bucketName).remove([path]);
+    throw assetError;
+  }
+
+  const { data: libraryItem, error: libraryError } = await supabase
+    .from("lms_curriculum_library_items")
+    .insert({
+      id: makeMediaId(),
+      curriculum_id: options.curriculumId || "nigeria-nerdc",
+      asset_id: asset.id,
+      title: options.title || file.name,
+      item_type: options.itemType || "source_document",
+      source_class: "verified_user_supplied",
+      access_class: "public",
+      licence_status: "verified_user_supplied",
+      storage_status: "stored",
+      public_status: "published",
+      qc_status: "passed",
+      metadata: { canonical_asset_id: asset.id, original_name: file.name },
+      updated_at: now,
+    })
+    .select("id")
+    .single();
+  if (libraryError) throw libraryError;
+
+  const url = supabase.storage.from(bucketName).getPublicUrl(path).data.publicUrl;
+  onProgress?.({ percentage: 100, bytesUploaded: file.size, bytesTotal: file.size, phase: "complete" });
+  return { assetId: asset.id, libraryItemId: libraryItem.id, url };
+}
