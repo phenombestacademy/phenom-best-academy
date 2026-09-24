@@ -3,7 +3,8 @@ import { Download, ExternalLink, FileText, Search, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHero, Section } from "@/components/page-hero";
-import { getCurriculumAssetUrl, listCurriculumLibrary, type CurriculumLibraryItem } from "@/lib/cms";
+import { getCurriculumAssetUrl, listCurriculumLibrary, uploadCurriculumLibraryFile, type CurriculumLibraryItem } from "@/lib/cms";
+import { getMyProfile, type Profile } from "@/lib/platform";
 
 export const Route = createFileRoute("/library")({ component: LibraryHub });
 
@@ -14,6 +15,9 @@ function LibraryHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [opening, setOpening] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   async function load() {
     setLoading(true); setError("");
@@ -23,6 +27,7 @@ function LibraryHub() {
   }
 
   useEffect(() => { void load(); }, [topicId]);
+  useEffect(() => { void getMyProfile().then(setProfile).catch(() => setProfile(null)); }, []);
 
   async function openItem(item: CurriculumLibraryItem, mode: "view" | "download") {
     setOpening(item.id + mode);
@@ -52,6 +57,23 @@ function LibraryHub() {
       {error ? <div className="mt-5 rounded-xl border border-orange/40 bg-orange/5 p-4 text-sm">{error}</div> : null}
       {loading ? <div className="mt-8 rounded-2xl border border-line bg-cream p-8 text-center">Loading the canonical Library…</div> : null}
       {!loading && !items.length ? <div className="mt-8 rounded-2xl border border-line bg-cream p-8 text-center"><p className="font-display text-2xl font-semibold">No accessible resources found.</p><p className="mt-2 text-sm text-muted">Resources appear here automatically when their canonical asset is stored and available to your account.</p></div> : null}
+
+      {profile?.role === "super_admin" ? <div className="mt-5 rounded-2xl border border-purple/20 bg-purple/5 p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="font-display text-xl font-semibold">Super Admin: add real Library material</h2><p className="mt-1 text-sm text-muted">Upload the actual PDF, DOCX, PPTX, audio, video or other source file. The original format is preserved; the Library database only indexes the canonical file.</p></div>
+          <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-line bg-white px-4 py-2 text-sm font-semibold">
+            {uploading ? "Uploading…" : "Choose real file"}
+            <input className="sr-only" type="file" disabled={uploading} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.md,.zip,.epub,.mp3,.wav,.m4a,.mp4,.webm,.mov,.png,.jpg,.jpeg,.gif" onChange={async e => {
+              const file = e.target.files?.[0]; e.currentTarget.value = ""; if (!file) return;
+              setUploading(true); setUploadMessage("");
+              try { await uploadCurriculumLibraryFile(file, {}, p => setUploadMessage(p.phase === "complete" ? "File stored and published." : `Uploading ${Math.round(p.percentage)}%…`)); await load(); }
+              catch (err) { setUploadMessage(err instanceof Error ? err.message : "Upload failed."); }
+              finally { setUploading(false); }
+            }} />
+          </label>
+        </div>
+        {uploadMessage ? <p className="mt-3 text-sm">{uploadMessage}</p> : null}
+      </div>}
 
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(item => <article key={item.id} className="rounded-2xl border border-line bg-cream p-5 shadow-card">
