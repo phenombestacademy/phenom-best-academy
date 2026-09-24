@@ -9,33 +9,67 @@ The architecture uses the NCF-SE 2023 four-stage structure:
 - Middle Stage — Grades 6–8
 - Secondary Stage — Grades 9–12
 
-The NCF-SE 2023 framework identifies curricular areas including Languages, Mathematics, Science, Social Science, Art Education, Physical Education and Well-being, Vocational Education and interdisciplinary areas. It articulates curricular aims, curricular goals, competencies and learning outcomes.
+The implementation keeps national framework content separate from board/state implementations. CBSE, NIOS, CISCE and state/UT boards must remain versioned alignment/pathway layers rather than being silently treated as the national syllabus.
 
-## Provenance
-Primary sources are Ministry of Education and NCERT. NCF Foundational Stage 2022 is retained as a complementary source. NEP 2020 is stored as policy context, not as a syllabus.
+## Current official source layer
+The live source registry now includes the Ministry of Education NCF-SE 2023, NCF Foundational Stage 2022, NCERT Class I–XII textbook/publication portal, CBSE Academic 2026–27 curriculum, CBSE 2026–27 sample question papers/marking schemes, CBSE Skill Education 2026–27, National Testing Agency (JEE Main/NEET-UG/CUET-UG), and NIOS secondary/senior-secondary pathway sources.
 
-## Implementation rule
-The national framework is the source architecture. State/UT curricula and board-specific implementations (for example CBSE, CISCE, NIOS and state boards) must be maintained as distinct, versioned alignment/pathway layers.
+Official-source URLs are retained as provenance links. Restricted official exam/textbook content is not copied into Phenom unless the rights permit it.
+
+## Curriculum architecture
+The live curriculum baseline now contains:
+- 4 NCF-SE stages
+- 160 curriculum/domain reconciliation nodes
+- 8 core national curricular subject areas represented across all 4 stages
+- 54 framework components
+- 160 requirement mappings
+- 13 verified source records
+- 5 external official resource records retained from the previous implementation
+
+The additional 128 domain nodes are deliberately labelled reconciliation nodes. They are not fabricated official syllabus chapters. They provide a complete processing grid for official source reconciliation before publication.
+
+## Planning, teaching and assessment
+The framework layer now explicitly covers:
+- annual academic planning
+- term-by-term scheme of work
+- teacher guides and lesson support
+- diagnostic/baseline assessment
+- formative and ongoing assessment
+- periodic/unit assessment
+- mid-term/half-yearly assessment
+- pre-board/mock assessment
+- final/annual/board examination preparation
+- question banks and item banks
+- revision and remediation
+- university/tertiary preparation
+- JEE Main/Advanced, NEET-UG and CUET-UG pathways
+- NIOS secondary/senior-secondary pathway
+- career and transition support
+- curriculum reconciliation and IQA
+
+CBSE's current 2026–27 academic material explicitly provides current curriculum/scheme-of-study material, sample question papers and marking schemes, and skill-education resources. NTA's current 2026 portal provides current JEE Main, NEET-UG and CUET-UG examination information. NIOS maintains separate secondary/senior-secondary pathways and examination resources.
 
 ## Content pipeline
-Official reconciliation → topic-level alignment → 14-resource pack generation → canonical Phenom Library → IQA → approval.
+For every curriculum node:
+Official source reconciliation → topic/learning-outcome alignment → 14-resource pack → planning/teacher/assessment expansion → canonical Phenom Library → IQA → approval.
+
+The live queue currently contains:
+- 160 topic-reconciliation jobs
+- 160 full-resource-pack jobs
+- 160 resource-expansion jobs
+- 480 queued content jobs in total
+- 160 queued IQA reviews
+- 2,240 draft resource-pack records (14 per node)
+- 196 canonical Library records for the India curriculum layer
 
 Queued/draft records are not treated as completed human-readable curriculum content.
 
-## Current baseline
-- 4 stages
-- 32 framework/topic reconciliation anchors
-- 20 framework components
-- 32 requirement mappings
-- 448 resource-pack records (14 per topic)
-- 64 content-generation jobs
-- 32 IQA reviews
-- 68 canonical Library records (including existing records)
-- 6 verified source records
-- 5 external official resources
-
 ## Quality and rights
-Official material remains provenance-controlled. Restricted material is linked or referenced rather than copied unless licensing permits storage. Generated resources must be checked against the reconciled official framework before being marked ready or approved.
+A node is not considered complete merely because a database record exists. It must have official provenance, reconciled curriculum content, human-readable resources, assessment/examination support, Library placement and a passed IQA review.
 
-## Current limitation
-The 32 topic records are framework reconciliation anchors, not a claim that India's complete official topic-by-topic syllabus corpus has already been extracted. The content worker must perform the official reconciliation before full resource generation is treated as authoritative.
+Official textbooks, question papers and other restricted material remain provenance-controlled. Phenom-generated resources are original support materials and must not be presented as official NCERT/CBSE/NIOS material.
+
+## Current completion state
+The India framework and source architecture have been substantially expanded and committed to the database. The content-generation and IQA queue is now populated for the expanded grid.
+
+**India is not yet marked fully complete.** The remaining completion work is the actual official topic-by-topic reconciliation, human-readable resource generation and IQA approval. This is intentionally left queued rather than falsely labelled complete.
