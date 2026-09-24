@@ -40,6 +40,8 @@ const desktopNav = [
   { to: "/contact", label: "Contact" },
   { to: "/careers", label: "Careers" },
   { to: "/media", label: "Media & Resources" },
+  { to: "/library", label: "Library" },
+  { to: "/library", label: "Library" },
   { to: "/tools", label: "Phenom Tool Hub" },
   { to: "/platform", label: "Platform" },
 ] as const;
