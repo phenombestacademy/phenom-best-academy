@@ -19,6 +19,7 @@ import { Route as PathRouteImport } from './routes/path'
 import { Route as ProgrammesRouteImport } from './routes/programmes'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as MediaRouteImport } from './routes/media'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as PlatformRouteImport } from './routes/platform'
@@ -124,6 +125,8 @@ export interface FileRoutesByFullPath {
   '/programmes': typeof ProgrammesRoute
   '/admin': typeof AdminRoute
   '/media': typeof MediaRoute
+  '/library': typeof LibraryRoute
+  '/library': typeof LibraryRoute
   '/account': typeof AccountRoute
   '/tools': typeof ToolsRoute
   '/platform': typeof PlatformRoute
@@ -415,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgrammesRoute: ProgrammesRoute,
   AdminRoute: AdminRoute,
   MediaRoute: MediaRoute,
+  LibraryRoute: LibraryRoute,
   AccountRoute: AccountRoute,
   ToolsRoute: ToolsRoute,
   PlatformRoute: PlatformRoute,
