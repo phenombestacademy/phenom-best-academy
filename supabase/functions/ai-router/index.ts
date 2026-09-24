@@ -31,17 +31,55 @@ async function openai(prompt: string, web: boolean, image?: string): Promise<str
 async function gemini(prompt: string, web: boolean, image?: string): Promise<string> {
   const key = Deno.env.get('GEMINI_API_KEY');
   if (!key) throw new Error('not configured');
-  const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.8-flash';
+
+  const configured = Deno.env.get('GEMINI_MODEL');
+  const models = configured
+    ? [configured]
+    : ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash'];
+
   const parts: any[] = [{ text: prompt }];
-  if (image) parts.push({ inline_data: { mime_type: String(image.match(/^data:([^;]+);/)?.[1] || 'image/jpeg'), data: image.split(',')[1] || '' } });
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: 'POST',
-    headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }], ...(web ? { tools: [{ google_search: {} }] } : {}) }),
-  });
-  const p = await r.json();
-  if (!r.ok) throw new Error(p.error?.message || 'provider failed');
-  return String(p.candidates?.[0]?.content?.parts?.map((x: any) => x.text || '').join('') || '');
+  if (image) {
+    parts.push({
+      inline_data: {
+        mime_type: String(image.match(/^data:([^;]+);/)?.[1] || 'image/jpeg'),
+        data: image.split(',')[1] || '',
+      },
+    });
+  }
+
+  let lastError = 'provider failed';
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const payload: any = { contents: [{ role: 'user', parts }] };
+    if (web) payload.tools = [{ google_search: {} }];
+
+    let r = await fetch(url, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let p = await r.json().catch(() => ({}));
+
+    if (!r.ok && web && payload.tools) {
+      const retryPayload = { contents: [{ role: 'user', parts }] };
+      r = await fetch(url, {
+        method: 'POST',
+        headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+        body: JSON.stringify(retryPayload),
+      });
+      p = await r.json().catch(() => ({}));
+    }
+
+    if (r.ok) {
+      const text = String(p.candidates?.[0]?.content?.parts?.map((x: any) => x.text || '').join('') || '');
+      if (text.trim()) return text;
+      lastError = `Gemini ${model} returned no text`;
+    } else {
+      lastError = String(p.error?.message || `Gemini ${model} request failed`);
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 async function azure(prompt: string, web: boolean): Promise<string> {
@@ -54,7 +92,7 @@ async function azure(prompt: string, web: boolean): Promise<string> {
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], temperature: 0.2, ...(web ? {} : {}) }),
+    body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], temperature: 0.2 }),
   });
   const p = await r.json();
   if (!r.ok) throw new Error(p.error?.message || 'provider failed');
@@ -99,8 +137,6 @@ async function route(body: any): Promise<{ text: string; providers: number }> {
   const candidates = (await Promise.all(jobs)).filter(x => x.text.trim());
   if (!candidates.length) throw new Error('No intelligence engine is currently available.');
 
-  // Engines work together rather than competing publicly. The response returned
-  // to the user is always branded as Phenom Best Core; provider identities never surface.
   const winner = candidates
     .map(c => ({ ...c, quality: score(c.text, prompt, mode) }))
     .sort((a, b) => b.quality - a.quality || a.latency - b.latency)[0];
@@ -115,11 +151,7 @@ serve(async (req) => {
     const prompt = String(body.prompt || '').trim();
     if (!prompt) return json({ error: 'A question is required.' }, 400);
     const result = await route(body);
-    return json({
-      text: result.text,
-      engine: 'Phenom Best Core',
-      providersUsed: result.providers,
-    });
+    return json({ text: result.text, engine: 'Phenom Best Core', providersUsed: result.providers });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : 'Phenom Best Core could not complete the request.' }, 400);
   }
