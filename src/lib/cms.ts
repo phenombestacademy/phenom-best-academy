@@ -671,7 +671,7 @@ export async function uploadMediaFile(
 
 
 export type CurriculumLibraryItem = {
-  id: string; title: string; itemType: string; curriculumId: string | null; topicId: string | null; topicTitle: string | null; topicCode: string | null; assetId: string | null; externalResourceId: string | null; storageBucket: string | null; storagePath: string | null; mimeType: string | null; fileSize: number | null; viewable: boolean; downloadable: boolean; canView: boolean; canDownload: boolean; status: string | null;
+  id: string; title: string; itemType: string; curriculumId: string | null; topicId: string | null; topicTitle: string | null; topicCode: string | null; assetId: string | null; externalResourceId: string | null; externalUrl: string | null; storageBucket: string | null; storagePath: string | null; mimeType: string | null; fileSize: number | null; viewable: boolean; downloadable: boolean; canView: boolean; canDownload: boolean; status: string | null;
 };
 
 export async function listCurriculumLibrary(options: { query?: string; topicId?: string; curriculumId?: string; limit?: number } = {}): Promise<CurriculumLibraryItem[]> {
