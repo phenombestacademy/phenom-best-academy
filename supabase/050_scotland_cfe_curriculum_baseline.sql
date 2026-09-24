@@ -1,0 +1,14 @@
+-- Scotland Curriculum for Excellence baseline
+-- Applied to Supabase project: hajrdejlamuiqjjhdnsv
+-- 2026-09-24
+-- Structural baseline: official-source anchors, resource-pack queue and canonical Library.
+-- Detailed official Experiences & Outcomes/Benchmarks are source-controlled and must be reconciled before authored resources are marked complete.
+
+-- Curriculum: scotland-cfe
+-- Levels: ELC, Early, First, Second, Third, Fourth, S4-S6, National 1-5, Higher, Advanced Higher, Post-school
+-- Subject catalogue: 38 Scotland-specific subject mappings
+-- Topics: 313 reconciliation/qualification/pathway anchors
+-- Resource packs: 14 per topic
+-- Jobs: topic_reconciliation + full_resource_pack per topic
+-- Library: one canonical item per resource pack, super-admin editorial control
+-- Official sources: Education Scotland and Qualifications Scotland
