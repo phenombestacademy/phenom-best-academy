@@ -93,6 +93,22 @@ Existing Nursery, Pre-Primary, Primary, Technical Education and tertiary curricu
 
 The supplied NERDC secondary structured dataset is retained in the Academy Library as the source-ingestion reference for this work.
 
+## South Africa curriculum implementation
+
+The South Africa implementation baseline is documented in `docs/SOUTH-AFRICA-CURRICULUM-IMPLEMENTATION.md`.
+
+The live curriculum catalogue now contains the South Africa NCS/CAPS framework baseline, early-years context, Grade R, Foundation Phase, Intermediate Phase, Senior Phase, FET, NSC/Matric and post-school/university pathway levels. It also includes the DBE subject catalogue baseline, official source/provenance records, canonical Library collections, resource-pack records and queued reconciliation/resource-generation jobs.
+
+South Africa uses a strict provenance split: DBE/Umalusi materials and official examination links remain official-source records; Phenom-authored lessons, notes, worked examples, activities, assessments, answers, marking guides, revision resources and examination preparation are original resources. Official past papers are linked/recorded as metadata rather than copied where rights do not permit reproduction.
+
+Province-specific implementations are represented as versioned/source-specific overlays so national CAPS remains canonical and historical/current variants are not silently overwritten.
+
+## Singapore curriculum implementation
+
+Singapore follows the same universal curriculum completion standard. The live implementation preserves its early-years, primary, secondary, PSLE, historical N(T)/N(A)/O-Level transition, 2027+ SEC G1/G2/G3, JC, MI, A-Level, Polytechnic, ITE and higher-education progression structure, with official-source provenance separated from Phenom-original resources.
+
+Singapore's implementation records are treated as a production baseline rather than as permission to claim that every official document has been reproduced verbatim. Detailed official syllabus reconciliation and Phenom resource generation remain governed by source, version, licensing and QA status.
+
 ## Admin Studio / Media / platform architecture
 
 The latest site includes the Admin Studio foundation at `/admin` and a public Media & Resources hub at `/media`. The platform architecture includes controlled media/resources, Google authentication through Supabase Auth, adult/teen/child account types with guardian linkage, privacy-conscious analytics, moderation hooks, organisation spaces, school multi-tenancy, CBT, result books/report cards, payment architecture and the relevant security boundaries documented in the source and Supabase migrations.
