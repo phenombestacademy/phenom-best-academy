@@ -668,3 +668,78 @@ export async function uploadMediaFile(
 
   return publicUrl;
 }
+
+
+export type CurriculumLibraryItem = {
+  id: string; title: string; itemType: string; curriculumId: string | null; topicId: string | null; topicTitle: string | null; topicCode: string | null; assetId: string | null; externalResourceId: string | null; storageBucket: string | null; storagePath: string | null; mimeType: string | null; fileSize: number | null; viewable: boolean; downloadable: boolean; canView: boolean; canDownload: boolean; status: string | null;
+};
+
+export async function listCurriculumLibrary(options: { query?: string; topicId?: string; curriculumId?: string; limit?: number } = {}): Promise<CurriculumLibraryItem[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data: links, error: linkError } = await supabase.from("lms_curriculum_library_topic_links").select("library_item_id,topic_id,alignment_status").in("alignment_status", ["origin", "verified", "candidate"]);
+  if (linkError) throw linkError;
+  const linkRows = (links ?? []) as Record<string, unknown>[];
+  const linkMap = new Map<string, string>();
+  for (const row of linkRows) { const itemId = String(row.library_item_id); if (!linkMap.has(itemId)) linkMap.set(itemId, String(row.topic_id)); }
+  if (options.topicId) for (const row of linkRows) if (String(row.topic_id) === options.topicId) linkMap.set(String(row.library_item_id), options.topicId);
+
+  let itemQuery = supabase.from("lms_curriculum_library_items").select("id,title,item_type,curriculum_id,topic_id,asset_id,external_resource_id").order("created_at", { ascending: false }).limit(options.limit ?? 200);
+  if (options.curriculumId) itemQuery = itemQuery.eq("curriculum_id", options.curriculumId);
+  if (options.query?.trim()) itemQuery = itemQuery.ilike("title", "%" + options.query.trim() + "%");
+  const { data: items, error: itemError } = await itemQuery;
+  if (itemError) throw itemError;
+  const itemRows = (items ?? []) as Record<string, unknown>[];
+  const selectedItems = options.topicId ? itemRows.filter((r) => linkMap.get(String(r.id)) === options.topicId) : itemRows;
+  const assetIds = Array.from(new Set(selectedItems.map((r) => r.asset_id).filter(Boolean).map(String)));
+
+  let assets: Record<string, unknown>[] = [];
+  if (assetIds.length) {
+    const { data, error } = await supabase.from("lms_curriculum_assets").select("id,storage_bucket,storage_path,mime_type,file_size,viewable,downloadable,status,visibility").in("id", assetIds);
+    if (error) throw error;
+    assets = (data ?? []) as Record<string, unknown>[];
+  }
+  const assetMap = new Map(assets.map((a) => [String(a.id), a]));
+  const topicIds = Array.from(new Set(selectedItems.map((r) => linkMap.get(String(r.id)) ?? r.topic_id).filter(Boolean).map(String)));
+  let topics: Record<string, unknown>[] = [];
+  if (topicIds.length) {
+    const { data, error } = await supabase.from("lms_curriculum_topics").select("id,curriculum_id,topic_title,topic_code,active").in("id", topicIds);
+    if (error) throw error;
+    topics = (data ?? []) as Record<string, unknown>[];
+  }
+  const topicMap = new Map(topics.map((t) => [String(t.id), t]));
+  const currentUser = (await supabase.auth.getUser()).data.user;
+  const permissionMap = new Map<string, { view: boolean; download: boolean }>();
+  if (currentUser && assetIds.length) {
+    const { data, error } = await supabase.from("lms_curriculum_asset_permissions").select("asset_id,user_id,can_view,can_download,expires_at").eq("user_id", currentUser.id).in("asset_id", assetIds);
+    if (error) throw error;
+    for (const row of (data ?? []) as Record<string, unknown>[]) {
+      const expired = row.expires_at && new Date(String(row.expires_at)).getTime() <= Date.now();
+      if (!expired) permissionMap.set(String(row.asset_id), { view: Boolean(row.can_view), download: Boolean(row.can_download) });
+    }
+  }
+  return selectedItems.map((row) => {
+    const asset = row.asset_id ? assetMap.get(String(row.asset_id)) : undefined;
+    const topicId = linkMap.get(String(row.id)) ?? (row.topic_id ? String(row.topic_id) : null);
+    const topic = topicId ? topicMap.get(topicId) : undefined;
+    const permission = row.asset_id ? permissionMap.get(String(row.asset_id)) : undefined;
+    const assetViewable = asset ? Boolean(asset.viewable) : false;
+    const assetDownloadable = asset ? Boolean(asset.downloadable) : false;
+    const visibility = asset ? String(asset.visibility ?? "") : "";
+    const publicAsset = visibility === "public" || visibility === "authenticated";
+    const canView = asset ? assetViewable && (publicAsset || Boolean(permission?.view)) : true;
+    const canDownload = asset ? assetDownloadable && (publicAsset || Boolean(permission?.download)) : false;
+    return { id: String(row.id), title: String(row.title ?? ""), itemType: String(row.item_type ?? "resource"), curriculumId: row.curriculum_id ? String(row.curriculum_id) : null, topicId, topicTitle: topic?.topic_title ? String(topic.topic_title) : null, topicCode: topic?.topic_code ? String(topic.topic_code) : null, assetId: row.asset_id ? String(row.asset_id) : null, externalResourceId: row.external_resource_id ? String(row.external_resource_id) : null, storageBucket: asset?.storage_bucket ? String(asset.storage_bucket) : null, storagePath: asset?.storage_path ? String(asset.storage_path) : null, mimeType: asset?.mime_type ? String(asset.mime_type) : null, fileSize: asset?.file_size == null ? null : Number(asset.file_size), viewable: assetViewable, downloadable: assetDownloadable, canView, canDownload, status: asset?.status ? String(asset.status) : null };
+  }).filter((item) => item.canView);
+}
+
+export async function getCurriculumAssetUrl(item: CurriculumLibraryItem, mode: "view" | "download" = "view"): Promise<string | null> {
+  const supabase = getSupabase();
+  if (!supabase || !item.storageBucket || !item.storagePath) return null;
+  if (mode === "download" && !item.canDownload) return null;
+  if (mode === "view" && !item.canView) return null;
+  const bucket = supabase.storage.from(item.storageBucket);
+  const { data, error } = await bucket.createSignedUrl(item.storagePath, 3600, mode === "download" ? { download: true } : undefined);
+  if (error) throw error;
+  return data?.signedUrl ?? null;
+}
