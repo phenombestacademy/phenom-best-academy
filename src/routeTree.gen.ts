@@ -161,6 +161,7 @@ export interface FileRoutesByTo {
   '/programmes': typeof ProgrammesRoute
   '/admin': typeof AdminRoute
   '/media': typeof MediaRoute
+  '/library': typeof LibraryRoute
   '/account': typeof AccountRoute
   '/tools': typeof ToolsRoute
   '/platform': typeof PlatformRoute
