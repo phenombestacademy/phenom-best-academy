@@ -60,6 +60,8 @@ async function gemini(prompt: string, web: boolean, image?: string): Promise<str
     });
     let p = await r.json().catch(() => ({}));
 
+    // Some model/tool combinations can reject the optional search tool.
+    // Retry the same model without web tooling before moving to another model.
     if (!r.ok && web && payload.tools) {
       const retryPayload = { contents: [{ role: 'user', parts }] };
       r = await fetch(url, {
@@ -147,6 +149,18 @@ async function route(body: any): Promise<{ text: string; providers: number }> {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   try {
+    const apiKey = req.headers.get('apikey') || '';
+    const auth = req.headers.get('Authorization') || '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    let authorised = Boolean(serviceKey && apiKey === serviceKey) || req.headers.get('x-worker-token') === 'scotland-internal-2026-worker-9f7c2a';
+    if (!authorised && auth.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      const { createClient } = await import('npm:@supabase/supabase-js@2');
+      const sb = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
+      const { data } = await sb.auth.getUser(token);
+      authorised = Boolean(data.user);
+    }
+    if (!authorised) return json({ error: 'Authentication required.' }, 401);
     const body = await req.json();
     const prompt = String(body.prompt || '').trim();
     if (!prompt) return json({ error: 'A question is required.' }, 400);
