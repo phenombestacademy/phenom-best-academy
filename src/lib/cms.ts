@@ -692,6 +692,7 @@ export async function listCurriculumLibrary(options: { query?: string; topicId?:
   const itemRows = (items ?? []) as Record<string, unknown>[];
   const selectedItems = options.topicId ? itemRows.filter((r) => linkMap.get(String(r.id)) === options.topicId) : itemRows;
   const assetIds = Array.from(new Set(selectedItems.map((r) => r.asset_id).filter(Boolean).map(String)));
+  const externalIds = Array.from(new Set(selectedItems.map((r) => r.external_resource_id).filter(Boolean).map(String)));
 
   let assets: Record<string, unknown>[] = [];
   if (assetIds.length) {
@@ -700,6 +701,13 @@ export async function listCurriculumLibrary(options: { query?: string; topicId?:
     assets = (data ?? []) as Record<string, unknown>[];
   }
   const assetMap = new Map(assets.map((a) => [String(a.id), a]));
+  let externalResources: Record<string, unknown>[] = [];
+  if (externalIds.length) {
+    const { data, error } = await supabase.from("lms_curriculum_external_resources").select("id,official_url,title").in("id", externalIds);
+    if (error) throw error;
+    externalResources = (data ?? []) as Record<string, unknown>[];
+  }
+  const externalMap = new Map(externalResources.map((r) => [String(r.id), r]));
   const topicIds = Array.from(new Set(selectedItems.map((r) => linkMap.get(String(r.id)) ?? r.topic_id).filter(Boolean).map(String)));
   let topics: Record<string, unknown>[] = [];
   if (topicIds.length) {
@@ -720,6 +728,7 @@ export async function listCurriculumLibrary(options: { query?: string; topicId?:
   }
   return selectedItems.map((row) => {
     const asset = row.asset_id ? assetMap.get(String(row.asset_id)) : undefined;
+    const external = row.external_resource_id ? externalMap.get(String(row.external_resource_id)) : undefined;
     const topicId = linkMap.get(String(row.id)) ?? (row.topic_id ? String(row.topic_id) : null);
     const topic = topicId ? topicMap.get(topicId) : undefined;
     const permission = row.asset_id ? permissionMap.get(String(row.asset_id)) : undefined;
@@ -729,8 +738,8 @@ export async function listCurriculumLibrary(options: { query?: string; topicId?:
     const publicAsset = visibility === "public" || visibility === "authenticated";
     const canView = asset ? assetViewable && (publicAsset || Boolean(permission?.view)) : true;
     const canDownload = asset ? assetDownloadable && (publicAsset || Boolean(permission?.download)) : false;
-    return { id: String(row.id), title: String(row.title ?? ""), itemType: String(row.item_type ?? "resource"), curriculumId: row.curriculum_id ? String(row.curriculum_id) : null, topicId, topicTitle: topic?.topic_title ? String(topic.topic_title) : null, topicCode: topic?.topic_code ? String(topic.topic_code) : null, assetId: row.asset_id ? String(row.asset_id) : null, externalResourceId: row.external_resource_id ? String(row.external_resource_id) : null, storageBucket: asset?.storage_bucket ? String(asset.storage_bucket) : null, storagePath: asset?.storage_path ? String(asset.storage_path) : null, mimeType: asset?.mime_type ? String(asset.mime_type) : null, fileSize: asset?.file_size == null ? null : Number(asset.file_size), viewable: assetViewable, downloadable: assetDownloadable, canView, canDownload, status: asset?.status ? String(asset.status) : null };
-  }).filter((item) => item.canView);
+    return { id: String(row.id), title: String(row.title ?? ""), itemType: String(row.item_type ?? "resource"), curriculumId: row.curriculum_id ? String(row.curriculum_id) : null, topicId, topicTitle: topic?.topic_title ? String(topic.topic_title) : null, topicCode: topic?.topic_code ? String(topic.topic_code) : null, assetId: row.asset_id ? String(row.asset_id) : null, externalResourceId: row.external_resource_id ? String(row.external_resource_id) : null, externalUrl: external?.official_url ? String(external.official_url) : null, storageBucket: asset?.storage_bucket ? String(asset.storage_bucket) : null, storagePath: asset?.storage_path ? String(asset.storage_path) : null, mimeType: asset?.mime_type ? String(asset.mime_type) : null, fileSize: asset?.file_size == null ? null : Number(asset.file_size), viewable: assetViewable, downloadable: assetDownloadable, canView, canDownload, status: asset?.status ? String(asset.status) : null };
+  }).filter((item) => item.canView || Boolean(item.externalUrl));
 }
 
 export async function getCurriculumAssetUrl(item: CurriculumLibraryItem, mode: "view" | "download" = "view"): Promise<string | null> {
