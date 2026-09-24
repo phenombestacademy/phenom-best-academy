@@ -131,7 +131,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/media': typeof MediaRoute
   '/library': typeof LibraryRoute
-  '/library': typeof LibraryRoute
   '/account': typeof AccountRoute
   '/tools': typeof ToolsRoute
   '/platform': typeof PlatformRoute
@@ -152,6 +151,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/library': typeof LibraryRoute
   '/about': typeof AboutRoute
   '/contact': typeof ContactRoute
   '/careers': typeof CareersRoute
@@ -222,6 +222,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/admin'
     | '/media'
+    | '/library'
     | '/account'
     | '/tools'
     | '/platform'
@@ -246,6 +247,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/admin'
     | '/media'
+    | '/library'
     | '/account'
     | '/tools'
     | '/platform'
@@ -270,6 +272,7 @@ export interface FileRouteTypes {
     | '/programmes'
     | '/admin'
     | '/media'
+    | '/library'
     | '/account'
     | '/tools'
     | '/platform'
@@ -380,6 +383,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MediaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/library': { id: '/library'; path: '/library'; fullPath: '/library'; preLoaderRoute: typeof LibraryRouteImport; parentRoute: typeof rootRouteImport }
     '/services/': {
       id: '/services/'
       path: '/services'
