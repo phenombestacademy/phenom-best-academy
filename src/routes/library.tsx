@@ -73,7 +73,7 @@ function LibraryHub() {
           </label>
         </div>
         {uploadMessage ? <p className="mt-3 text-sm">{uploadMessage}</p> : null}
-      </div>}
+      </div> : null}
 
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(item => <article key={item.id} className="rounded-2xl border border-line bg-cream p-5 shadow-card">
