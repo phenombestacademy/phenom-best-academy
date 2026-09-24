@@ -85,7 +85,7 @@ function LibraryHub() {
           <div className="mt-4 flex flex-wrap gap-2">
             {item.storagePath ? <Button size="sm" variant="navy" disabled={opening !== ""} onClick={() => void openItem(item, "view")}><Eye className="size-4" />{opening === item.id + "view" ? "Opening…" : "View"}</Button> : null}
             {item.canDownload && item.storagePath ? <Button size="sm" variant="outline" disabled={opening !== ""} onClick={() => void openItem(item, "download")}><Download className="size-4" />{opening === item.id + "download" ? "Preparing…" : "Download"}</Button> : null}
-            {item.externalUrl && !item.storagePath ? <Button size="sm" variant="outline" onClick={() => window.open(item.externalUrl!, "_blank", "noopener,noreferrer")}><ExternalLink className="size-4" />Open source</Button> : null}
+            {item.externalUrl && !item.storagePath ? <Button size="sm" variant="outline" onClick={() => window.open(item.externalUrl ?? "", "_blank", "noopener,noreferrer")}><ExternalLink className="size-4" />Open source</Button> : null}
           </div>
         </article>)}
       </div>
