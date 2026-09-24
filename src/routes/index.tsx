@@ -126,8 +126,8 @@ function Home() {
       <Section className="pt-0">
         <HeaderBlock
           kicker="Our knowledge and creative arms"
-          title="Two specialist identities under the Academy"
-          lede="Phenom Best Academy brings its wider knowledge and creative work together through two complementary service identities."
+          title="Six specialist identities under the Academy"
+          lede="Phenom Best Academy brings its wider knowledge and creative work together through six complementary service identities."
         />
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
