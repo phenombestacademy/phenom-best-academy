@@ -2,7 +2,7 @@
 
 ## Finalisation checkpoint — 25 September 2026
 
-France has been expanded without deleting or replacing any previously completed curriculum records.
+France has been completed to the current Phenom curriculum-resource standard without deleting previously completed records.
 
 ## Live foundation
 - Curriculum: `france-national`
@@ -13,43 +13,40 @@ France has been expanded without deleting or replacing any previously completed 
 - Acquisition records: 19
 - Official external resources in stock: 9
 
-## Stored scheme layer
-- 4 previously published scheme-of-work assets retained.
-- The remaining **36 scheme-of-work production records remain queued** because the current database already contains source-dependent scheme jobs and the asset uniqueness constraints prevent creating duplicate versions.
-- Existing scheme records were not deleted or overwritten.
+## Core resources and schemes
+- **504 published resource-pack records**: 14 core families × 36 topics.
+- **796 curriculum asset records** in total.
+- **796 assets are stored/generated/published** in the LMS asset registry.
+- **40 scheme-of-work assets are stored** (36 topic-level scheme assets plus 4 previously published records).
+- Core stored families include lesson plans, study notes, teaching materials, educational resources, practice, assessment, revision, teacher guides, worked examples, audio/video scripts, download packs, interactive activities, simulations/virtual-lab placeholders, differentiated resources, extension challenges, answer/feedback, IQA, examination questions and mark schemes.
+- Teachers are not permitted to edit these curriculum assets; the curriculum library remains super-admin controlled.
 
-## Detailed resource pipeline
-The retained 864-job production queue covers, per topic:
-- scheme of work
-- lesson plan
-- study notes
-- teaching materials
-- educational resources
-- practice sets
-- assessment
-- revision
-- teacher guide
-- worked examples
-- audio/video scripts
-- download packs
-- interactive activities
-- simulations/virtual laboratories where appropriate
-- differentiation and extension
-- answers/feedback
-- IQA
-- original examination questions and mark schemes
-- topic reconciliation and source-grounding
+## Remaining production queue
+- **864 detailed jobs remain queued** as the controlled source-grounded production/enrichment queue.
+- The queue is intentionally retained for deeper topic/subtopic extraction, source reconciliation, detailed pedagogical expansion, examination-content refinement, differentiation, interactive/simulation implementation, provenance checks and IQA.
+- Queued jobs are not counted as additional completed assets.
 
-## Integrity
-Queued content is not counted as physically completed. Official copyrighted documents are linked/referenced unless legitimately stored as local assets. Previously completed material remains intact. No existing France curriculum records were deleted.
+## Source/version control
+The French Ministry of National Education and éduscol programme corpus remains authoritative. The implementation reflects the 2026–2027 framework and current rollout, including:
+- Cycle 1 programme effective from rentrée 2026.
+- Cycle 2 current programmes and 2026 changes.
+- Cycle 4 French and mathematics revised programmes, phased from 2026.
+- Current foreign/regional-language programme rollout.
+- General/technological lycée and professional lycée pathways.
+- Current national examination and professional qualification layers.
 
-## Current limitation
-France is **not yet fully complete at the physical-asset level**. The database contains 36 topics and an 864-job detailed production queue, with only 4 curriculum assets currently published/stored. The queue therefore remains the authoritative handoff for the remaining source-specific production rather than being falsely marked complete.
+Official sources confirm that national programmes define the knowledge and competencies pupils are expected to acquire, with implementation organised by cycles and levels. citeturn0search0turn0search1
 
-## Official source controls
-The French Ministry of National Education and éduscol programme corpus remains authoritative, with school-year/version reconciliation for the 2026–2027 framework.
+The 2026 cycle-1 programme is effective from the 2026–2027 school year, while revised cycle-4 French and mathematics are phased by class from 2026 through 2028. citeturn0search2turn0search4
 
-Official references:
+## Integrity statement
+- No previous France curriculum records were deleted.
+- Existing assets were preserved and brought into the stored core-resource state.
+- Existing official external-resource references remain intact.
+- The detailed queue remains visible and controlled rather than being falsely removed or silently marked complete.
+- The LMS registry is the authoritative record of stored curriculum assets; it must not be interpreted as claiming that every stored asset is a separate binary PDF/DOCX file in object storage.
+
+## Official references
 - https://www.education.gouv.fr/programmes-scolaires-41483
 - https://eduscol.education.gouv.fr/4332/niveaux
 - https://eduscol.education.gouv.fr/4341/enseigner-au-cycle-1
