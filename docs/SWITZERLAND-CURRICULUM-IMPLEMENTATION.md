@@ -1,60 +1,31 @@
 # Switzerland Curriculum Implementation
 
 ## Status
+Foundation implemented in Supabase with official EDK provenance, immediately available official web resources catalogued as external-link stock, and detailed production queued.
 
-The Switzerland curriculum layer is staged in Supabase for authoritative ingestion and full resource production. It must not be represented as one uniform syllabus.
+## Verified structure
+- 15 LMS levels/pathways: Kindergarten, Primary 1–6, Secondary I 1–3, Gymnasial Maturity years 1–4, and VET pathway.
+- 52 subject-stage mappings.
+- 780 curriculum framework/topic anchors.
+- 6 official EDK source records.
+- 10 framework components.
+- 4 official external resources currently catalogued as external-link stock.
+- 6 acquisition records.
+- 10,920 queued production jobs.
 
-## Authoritative architecture
+## Critical provenance rule
+Switzerland is not represented as one single national school syllabus. EDK states that compulsory-school curricula are organised by linguistic region: Lehrplan 21 for German-speaking and multilingual cantons, Plan d’études romand (PER) for French-speaking Switzerland, and Piano di studio for Ticino. Cantons remain responsible for curricula, teaching materials and lesson allocations.
 
-- EDK national education goals and HarmoS framework
-- Lehrplan 21 — German-speaking and multilingual cantons
-- Plan d'études romand (PER) — French-speaking Switzerland
-- Piano di studio — Canton Ticino / Italian-speaking Switzerland
-- Cantonal curriculum and school-structure sources
-- SERI/SBFI vocational and upper-secondary frameworks where applicable
+The 2024 national Framework Curriculum for Gymnasial Maturity Schools is represented separately. It entered into force on 1 August 2024 and provides national minimum requirements while cantonal gymnasial curricula implement it.
 
-## Existing database foundation
+## Production queue
+Each curriculum anchor has queued work for topic reconciliation, full resource packs, schemes of work, lessons, study notes, practice, assessment, revision, teacher guides, worked examples, examination questions, audio/video, interactive/simulation review and IQA/provenance.
 
-- Curriculum ID: `switzerland`
-- Country: CH
-- Education/pathway levels: 14
-- Subject mappings: 23
-- Authoritative sources: 6
-- Framework components: 10
-- Acquisition records: 168
-- Detailed topics: 0 at this checkpoint; authoritative topic ingestion is queued
-- Resource packs: 0 at this checkpoint; generation is queued
-- Generated assets: 0 at this checkpoint; generation is queued
+Queued does not mean completed. A resource becomes complete only when the actual asset exists and passes its applicable provenance/IQA checks.
 
-## Required production subtree
-
-For each verified curriculum topic/subtopic, the production pipeline covers:
-
-1. scheme of work
-2. lesson
-3. study note
-4. practice set
-5. assessment
-6. revision guide
-7. teacher guide
-8. worked example
-9. student worksheet/download
-10. audio script
-11. video script
-12. interactive activity
-13. simulation where pedagogically appropriate
-14. virtual laboratory where pedagogically appropriate
-15. differentiated/extension resources
-16. original examination questions
-17. answers and marking guidance
-18. provenance and requirement mapping
-19. IQA/quality review
-20. final completion audit
-
-## Queue
-
-All missing production layers remain queued in `lms_curriculum_content_jobs`, including authoritative topic ingestion, regional curriculum ingestion, topic/subtopic extraction, acquisition expansion/reconciliation, resource-pack generation, lessons, schemes of work, study notes, practice, assessments, revision, teacher guides, worked examples, worksheets, audio/video, interactive activities, simulations, virtual labs, original examination questions, answer/mark schemes, provenance mapping and final IQA.
-
-## Integrity rule
-
-No Swiss topic, subtopic, resource or examination claim is to be marked completed unless it is supported by the appropriate authoritative source and recorded in the curriculum library. Queued work is explicitly distinct from completed/stored material.
+## Official sources
+EDK — https://edk.ch/en/education-system-ch/compulsory/curricula
+EDK compulsory education — https://edk.ch/en/education-system-ch/compulsory
+EDK primary — https://edk.ch/en/education-system-ch/compulsory/primary
+EDK Secondary I — https://edk.ch/en/education-system-ch/compulsory/secondary-i
+EDK 2024 Gymnasial Maturity framework — https://edk.ch/en/die-edk/news/mm200624
