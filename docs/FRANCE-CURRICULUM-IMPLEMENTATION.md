@@ -1,39 +1,53 @@
 # France — National Curriculum Implementation
 
-Status: implemented foundation and full production handoff in Supabase; production remains source-grounded and queued where physical content is not yet stored.
+## Finalisation checkpoint — 25 September 2026
 
-## Scope
-- Current 2026–2027 national programme framework.
-- École maternelle, école élémentaire, collège, lycée général/technologique and lycée professionnel.
-- Cycles 1–4, socle commun, national assessment/examination layer, LVE/LVR, digital/EMI and interdisciplinary/STEM layers.
-- Programme changes are versioned by effective school year.
+France has been expanded without deleting or replacing any previously completed curriculum records.
 
-## Live Supabase checkpoint
+## Live foundation
 - Curriculum: `france-national`
-- Levels/pathways: 23 (4 existing stage umbrellas + 19 class/pathway levels)
+- Levels/pathways: 23
 - Curriculum anchors/topics: 36
 - Official source records: 11
 - Framework components: 10
 - Acquisition records: 19
 - Official external resources in stock: 9
-- Curriculum asset records: 796
-- Physically stored/published scheme-of-work files: 4
-- Remaining scheme-of-work asset records queued: 36
-- Queued content-production jobs: 864
-- Completed/generated/stored/published curriculum assets: 4
 
-## Resource pipeline
-For each existing curriculum anchor, the pipeline covers:
-scheme of work, lesson plan, study note, teaching material, educational resource, practice set, assessment, revision guide, teacher guide, worked examples, audio/video scripts, download pack, interactive activity, simulation/virtual-lab where pedagogically appropriate, differentiated resource, extension/challenge, answer/feedback, IQA review, original exam questions and mark schemes.
+## Stored scheme layer
+- 4 previously published scheme-of-work assets retained.
+- The remaining **36 scheme-of-work production records remain queued** because the current database already contains source-dependent scheme jobs and the asset uniqueness constraints prevent creating duplicate versions.
+- Existing scheme records were not deleted or overwritten.
 
-## Source integrity
-Official programme and framework links are catalogued from the French Ministry of National Education / éduscol. Copyrighted official documents are referenced as official external resources rather than represented as locally stored copies unless actually stored.
+## Detailed resource pipeline
+The retained 864-job production queue covers, per topic:
+- scheme of work
+- lesson plan
+- study notes
+- teaching materials
+- educational resources
+- practice sets
+- assessment
+- revision
+- teacher guide
+- worked examples
+- audio/video scripts
+- download packs
+- interactive activities
+- simulations/virtual laboratories where appropriate
+- differentiation and extension
+- answers/feedback
+- IQA
+- original examination questions and mark schemes
+- topic reconciliation and source-grounding
 
-## Completeness rule
-The 36 initial topic records have been reconciled to source-grounded curriculum anchors. The current database deliberately does not mark queued resources as physically generated. Detailed official topic/subtopic extraction remains tied to the authoritative programme corpus; derived learning resources remain queued behind that source layer rather than being fabricated.
+## Integrity
+Queued content is not counted as physically completed. Official copyrighted documents are linked/referenced unless legitimately stored as local assets. Previously completed material remains intact. No existing France curriculum records were deleted.
 
-## 2026–2027 versioning
-The implementation records the current 2026–2027 rollout, including phased changes to French/mathematics in cycle 4 and current LVE/LVR implementation.
+## Current limitation
+France is **not yet fully complete at the physical-asset level**. The database contains 36 topics and an 864-job detailed production queue, with only 4 curriculum assets currently published/stored. The queue therefore remains the authoritative handoff for the remaining source-specific production rather than being falsely marked complete.
+
+## Official source controls
+The French Ministry of National Education and éduscol programme corpus remains authoritative, with school-year/version reconciliation for the 2026–2027 framework.
 
 Official references:
 - https://www.education.gouv.fr/programmes-scolaires-41483
@@ -44,5 +58,3 @@ Official references:
 - https://eduscol.education.gouv.fr/4362/enseigner-au-cycle-4
 - https://eduscol.education.gouv.fr/4494/langues-vivantes-etrangeres-et-regionales
 - https://eduscol.education.gouv.fr/7087/rentree-2026-2027
-
-Security advisor findings observed during this checkpoint are pre-existing platform-level findings; no new RLS/security changes were introduced by this curriculum data population.
