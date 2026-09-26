@@ -148,7 +148,7 @@ function AccountPage() {
         setParentEmail(p.parentEmail || '');
       }
       setAuthStep('password');
-      setMessage('Email verified. Create your password to complete your Phenom account.');
+      setMessage('Email verified. Create your password now. Next time you can sign in with your Phenom User ID or email address and this password.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'The verification code could not be accepted.');
     } finally {
@@ -207,14 +207,14 @@ function AccountPage() {
           <div role="dialog" aria-modal="true" aria-labelledby="phenom-auth-title" className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
             <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">
-              {authStep === 'method' ? 'Create your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with email and password' : 'Create your password'}
+              {authStep === 'method' ? 'Create or sign in to your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with email and password' : 'Create your password'}
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               {authStep === 'method'
                 ? 'Choose how you want to continue.'
                 : authStep === 'otp'
                   ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</>
-                  : 'Your email has been verified. Create a password so you can also sign in with your Phenom User ID or email address.'}
+                  : 'Your email has been verified. Create your password now. Next time, you can sign in with your Phenom User ID or email address and this password.'}
             </p>
 
             {authStep === 'method' ? (
@@ -238,8 +238,11 @@ function AccountPage() {
                   <Button className="mt-3 w-full" onClick={requestEmailOtp} disabled={busy || !email.trim()}>
                     {busy ? 'Sending verification code…' : 'Continue with email address'}
                   </Button>
-                  <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit verification code to this email. You only need access to this email address to receive your code.</p>
+                  <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit verification code to this email. You only need access to this email address to receive your code. The code can be entered on the device where you started sign-in.</p>
                 </div>
+                <button type="button" onClick={() => { setMessage(''); setAuthStep('emailPassword'); }} className="mt-4 w-full text-sm font-semibold text-green">
+                  Already have a Phenom account? Sign in with password
+                </button>
               </>
             ) : null}
 
