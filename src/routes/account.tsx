@@ -76,6 +76,7 @@ function AccountPage() {
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [welcomeSent, setWelcomeSent] = useState(false);
   const [locale, setAccountLocale] = useState<SupportedLocale>(() => getLocale());
   const [learningLocale, setLearningLocale] = useState<SupportedLocale | ''>('');
@@ -172,22 +173,17 @@ function AccountPage() {
       setMessage('');
       if (password !== passwordConfirm) throw new Error('The passwords do not match.');
       await setAccountPassword(password);
-      let welcomeDelivered = false;
-      try {
-        await sendWelcomeEmail();
-        welcomeDelivered = true;
-        setWelcomeSent(true);
-      } catch {
-        setWelcomeSent(false);
-      }
 
-      // Password creation is complete at this point. Do not let profile
-      // initialisation block or falsely report failure after the password
-      // has already been saved.
+      // The password has now been saved by Supabase. Move the user forward
+      // immediately; welcome-email delivery must never hold up account creation.
       setAuthStep('method');
-      setMessage(welcomeDelivered ? 'Your Phenom account is ready. A welcome email has been sent.' : 'Your Phenom account is ready.');
+      setMessage('Your Phenom account is ready. You can now sign in with your Phenom User ID or email address and your password.');
       setBusy(false);
 
+      // Non-blocking follow-up tasks.
+      void sendWelcomeEmail()
+        .then(() => setWelcomeSent(true))
+        .catch(() => setWelcomeSent(false));
       void getMyProfile()
         .then((p) => setProfile(p))
         .catch(() => undefined);
@@ -295,9 +291,15 @@ function AccountPage() {
             {authStep === 'password' ? (
               <div className="mt-5">
                 <label htmlFor="phenom-password" className="text-sm font-semibold">Create password</label>
-                <input id="phenom-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <div className="relative mt-2">
+                  <input id="phenom-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-line bg-white p-3 pr-20 text-sm" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green">{showPassword ? 'Hide' : 'Show'}</button>
+                </div>
                 <label htmlFor="phenom-password-confirm" className="mt-3 block text-sm font-semibold">Confirm password</label>
-                <input id="phenom-password-confirm" type="password" autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <div className="relative mt-2">
+                  <input id="phenom-password-confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="w-full rounded-xl border border-line bg-white p-3 pr-20 text-sm" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green">{showPassword ? 'Hide' : 'Show'}</button>
+                </div>
                 <Button className="mt-4 w-full" onClick={createPassword} disabled={busy || password.length < 8 || password !== passwordConfirm}>{busy ? 'Creating password…' : 'Create password & continue'}</Button>
               </div>
             ) : null}
