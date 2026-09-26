@@ -180,13 +180,19 @@ function AccountPage() {
       } catch {
         setWelcomeSent(false);
       }
-      const p = await getMyProfile();
-      setProfile(p);
+
+      // Password creation is complete at this point. Do not let profile
+      // initialisation block or falsely report failure after the password
+      // has already been saved.
       setAuthStep('method');
       setMessage(welcomeDelivered ? 'Your Phenom account is ready. A welcome email has been sent.' : 'Your Phenom account is ready.');
+      setBusy(false);
+
+      void getMyProfile()
+        .then((p) => setProfile(p))
+        .catch(() => undefined);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Your password could not be created.');
-    } finally {
       setBusy(false);
     }
   };
