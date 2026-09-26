@@ -111,7 +111,7 @@ function AccountPage() {
   const loginWithGoogle = async () => {
     try {
       setBusy(true);
-      await saveAccountChoice(category, role);
+      saveAccountChoice(category, role).catch(() => undefined);
       await signInWithGoogle();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Google sign-in could not start.');
@@ -123,7 +123,7 @@ function AccountPage() {
     try {
       setBusy(true);
       setMessage('');
-      await saveAccountChoice(category, role);
+      saveAccountChoice(category, role).catch(() => undefined);
       await sendEmailOtp(email);
       setAuthStep('otp');
       setMessage('A 6-digit verification code has been sent to your email address.');
