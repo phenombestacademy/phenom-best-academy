@@ -138,20 +138,30 @@ function AccountPage() {
     try {
       setBusy(true);
       setMessage('');
+      // OTP verification must be independent of profile loading. Supabase
+      // creates the authenticated session here; profile/RPC work must not
+      // prevent the user from reaching the password-creation step.
       await verifyEmailOtp(email, otp);
-      const p = await getMyProfile();
-      setProfile(p);
-      if (p) {
-        setCategory(p.accountCategory);
-        setRole(p.onboardingRole);
-        setAccountType(p.accountType);
-        setParentEmail(p.parentEmail || '');
-      }
       setAuthStep('password');
       setMessage('Email verified. Create your password now. Next time you can sign in with your Phenom User ID or email address and this password.');
+      setBusy(false);
+
+      // Load the profile after verification without blocking the password step.
+      // If profile initialisation is unavailable, the authenticated session
+      // still remains valid and password creation can proceed.
+      void getMyProfile()
+        .then((p) => {
+          setProfile(p);
+          if (p) {
+            setCategory(p.accountCategory);
+            setRole(p.onboardingRole);
+            setAccountType(p.accountType);
+            setParentEmail(p.parentEmail || '');
+          }
+        })
+        .catch(() => undefined);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'The verification code could not be accepted.');
-    } finally {
       setBusy(false);
     }
   };
