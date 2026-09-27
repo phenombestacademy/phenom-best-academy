@@ -129,7 +129,12 @@ function AccountPage() {
       const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: otp.replace(/\D/g, ''), type: 'email' });
       if (error) throw error;
       if (!data.session) throw new Error('The recovery code was accepted, but a secure session was not created. Please try again.');
-      setPassword(''); setPasswordConfirm(''); setShowPassword(false); setAuthStep('forgotPassword'); setMessage('Your email has been verified. Create a new password now.');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessionError) throw sessionError;
+      setPassword(''); setPasswordConfirm(''); setShowPassword(false); setAuthStep('forgotPassword'); setMessage('Your recovery code has been verified. Create and confirm your new password.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'The recovery code could not be accepted.');
     } finally { setBusy(false); }
@@ -142,6 +147,11 @@ function AccountPage() {
       if (password !== passwordConfirm) throw new Error('The passwords do not match.');
       const supabase = getSupabase();
       if (!supabase) throw new Error('Connect Supabase before enabling password recovery.');
+      const currentSession = await supabase.auth.getSession();
+      if (!currentSession.data.session) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
+      if (!refreshed.session) throw new Error('Your secure recovery session could not be refreshed. Please verify the recovery code again.');
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       const p = await getMyProfile();
