@@ -101,7 +101,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     const onChange = () => setCurrentLocale(getLocale());
     window.addEventListener("phenom-locale-change", onChange);
     return () => window.removeEventListener("phenom-locale-change", onChange);
-  }, [queryClient]);
+  }, []);
 
   useEffect(() => {
     setHasAccountHistory(window.localStorage.getItem("phenom-account-history-v1") === "true");
@@ -152,7 +152,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       active = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     setMoreOpen(false);
