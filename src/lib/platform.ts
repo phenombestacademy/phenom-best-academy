@@ -218,7 +218,7 @@ export async function ensureProfile(user: { id: string; email?: string; user_met
   const effectiveCategory = invitedCategory ?? choice.category;
   const effectiveRole = invitedRole ?? choice.role;
   const fullName = String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Phenom User');
-  const { data, error } = await supabase.from('profiles').upsert({ id: user.id, email: user.email ?? '', full_name: fullName, account_category: effectiveCategory, onboarding_role: effectiveRole }, { onConflict: 'id' }).select().single();
+  const { data, error } = await supabase .from('profiles').upsert({ id: user.id, email: user.email ?? '', full_name: fullName, account_category: effectiveCategory, onboarding_role: effectiveRole }, { onConflict: 'id' }).select('id,full_name,email,role,account_category,onboarding_role,account_type,parent_email,avatar_url,created_at,phenom_user_id,preferred_locale,learning_locale,support_locale,first_name,middle_name,surname,phone,date_of_birth,gender,country,state_region,city,address').single();
   if (error) throw error;
   await supabase.rpc('activate_school_membership_for_current_user');
   clearPendingAccountChoice();
@@ -230,7 +230,7 @@ export async function getMyProfile(): Promise<Profile | null> {
   if (!supabase) return null;
   const session = await getSession();
   if (!session) return null;
-  const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  const { data } = await supabase .from('profiles').select('id,full_name,email,role,account_category,onboarding_role,account_type,parent_email,avatar_url,created_at,phenom_user_id,preferred_locale,learning_locale,support_locale,first_name,middle_name,surname,phone,date_of_birth,gender,country,state_region,city,address').eq('id', session.user.id).maybeSingle();
   if (!data) return ensureProfile(session.user);
   const choice = getPendingAccountChoice();
   if (!data.account_category || !data.onboarding_role) {
