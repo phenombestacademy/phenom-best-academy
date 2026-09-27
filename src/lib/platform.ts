@@ -70,10 +70,7 @@ export async function signInWithGoogle() {
     const supabase = getSupabase();
     if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
     const redirectTo = `${window.location.origin}/account`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
     if (error) throw error;
     window.setTimeout(() => endAuthFlow('google'), 5000);
   } catch (error) {
@@ -90,29 +87,16 @@ export async function sendEmailOtp(email: string) {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) throw new Error('Enter your email address.');
 
-    // First ask Supabase whether an existing account can receive an OTP.
-    // shouldCreateUser:false prevents an existing email from silently entering
-    // the sign-up flow. A successful request means the account already exists.
-    const existingAccountCheck = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: { shouldCreateUser: false },
+    // Check the Academy profile directory before starting OTP sign-up. This
+    // prevents an existing email from being treated as a new account.
+    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', {
+      p_email: cleanEmail,
+      p_user_id: null,
     });
-
-    if (!existingAccountCheck.error) {
+    if (lookupError) throw lookupError;
+    if (Boolean((lookup as { exists?: boolean } | null)?.exists)) {
       throw new Error('You already have a Phenom account. Please sign in instead.');
     }
-
-    // Supabase documents user_not_found as the condition for a missing account.
-    // Only that condition is allowed to fall through into account creation;
-    // transport, rate-limit and service errors must never create an account.
-    const errorCode = existingAccountCheck.error.code;
-    const errorMessage = existingAccountCheck.error.message.toLowerCase();
-    const accountDoesNotExist =
-      errorCode === 'user_not_found' ||
-      errorCode === 'user_not_found_or_invalid' ||
-      errorMessage.includes('user not found');
-
-    if (!accountDoesNotExist) throw existingAccountCheck.error;
 
     const otpRequest = supabase.auth.signInWithOtp({
       email: cleanEmail,
@@ -120,13 +104,7 @@ export async function sendEmailOtp(email: string) {
     });
 
     const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => {
-        reject(
-          new Error(
-            'The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.',
-          ),
-        );
-      }, 20_000);
+      window.setTimeout(() => reject(new Error('The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.')), 20_000);
     });
 
     const { error } = await Promise.race([otpRequest, timeout]);
@@ -142,11 +120,7 @@ export async function verifyEmailOtp(email: string, token: string) {
   const cleanEmail = email.trim().toLowerCase();
   const cleanToken = token.replace(/\D/g, '');
   if (cleanToken.length !== 6) throw new Error('Enter the 6-digit code from your email.');
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: cleanEmail,
-    token: cleanToken,
-    type: 'email',
-  });
+  const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: cleanToken, type: 'email' });
   if (error) throw error;
   if (!data.session) throw new Error('Your code was accepted, but the secure session was not created. Please try again.');
   return data.session;
@@ -158,18 +132,16 @@ export async function signInWithEmailPassword(identifier: string, password: stri
   const cleanIdentifier = identifier.trim();
   if (!cleanIdentifier) throw new Error('Enter your Phenom User ID or email address.');
 
-  // Phenom User ID is an approved login identifier. Resolve it through the
-  // authenticated profile table when the supplied identifier is not an email.
   let email = cleanIdentifier.toLowerCase();
   if (!cleanIdentifier.includes('@')) {
-    const { data: profile, error: lookupError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('phenom_user_id', cleanIdentifier)
-      .maybeSingle();
+    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', {
+      p_email: null,
+      p_user_id: cleanIdentifier,
+    });
     if (lookupError) throw lookupError;
-    if (!profile?.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
-    email = String(profile.email).trim().toLowerCase();
+    const result = lookup as { found?: boolean; email?: string } | null;
+    if (!result?.found || !result.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
+    email = result.email.trim().toLowerCase();
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -192,9 +164,7 @@ export async function setAccountPassword(password: string) {
   if (error) throw error;
   if (typeof window !== 'undefined') {
     const phenomUserId = await getPhenomUserId();
-    window.alert(
-      `Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`,
-    );
+    window.alert(`Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
     window.location.assign('/');
   }
 }
@@ -213,10 +183,7 @@ export async function saveLearningLanguage(learningLocale: string | null, suppor
   if (!supabase) return;
   const session = await getSession();
   if (!session) return;
-  const { error } = await supabase.from('profiles').update({
-    learning_locale: learningLocale,
-    support_locale: supportLocale ?? null,
-  }).eq('id', session.user.id);
+  const { error } = await supabase.from('profiles').update({ learning_locale: learningLocale, support_locale: supportLocale ?? null }).eq('id', session.user.id);
   if (error) throw error;
 }
 
@@ -225,11 +192,7 @@ export async function getPhenomUserId(): Promise<string | null> {
   if (!supabase) return null;
   const session = await getSession();
   if (!session) return null;
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('phenom_user_id')
-    .eq('id', session.user.id)
-    .maybeSingle();
+  const { data, error } = await supabase.from('profiles').select('phenom_user_id').eq('id', session.user.id).maybeSingle();
   if (error) throw error;
   return data?.phenom_user_id ? String(data.phenom_user_id) : null;
 }
@@ -253,10 +216,7 @@ export async function saveAccountChoice(category: AccountCategory, role: Onboard
 async function updateAccountChoice(userId: string, category: AccountCategory, role: OnboardingRole) {
   const supabase = getSupabase();
   if (!supabase) return;
-  const { error } = await supabase.from('profiles').update({
-    account_category: category,
-    onboarding_role: role,
-  }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ account_category: category, onboarding_role: role }).eq('id', userId);
   if (error) throw error;
 }
 
@@ -269,13 +229,7 @@ export async function ensureProfile(user: { id: string; email?: string; user_met
   const effectiveCategory = invitedCategory ?? choice.category;
   const effectiveRole = invitedRole ?? choice.role;
   const fullName = String(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Phenom User');
-  const { data, error } = await supabase.from('profiles').upsert({
-    id: user.id,
-    email: user.email ?? '',
-    full_name: fullName,
-    account_category: effectiveCategory,
-    onboarding_role: effectiveRole,
-  }, { onConflict: 'id' }).select().single();
+  const { data, error } = await supabase.from('profiles').upsert({ id: user.id, email: user.email ?? '', full_name: fullName, account_category: effectiveCategory, onboarding_role: effectiveRole }, { onConflict: 'id' }).select().single();
   if (error) throw error;
   await supabase.rpc('activate_school_membership_for_current_user');
   clearPendingAccountChoice();
@@ -314,26 +268,13 @@ export async function saveChildSafetySettings(input: { accountType: 'adult' | 't
   if (!supabase) throw new Error('Connect Supabase first.');
   const session = await getSession();
   if (!session) throw new Error('Please sign in first.');
-  const { error } = await supabase.from('profiles').update({
-    account_type: input.accountType,
-    parent_email: input.parentEmail?.trim().toLowerCase() || null,
-  }).eq('id', session.user.id);
+  const { error } = await supabase.from('profiles').update({ account_type: input.accountType, parent_email: input.parentEmail?.trim().toLowerCase() || null }).eq('id', session.user.id);
   if (error) throw error;
   if (input.parentEmail) {
     const parentEmail = input.parentEmail.trim().toLowerCase();
-    const { data: parent } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', parentEmail)
-      .maybeSingle();
-
+    const { data: parent } = await supabase.from('profiles').select('id').eq('email', parentEmail).maybeSingle();
     if (parent?.id && parent.id !== session.user.id) {
-      const { error: linkError } = await supabase
-        .from('parent_links')
-        .upsert(
-          { child_id: session.user.id, parent_id: parent.id, status: 'pending' },
-          { onConflict: 'parent_id,child_id' },
-        );
+      const { error: linkError } = await supabase.from('parent_links').upsert({ child_id: session.user.id, parent_id: parent.id, status: 'pending' }, { onConflict: 'parent_id,child_id' });
       if (linkError) throw linkError;
     }
   }
@@ -343,11 +284,7 @@ export async function logAnalytics(event: string, metadata: Record<string, unkno
   const supabase = getSupabase();
   if (!supabase) return;
   const session = await getSession();
-  await supabase.from('analytics_events').insert({
-    user_id: session?.user.id ?? null,
-    event_name: event,
-    payload: metadata,
-  });
+  await supabase.from('analytics_events').insert({ user_id: session?.user.id ?? null, event_name: event, payload: metadata });
 }
 
 export async function submitSuggestion(subject: string, message: string) {
