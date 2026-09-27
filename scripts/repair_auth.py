@@ -1,3 +1,4 @@
+# Phenom auth session repair — verified OTP sessions must be persisted before password updates.
 from pathlib import Path
 
 p = Path('src/lib/platform.ts')
