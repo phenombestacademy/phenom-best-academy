@@ -18,6 +18,16 @@ export type Profile = {
   preferredLocale?: string;
   learningLocale?: string | null;
   supportLocale?: string | null;
+  firstName?: string | null;
+  middleName?: string | null;
+  surname?: string | null;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  country?: string | null;
+  stateRegion?: string | null;
+  city?: string | null;
+  address?: string | null;
 };
 
 const CATEGORY_KEY = 'phenom-pending-account-category-v1';
@@ -86,27 +96,11 @@ export async function sendEmailOtp(email: string) {
     if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) throw new Error('Enter your email address.');
-
-    // Check the Academy profile directory before starting OTP sign-up. This
-    // prevents an existing email from being treated as a new account.
-    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', {
-      p_email: cleanEmail,
-      p_user_id: null,
-    });
+    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: cleanEmail, p_user_id: null });
     if (lookupError) throw lookupError;
-    if (Boolean((lookup as { exists?: boolean } | null)?.exists)) {
-      throw new Error('You already have a Phenom account. Please sign in instead.');
-    }
-
-    const otpRequest = supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: { shouldCreateUser: true },
-    });
-
-    const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.')), 20_000);
-    });
-
+    if (Boolean((lookup as { exists?: boolean } | null)?.exists)) throw new Error('You already have a Phenom account. Please sign in instead.');
+    const otpRequest = supabase.auth.signInWithOtp({ email: cleanEmail, options: { shouldCreateUser: true } });
+    const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.')), 20_000));
     const { error } = await Promise.race([otpRequest, timeout]);
     if (error) throw error;
   } finally {
@@ -131,19 +125,14 @@ export async function signInWithEmailPassword(identifier: string, password: stri
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
   const cleanIdentifier = identifier.trim();
   if (!cleanIdentifier) throw new Error('Enter your Phenom User ID or email address.');
-
   let email = cleanIdentifier.toLowerCase();
   if (!cleanIdentifier.includes('@')) {
-    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', {
-      p_email: null,
-      p_user_id: cleanIdentifier,
-    });
+    const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: null, p_user_id: cleanIdentifier });
     if (lookupError) throw lookupError;
     const result = lookup as { found?: boolean; email?: string } | null;
     if (!result?.found || !result.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
     email = result.email.trim().toLowerCase();
   }
-
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return getMyProfile();
@@ -280,6 +269,104 @@ export async function saveChildSafetySettings(input: { accountType: 'adult' | 't
   }
 }
 
+export async function saveProfileDetails(input: {
+  firstName?: string | null;
+  middleName?: string | null;
+  surname?: string | null;
+  fullName?: string | null;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  country?: string | null;
+  stateRegion?: string | null;
+  city?: string | null;
+  address?: string | null;
+}) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  const session = await getSession();
+  if (!session) throw new Error('Please sign in first.');
+  const updates = {
+    first_name: input.firstName?.trim() || null,
+    middle_name: input.middleName?.trim() || null,
+    surname: input.surname?.trim() || null,
+    full_name: input.fullName?.trim() || [input.firstName, input.middleName, input.surname].filter(Boolean).join(' ').trim() || 'Phenom User',
+    phone: input.phone?.trim() || null,
+    date_of_birth: input.dateOfBirth || null,
+    gender: input.gender?.trim() || null,
+    country: input.country?.trim() || null,
+    state_region: input.stateRegion?.trim() || null,
+    city: input.city?.trim() || null,
+    address: input.address?.trim() || null,
+  };
+  const { error } = await supabase.from('profiles').update(updates).eq('id', session.user.id);
+  if (error) throw error;
+  return getMyProfile();
+}
+
+export async function uploadProfileAvatar(file: File) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  const session = await getSession();
+  if (!session) throw new Error('Please sign in first.');
+  if (!file.type.startsWith('image/')) throw new Error('Please choose an image file.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('Profile pictures must be 5 MB or smaller.');
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const path = `${session.user.id}/avatar-${Date.now()}.${extension}`;
+  const { error: uploadError } = await supabase.storage.from('profile-avatars').upload(path, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+  const { data } = supabase.storage.from('profile-avatars').getPublicUrl(path);
+  const { error: profileError } = await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', session.user.id);
+  if (profileError) throw profileError;
+  return data.publicUrl;
+}
+
+export async function removeProfileAvatar() {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  const session = await getSession();
+  if (!session) throw new Error('Please sign in first.');
+  const { data: profile } = await supabase.from('profiles').select('avatar_url').eq('id', session.user.id).maybeSingle();
+  if (profile?.avatar_url) {
+    const marker = '/storage/v1/object/public/profile-avatars/';
+    const index = profile.avatar_url.indexOf(marker);
+    if (index >= 0) await supabase.storage.from('profile-avatars').remove([profile.avatar_url.slice(index + marker.length)]);
+  }
+  const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', session.user.id);
+  if (error) throw error;
+}
+
+export async function sendPasswordChangeOtp() {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  const session = await getSession();
+  if (!session?.user.email) throw new Error('Please sign in first.');
+  const { error } = await supabase.auth.signInWithOtp({ email: session.user.email, options: { shouldCreateUser: false } });
+  if (error) throw error;
+}
+
+export async function verifyPasswordChangeOtp(token: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  const session = await getSession();
+  if (!session?.user.email) throw new Error('Please sign in first.');
+  const cleanToken = token.replace(/\D/g, '');
+  if (cleanToken.length !== 6) throw new Error('Enter the 6-digit code from your email.');
+  const { data, error } = await supabase.auth.verifyOtp({ email: session.user.email, token: cleanToken, type: 'email' });
+  if (error) throw error;
+  if (!data.session) throw new Error('The verification code was accepted, but a secure session was not created.');
+  return true;
+}
+
+export async function changePassword(password: string, confirmation: string) {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Connect Supabase first.');
+  if (password.length < 8) throw new Error('Use at least 8 characters for your new password.');
+  if (password !== confirmation) throw new Error('The passwords do not match.');
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
 export async function logAnalytics(event: string, metadata: Record<string, unknown> = {}) {
   const supabase = getSupabase();
   if (!supabase) return;
@@ -330,6 +417,16 @@ function fromProfileRow(row: Record<string, unknown>): Profile {
     preferredLocale: row.preferred_locale ? String(row.preferred_locale) : 'en-NG',
     learningLocale: row.learning_locale ? String(row.learning_locale) : null,
     supportLocale: row.support_locale ? String(row.support_locale) : null,
+    firstName: row.first_name ? String(row.first_name) : null,
+    middleName: row.middle_name ? String(row.middle_name) : null,
+    surname: row.surname ? String(row.surname) : null,
+    phone: row.phone ? String(row.phone) : null,
+    dateOfBirth: row.date_of_birth ? String(row.date_of_birth) : null,
+    gender: row.gender ? String(row.gender) : null,
+    country: row.country ? String(row.country) : null,
+    stateRegion: row.state_region ? String(row.state_region) : null,
+    city: row.city ? String(row.city) : null,
+    address: row.address ? String(row.address) : null,
     createdAt: row.created_at ? String(row.created_at) : undefined,
   };
 }
