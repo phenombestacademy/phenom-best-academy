@@ -42,7 +42,7 @@ export async function listActiveAnnouncements(): Promise<Announcement[]> {
 export async function listAllAnnouncements(): Promise<Announcement[]> {
   const supabase = getSupabase();
   if (!supabase) return typeof window === 'undefined' ? [] : (JSON.parse(localStorage.getItem(LOCAL_ANNOUNCEMENTS) || '[]') as Announcement[]);
-  const { data, error } = await supabase.from('site_announcements').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('site_announcements').select('id,title,body,link_url,published,floating,starts_at,ends_at,created_at').order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(fromAnnouncement);
 }
