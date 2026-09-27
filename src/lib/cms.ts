@@ -449,7 +449,7 @@ export async function listPublishedMedia(): Promise<MediaItem[]> {
 
   const { data, error } = await supabase
     .from("media_items")
-    .select("*")
+    .select("id,title,description,media_url,media_type,category,published,created_at")
     .eq("published", true)
     .order("created_at", { ascending: false });
 
