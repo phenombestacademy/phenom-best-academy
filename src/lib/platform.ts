@@ -117,6 +117,11 @@ export async function verifyEmailOtp(email: string, token: string) {
   const { data, error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: cleanToken, type: 'email' });
   if (error) throw error;
   if (!data.session) throw new Error('Your code was accepted, but the secure session was not created. Please try again.');
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+  if (sessionError) throw sessionError;
   return data.session;
 }
 
@@ -149,8 +154,14 @@ export async function setAccountPassword(password: string) {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
   if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
+  const current = await getSession();
+  if (!current) throw new Error('Your verification session is no longer active. Please verify the code again.');
+  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) throw refreshError;
+  if (!refreshed.session) throw new Error('Your secure session could not be refreshed. Please verify the code again.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
+  await supabase.auth.refreshSession();
   if (typeof window !== 'undefined') {
     const phenomUserId = await getPhenomUserId();
     window.alert(`Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
@@ -355,6 +366,11 @@ export async function verifyPasswordChangeOtp(token: string) {
   const { data, error } = await supabase.auth.verifyOtp({ email: session.user.email, token: cleanToken, type: 'email' });
   if (error) throw error;
   if (!data.session) throw new Error('The verification code was accepted, but a secure session was not created.');
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+  if (sessionError) throw sessionError;
   return true;
 }
 
@@ -363,6 +379,11 @@ export async function changePassword(password: string, confirmation: string) {
   if (!supabase) throw new Error('Connect Supabase first.');
   if (password.length < 8) throw new Error('Use at least 8 characters for your new password.');
   if (password !== confirmation) throw new Error('The passwords do not match.');
+  const session = await getSession();
+  if (!session) throw new Error('Please sign in first.');
+  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) throw refreshError;
+  if (!refreshed.session) throw new Error('Your secure session could not be refreshed. Please try again.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
 }
