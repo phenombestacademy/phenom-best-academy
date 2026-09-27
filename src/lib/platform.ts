@@ -155,6 +155,17 @@ export async function setAccountPassword(password: string) {
   if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
+
+  // Account creation is complete at this point. Keep the authenticated
+  // session, obtain the permanent Phenom User ID, and give the user a clear
+  // confirmation before returning them to the public home page.
+  if (typeof window !== 'undefined') {
+    const phenomUserId = await getPhenomUserId();
+    window.alert(
+      `Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`,
+    );
+    window.location.assign('/');
+  }
 }
 
 export async function savePreferredLocale(locale: string) {
