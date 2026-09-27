@@ -186,7 +186,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
   const { data, error } = await supabase
     .from("site_settings")
-    .select("*")
+    .select("id,background,surface,accent,accent2,text,muted,animation,logo_url,background_mode,background_image_url,gradient_start,gradient_end,gradient_angle,pattern,font_scale")
     .eq("id", 1)
     .maybeSingle();
 
