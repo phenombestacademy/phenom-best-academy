@@ -71,29 +71,48 @@ let supabaseClient: SupabaseClient | null | undefined;
 export function getSupabase(): SupabaseClient | null {
   if (supabaseClient !== undefined) return supabaseClient;
 
-  // The publishable key is safe for browser use. Keep environment variables as the
-  // preferred configuration, with the connected Phenom project as a resilient fallback
-  // so the public application does not become disconnected when deployment variables are absent.
-  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
-    "https://hajrdejlamuiqjjhdnsv.supabase.co";
-  const key = (
+  const fallbackUrl = "https://hajrdejlamuiqjjhdnsv.supabase.co";
+  const fallbackKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhanJkZWpsYW11aXFqamhkbnN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1Njk2OTIsImV4cCI6MjEwNTE0NTY5Mn0.o1hNqDcOzxYUNij_zVFlcaetwMIOrzNOziA0JABpLVI";
+
+  const configuredUrl = String(import.meta.env.VITE_SUPABASE_URL || "").trim();
+  const configuredKey = String(
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhanJkZWpsYW11aXFqamhkbnN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1Njk2OTIsImV4cCI6MjEwNTE0NTY5Mn0.o1hNqDcOzxYUNij_zVFlcaetwMIOrzNOziA0JABpLVI"
-  ) as string | undefined;
+      import.meta.env.VITE_SUPABASE_ANON_KEY ||
+      "",
+  ).trim();
 
-  if (!url || !key) {
-    supabaseClient = null;
-    return supabaseClient;
+  // Prefer deployment variables, but reject empty/malformed values so a bad Vercel
+  // variable cannot make the application appear disconnected when the known project
+  // configuration is available.
+  const url =
+    /^https:\/\/[^/]+\\.supabase\\.co(?:\\/.*)?$/i.test(configuredUrl)
+      ? configuredUrl
+      : fallbackUrl;
+  const key =
+    /^(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)$/.test(
+      configuredKey,
+    )
+      ? configuredKey
+      : fallbackKey;
+
+  try {
+    supabaseClient = createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  } catch {
+    supabaseClient = createClient(fallbackUrl, fallbackKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
   }
-
-  supabaseClient = createClient(url, key, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  });
 
   return supabaseClient;
 }
