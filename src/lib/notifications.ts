@@ -34,7 +34,7 @@ export async function listActiveAnnouncements(): Promise<Announcement[]> {
     try { return (JSON.parse(localStorage.getItem(LOCAL_ANNOUNCEMENTS) || '[]') as Announcement[]).filter(isActive); } catch { return []; }
   }
   const now = new Date().toISOString();
-  const { data, error } = await supabase.from('site_announcements').select('*').eq('published', true).or(`starts_at.is.null,starts_at.lte.${now}`).or(`ends_at.is.null,ends_at.gte.${now}`).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('site_announcements').select('id,title,body,link_url,published,floating,starts_at,ends_at,created_at').eq('published', true).or(`starts_at.is.null,starts_at.lte.${now}`).or(`ends_at.is.null,ends_at.gte.${now}`).order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(fromAnnouncement);
 }
