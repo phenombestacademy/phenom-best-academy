@@ -12,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BrandFull, BrandWordmark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { academy } from "@/lib/academy";
@@ -79,8 +80,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = useActivePath();
   const [moreOpen, setMoreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const queryClient = useQueryClient();
+  const [announcementDismissed, setAnnouncementDismissed] = useState<Set<string>>(new Set());
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [subscriberEmail, setSubscriberEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState("");
@@ -89,6 +90,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [hasAccountHistory, setHasAccountHistory] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const profileQuery = useQuery({ queryKey: ["account-profile"], queryFn: getMyProfile, enabled: isAuthenticated, staleTime: 60_000 });
+  const announcementsQuery = useQuery({ queryKey: ["site-announcements"], queryFn: listActiveAnnouncements, staleTime: 60_000 });
+  const notificationsQuery = useQuery({ queryKey: ["my-notifications"], queryFn: listMyNotifications, enabled: isAuthenticated, staleTime: 15_000 });
+  const announcements = announcementsQuery.data ?? [];
+  const notifications = isAuthenticated ? (notificationsQuery.data ?? []) : [];
 
   useEffect(() => {
     setCurrentLocale(initLocale());
@@ -166,34 +172,15 @@ export function SiteShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    void getMyProfile().then((nextProfile) => {
-      setProfile(nextProfile);
-      const saved = nextProfile?.preferredLocale as SupportedLocale | undefined;
-      if (saved && saved !== getLocale()) {
-        setLocale(saved);
-        setCurrentLocale(saved);
-      }
-    }).catch(() => undefined);
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const activeAnnouncements = await listActiveAnnouncements();
-        if (active) setAnnouncements(activeAnnouncements);
-        if (isAuthenticated) {
-          const userNotifications = await listMyNotifications();
-          if (active) setNotifications(userNotifications);
-        } else if (active) {
-          setNotifications([]);
-        }
-      } catch {}
-    };
-    void load();
-    return () => { active = false; };
-  }, [isAuthenticated]);
+    const nextProfile = profileQuery.data;
+    if (!nextProfile) return;
+    setProfile(nextProfile);
+    const saved = nextProfile.preferredLocale as SupportedLocale | undefined;
+    if (saved && saved !== getLocale()) {
+      setLocale(saved);
+      setCurrentLocale(saved);
+    }
+  }, [profileQuery.data]);
 
   useEffect(() => {
     if (!moreOpen && !profileOpen) return;
@@ -286,11 +273,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {announcements.find((a) => a.floating) ? (
+      {announcements.find((a) => a.floating && !announcementDismissed.has(a.id)) ? (
         <div className="fixed inset-x-3 top-[4.75rem] z-50 mx-auto max-w-2xl rounded-2xl border border-gold/40 bg-navy-deep p-4 text-cream shadow-card">
           {(() => {
-            const a = announcements.find((x) => x.floating)!;
-            return <div className="flex items-start gap-3"><div className="flex-1"><p className="font-semibold text-gold">{a.title}</p><p className="mt-1 text-sm text-cream/80">{a.body}</p>{a.linkUrl ? <a className="mt-2 inline-block text-sm font-semibold text-cream underline" href={a.linkUrl}>Open announcement</a> : null}</div><button type="button" aria-label="Close announcement" onClick={() => setAnnouncements((prev) => prev.map((x) => x.id === a.id ? { ...x, floating: false } : x))} className="flex size-9 items-center justify-center rounded-full hover:bg-white/10"><X className="size-4" /></button></div>;
+            const a = announcements.find((x) => x.floating && !announcementDismissed.has(x.id))!;
+            return <div className="flex items-start gap-3"><div className="flex-1"><p className="font-semibold text-gold">{a.title}</p><p className="mt-1 text-sm text-cream/80">{a.body}</p>{a.linkUrl ? <a className="mt-2 inline-block text-sm font-semibold text-cream underline" href={a.linkUrl}>Open announcement</a> : null}</div><button type="button" aria-label="Close announcement" onClick={() => setAnnouncementDismissed((prev) => new Set(prev).add(a.id))} className="flex size-9 items-center justify-center rounded-full hover:bg-white/10"><X className="size-4" /></button></div>;
           })()}
         </div>
       ) : null}
@@ -301,7 +288,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <div className="mt-3 max-h-[60vh] space-y-2 overflow-auto">
             {notifications.length === 0 && announcements.length === 0 ? <p className="py-4 text-sm text-muted">No new notifications.</p> : null}
             {announcements.map((a) => <div key={a.id} className="rounded-xl bg-paper p-3"><p className="font-semibold">{a.title}</p><p className="mt-1 text-sm text-muted">{a.body}</p></div>)}
-            {notifications.map((n) => <button type="button" key={n.id} onClick={async () => { await markNotificationRead(n.id); setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)); if (n.linkUrl) location.href = n.linkUrl; }} className="block w-full rounded-xl bg-paper p-3 text-left"><p className="font-semibold">{n.title}</p><p className="mt-1 text-sm text-muted">{n.body}</p><p className="mt-1 text-[11px] text-muted">{new Date(n.createdAt).toLocaleString()}</p></button>)}
+            {notifications.map((n) => <button type="button" key={n.id} onClick={async () => { await markNotificationRead(n.id); queryClient.setQueryData<UserNotification[]>(["my-notifications"], (prev = []) => prev.map((x) => x.id === n.id ? { ...x, readAt: new Date().toISOString() } : x)); if (n.linkUrl) location.href = n.linkUrl; }} className="block w-full rounded-xl bg-paper p-3 text-left"><p className="font-semibold">{n.title}</p><p className="mt-1 text-sm text-muted">{n.body}</p><p className="mt-1 text-[11px] text-muted">{new Date(n.createdAt).toLocaleString()}</p></button>)}
           </div>
         </div>
       ) : null}
