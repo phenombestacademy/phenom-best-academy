@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { SiteShell } from "@/components/site-shell";
+import { AppQueryProvider } from "@/components/app-query-provider";
 import appCss from "../styles.css?url";
 import { applySettings, getLocalSettings, getSiteSettings } from "@/lib/cms";
 
