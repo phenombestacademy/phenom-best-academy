@@ -156,12 +156,10 @@ export async function setAccountPassword(password: string) {
   if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
   const current = await getSession();
   if (!current) throw new Error('Your verification session is no longer active. Please verify the code again.');
-  const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-  if (refreshError) throw refreshError;
-  if (!refreshed.session) throw new Error('Your secure session could not be refreshed. Please verify the code again.');
+  const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
+  if (userCheckError || !userCheck.user) throw new Error('Your verification session is no longer active. Please verify the code again.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
-  await supabase.auth.refreshSession();
   if (typeof window !== 'undefined') {
     const phenomUserId = await getPhenomUserId();
     window.alert(`Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
