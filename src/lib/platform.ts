@@ -135,7 +135,7 @@ export async function signInWithEmailPassword(identifier: string, password: stri
     const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: null, p_user_id: cleanIdentifier });
     if (lookupError) throw lookupError;
     const result = lookup as { found?: boolean; email?: string } | null;
-    if (!result?.found || !result.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
+    if (!result?.found || !result.email) throw new Error('Sign-in failed. Check your Phenom User ID/email and password.');
     email = result.email.trim().toLowerCase();
   }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
