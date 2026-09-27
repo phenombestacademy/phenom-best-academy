@@ -66,15 +66,31 @@ export const defaultSettings: SiteSettings = {
 const MEDIA_KEY = "phenom-cms-media-v1";
 const SETTINGS_KEY = "phenom-cms-settings-v2";
 
+let supabaseClient: SupabaseClient | null | undefined;
+
 export function getSupabase(): SupabaseClient | null {
+  if (supabaseClient !== undefined) return supabaseClient;
+
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const key = (
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.VITE_SUPABASE_ANON_KEY
   ) as string | undefined;
 
-  if (!url || !key) return null;
-  return createClient(url, key);
+  if (!url || !key) {
+    supabaseClient = null;
+    return supabaseClient;
+  }
+
+  supabaseClient = createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+
+  return supabaseClient;
 }
 
 export function getLocalMedia(): MediaItem[] {
