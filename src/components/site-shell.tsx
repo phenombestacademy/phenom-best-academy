@@ -101,7 +101,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     const onChange = () => setCurrentLocale(getLocale());
     window.addEventListener("phenom-locale-change", onChange);
     return () => window.removeEventListener("phenom-locale-change", onChange);
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     setHasAccountHistory(window.localStorage.getItem("phenom-account-history-v1") === "true");
@@ -116,20 +116,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    const refreshProfile = () => {
-      window.setTimeout(() => {
-        if (!active) return;
-        void getMyProfile().then((nextProfile) => {
-          if (!active) return;
-          setProfile(nextProfile);
-          setIsSuperAdmin(nextProfile?.role === "super_admin");
-        }).catch(() => {
-          if (!active) return;
-          setProfile(null);
-          setIsSuperAdmin(false);
-        });
-      }, 0);
-    };
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
@@ -139,25 +125,27 @@ export function SiteShell({ children }: { children: ReactNode }) {
         window.localStorage.setItem("phenom-account-history-v1", "true");
         setHasAccountHistory(true);
         if (data.session?.user.email) window.localStorage.setItem("phenom-last-email-v1", data.session.user.email);
-        refreshProfile();
+        void queryClient.invalidateQueries({ queryKey: ["account-profile"] });
       } else {
         setProfile(null);
         setIsSuperAdmin(false);
+        queryClient.removeQueries({ queryKey: ["account-profile"] });
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       setIsAuthenticated(Boolean(session));
-      setProfile(null);
       if (!session) {
+        setProfile(null);
         setIsSuperAdmin(false);
+        queryClient.removeQueries({ queryKey: ["account-profile"] });
         return;
       }
       window.localStorage.setItem("phenom-account-history-v1", "true");
       setHasAccountHistory(true);
       if (session.user.email) window.localStorage.setItem("phenom-last-email-v1", session.user.email);
-      refreshProfile();
+      void queryClient.invalidateQueries({ queryKey: ["account-profile"] });
     });
 
     return () => {
@@ -175,6 +163,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     const nextProfile = profileQuery.data;
     if (!nextProfile) return;
     setProfile(nextProfile);
+    setIsSuperAdmin(nextProfile.role === "super_admin");
     const saved = nextProfile.preferredLocale as SupportedLocale | undefined;
     if (saved && saved !== getLocale()) {
       setLocale(saved);
