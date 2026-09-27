@@ -82,17 +82,22 @@ export function getSupabase(): SupabaseClient | null {
       "",
   ).trim();
 
-  // Prefer deployment variables, but reject empty/malformed values so a bad Vercel
+  // Prefer deployment variables, but reject empty or malformed values so a bad Vercel
   // variable cannot make the application appear disconnected when the known project
   // configuration is available.
-  const url =
-    /^https:\/\/[^/]+\\.supabase\\.co(?:\\/.*)?$/i.test(configuredUrl)
-      ? configuredUrl
-      : fallbackUrl;
+  let url = fallbackUrl;
+  try {
+    const parsed = new URL(configuredUrl);
+    if (parsed.protocol === "https:" && parsed.hostname.endsWith(".supabase.co")) {
+      url = configuredUrl;
+    }
+  } catch {
+    // Keep the known-good fallback URL.
+  }
+
   const key =
-    /^(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+)$/.test(
-      configuredKey,
-    )
+    configuredKey.startsWith("sb_publishable_") ||
+    (configuredKey.startsWith("eyJ") && configuredKey.split(".").length === 3)
       ? configuredKey
       : fallbackKey;
 
