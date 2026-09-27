@@ -82,7 +82,7 @@ export async function subscribeEmail(email: string) {
 export async function listMyNotifications(): Promise<UserNotification[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data, error } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false }).limit(50);
+  const { data, error } = await supabase.from('user_notifications').select('id,title,body,link_url,read_at,created_at').order('created_at', { ascending: false }).limit(50);
   if (error) throw error;
   return (data ?? []).map((row: Record<string, unknown>) => ({ id: String(row.id), title: String(row.title ?? ''), body: String(row.body ?? ''), linkUrl: row.link_url ? String(row.link_url) : null, readAt: row.read_at ? String(row.read_at) : null, createdAt: String(row.created_at ?? '') }));
 }
