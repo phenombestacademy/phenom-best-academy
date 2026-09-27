@@ -172,7 +172,7 @@ function AccountPage() {
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
             <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">{authStep === 'method' ? 'Create or sign in to your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with password' : authStep === 'forgotOtp' ? 'Enter password recovery code' : authStep === 'forgotPassword' ? 'Create new password' : 'Create your password'}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              {authStep === 'method' ? 'Choose how you want to continue.' : authStep === 'otp' ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</> : authStep === 'emailPassword' ? 'Use your Phenom User ID or the email address registered to your Phenom account, together with your password.' : authStep === 'forgotOtp' ? <>We sent a 6-digit password recovery code to <strong>{email}</strong>. Enter it here to verify your identity.</> : authStep === 'forgotPassword' ? 'Your recovery code has been verified. Create and confirm your new password.' : 'Your email has been verified. Create your password now. Next time, you can sign in with your Phenom User ID or email address and this password.'}
+              {authStep === 'method' ? 'Sign in with your Phenom User ID or registered email address and password.' : authStep === 'otp' ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</> : authStep === 'emailPassword' ? 'Use your Phenom User ID or the email address registered to your Phenom account, together with your password.' : authStep === 'forgotOtp' ? <>We sent a 6-digit password recovery code to <strong>{email}</strong>. Enter it here to verify your identity.</> : authStep === 'forgotPassword' ? 'Your recovery code has been verified. Create and confirm your new password.' : 'Your email has been verified. Create your password now. Next time, you can sign in with your Phenom User ID or email address and this password.'}
             </p>
 
             {authStep === 'method' ? <>
@@ -201,23 +201,8 @@ function AccountPage() {
                 <button type="button" onClick={startForgotPassword} disabled={busy || !email.trim()} className="mt-3 w-full text-sm font-semibold text-green disabled:opacity-50">Forgot password or Phenom User ID?</button>
               </div>
 
-              <div className="my-4 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" /><span>or</span><span className="h-px flex-1 bg-line" /></div>
-
-              <p className="text-sm font-semibold">Create a new Phenom account</p>
-              <div className="mt-3 rounded-xl border border-line bg-white p-4">
-                <div className="rounded-xl border border-line bg-paper p-4">
-                  <label className="text-sm font-semibold">Account type</label>
-                  <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm">{accountChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>
-                  <p className="mt-2 text-xs text-muted">{accountChoices.find((x) => x.value === role)?.description}</p>
-                </div>
-                <label htmlFor="phenom-email" className="mt-4 block text-sm font-semibold">New account email address</label>
-                <input id="phenom-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm" />
-                <Button className="mt-3 w-full" onClick={requestEmailOtp} disabled={busy || !email.trim()}>{busy ? 'Sending verification code…' : 'Continue with email address'}</Button>
-                <p className="mt-2 text-center text-xs text-muted">For a new account, we will send a 6-digit verification code to this email. Enter the code on the device where you started registration.</p>
-              </div>
-
               <Button variant="cream" className="mt-3 w-full border border-line" onClick={loginWithGoogle} disabled={busy}>{busy ? 'Opening Google sign-in…' : 'Continue with Google'}</Button>
-              <p className="mt-2 text-center text-xs text-muted">Google can be used to sign in or create an account.</p>
+              <p className="mt-2 text-center text-xs text-muted">Sign in securely with your Google account.</p>
             </> : null}
 
             {authStep === 'otp' ? <div className="mt-5">
