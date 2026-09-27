@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Camera, KeyRound, LockKeyhole, LogOut, Settings2, UserCircle, BookOpen, Languages, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHero, Section } from "@/components/page-hero";
@@ -51,30 +52,31 @@ function SettingsPage() {
     firstName: "", middleName: "", surname: "", phone: "", dateOfBirth: "", gender: "", country: "Nigeria", stateRegion: "", city: "", address: "",
   });
 
+  const profileQuery = useQuery({ queryKey: ["account-profile"], queryFn: getMyProfile, staleTime: 60_000 });
+  const subscriptionsQuery = useQuery({ queryKey: ["my-subscriptions"], queryFn: getMyActiveSubscriptions, staleTime: 30_000 });
+  const queriedProfile = profileQuery.data ?? null;
+  const queriedSubscriptions = subscriptionsQuery.data ?? [];
+
   useEffect(() => {
-    Promise.all([getMyProfile(), getMyActiveSubscriptions()])
-      .then(([p, subs]) => {
-        if (!p) {
-          window.location.assign("/account");
-          return;
-        }
-        setProfile(p);
-        setSubscriptions(subs);
-        setForm({
-          firstName: p.firstName || "",
-          middleName: p.middleName || "",
-          surname: p.surname || "",
-          phone: p.phone || "",
-          dateOfBirth: p.dateOfBirth || "",
-          gender: p.gender || "",
-          country: p.country || "Nigeria",
-          stateRegion: p.stateRegion || "",
-          city: p.city || "",
-          address: p.address || "",
-        });
-      })
-      .catch((error) => setMessage(error instanceof Error ? error.message : "Could not load your account settings."));
-  }, []);
+    if (!queriedProfile) {
+      if (!profileQuery.isPending && !profileQuery.isFetching) window.location.assign("/account");
+      return;
+    }
+    setProfile(queriedProfile);
+    setSubscriptions(queriedSubscriptions);
+    setForm({
+      firstName: queriedProfile.firstName || "",
+      middleName: queriedProfile.middleName || "",
+      surname: queriedProfile.surname || "",
+      phone: queriedProfile.phone || "",
+      dateOfBirth: queriedProfile.dateOfBirth || "",
+      gender: queriedProfile.gender || "",
+      country: queriedProfile.country || "Nigeria",
+      stateRegion: queriedProfile.stateRegion || "",
+      city: queriedProfile.city || "",
+      address: queriedProfile.address || "",
+    });
+  }, [queriedProfile, queriedSubscriptions, profileQuery.isPending, profileQuery.isFetching]);
 
   const saveProfile = async () => {
     try {
