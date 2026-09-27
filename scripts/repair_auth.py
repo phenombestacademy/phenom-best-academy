@@ -1,4 +1,3 @@
-# Phenom auth session repair — verified OTP sessions must be persisted before password updates.
 from pathlib import Path
 
 p = Path('src/lib/platform.ts')
@@ -88,3 +87,38 @@ if old in s:
     s = s.replace(old, new, 1)
 
 p.write_text(s, encoding='utf-8')
+
+# Recovery flow fix: verifyOtp must persist the returned session before updateUser.
+a = Path('src/routes/account.tsx')
+a_s = a.read_text(encoding='utf-8')
+
+old = """      if (error) throw error;
+      if (!data.session) throw new Error('The recovery code was accepted, but a secure session was not created. Please try again.');
+      setPassword(''); setPasswordConfirm(''); setShowPassword(false); setAuthStep('forgotPassword'); setMessage('Your email has been verified. Create a new password now.');"""
+new = """      if (error) throw error;
+      if (!data.session) throw new Error('The recovery code was accepted, but a secure session was not created. Please try again.');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessionError) throw sessionError;
+      setPassword(''); setPasswordConfirm(''); setShowPassword(false); setAuthStep('forgotPassword'); setMessage('Your email has been verified. Create a new password now.');"""
+if old in a_s:
+    a_s = a_s.replace(old, new, 1)
+
+old = """      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      const p = await getMyProfile();"""
+new = """      const session = await getSupabase()?.auth.getSession();
+      if (!session?.data.session) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
+      if (!refreshed.session) throw new Error('Your secure recovery session could not be refreshed. Please verify the recovery code again.');
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      await supabase.auth.refreshSession();
+      const p = await getMyProfile();"""
+if old in a_s:
+    a_s = a_s.replace(old, new, 1)
+
+a.write_text(a_s, encoding='utf-8')
