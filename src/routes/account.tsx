@@ -176,21 +176,48 @@ function AccountPage() {
             </p>
 
             {authStep === 'method' ? <>
-              <p className="mt-2 text-xs leading-relaxed text-muted">Signing in with your Google account may require phone verification.</p>
-              <div className="mt-5 rounded-xl border border-line bg-white p-4">
-                <label className="text-sm font-semibold">Account type</label>
-                <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm">{accountChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>
-                <p className="mt-2 text-xs text-muted">{accountChoices.find((x) => x.value === role)?.description}</p>
+              <div className="mt-5 rounded-xl border border-green/30 bg-green/5 p-4">
+                <p className="text-sm font-semibold text-green">Sign in to your existing Phenom account</p>
+                <label htmlFor="phenom-login-identifier" className="mt-3 block text-sm font-semibold">Phenom User ID or email address</label>
+                <input id="phenom-login-identifier" type="text" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Phenom User ID or email address" className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
+                <label htmlFor="phenom-login-password" className="mt-3 block text-sm font-semibold">Password</label>
+                <div className="relative mt-2">
+                  <input id="phenom-login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-line bg-white p-3 pr-16 text-sm" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green">{showPassword ? 'Hide' : 'Show'}</button>
+                </div>
+                <Button className="mt-4 w-full" onClick={async () => {
+                  try {
+                    setBusy(true); setMessage('');
+                    const p = await signInWithEmailPassword(email, password);
+                    setProfile(p);
+                    if (p) { setCategory(p.accountCategory); setRole(p.onboardingRole); setAccountType(p.accountType); setParentEmail(p.parentEmail || ''); }
+                    setMessage('Signed in successfully. Welcome back.');
+                  } catch (e) {
+                    setMessage(e instanceof Error ? e.message : 'Phenom User ID/email and password sign-in failed.');
+                  } finally { setBusy(false); }
+                }} disabled={busy || !email.trim() || !password}>
+                  {busy ? 'Signing in…' : 'Sign in'}
+                </Button>
+                <button type="button" onClick={startForgotPassword} disabled={busy || !email.trim()} className="mt-3 w-full text-sm font-semibold text-green disabled:opacity-50">Forgot password or Phenom User ID?</button>
               </div>
-              <Button className="mt-6 w-full" onClick={loginWithGoogle} disabled={busy}>{busy ? 'Opening Google sign-in…' : 'Continue with Google'}</Button>
-              <div className="my-3 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" /><span>or</span><span className="h-px flex-1 bg-line" /></div>
-              <div className="rounded-xl border border-line bg-white p-4">
-                <label htmlFor="phenom-email" className="text-sm font-semibold">Email address</label>
+
+              <div className="my-4 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" /><span>or</span><span className="h-px flex-1 bg-line" /></div>
+
+              <p className="text-sm font-semibold">Create a new Phenom account</p>
+              <div className="mt-3 rounded-xl border border-line bg-white p-4">
+                <div className="rounded-xl border border-line bg-paper p-4">
+                  <label className="text-sm font-semibold">Account type</label>
+                  <select value={role} onChange={(e) => selectRole(e.target.value as OnboardingRole)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm">{accountChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>
+                  <p className="mt-2 text-xs text-muted">{accountChoices.find((x) => x.value === role)?.description}</p>
+                </div>
+                <label htmlFor="phenom-email" className="mt-4 block text-sm font-semibold">New account email address</label>
                 <input id="phenom-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-xl border border-line bg-paper p-3 text-sm" />
                 <Button className="mt-3 w-full" onClick={requestEmailOtp} disabled={busy || !email.trim()}>{busy ? 'Sending verification code…' : 'Continue with email address'}</Button>
-                <p className="mt-2 text-center text-xs text-muted">We will send a 6-digit verification code to this email. You only need access to this email address to receive your code. The code can be entered on the device where you started sign-in.</p>
+                <p className="mt-2 text-center text-xs text-muted">For a new account, we will send a 6-digit verification code to this email. Enter the code on the device where you started registration.</p>
               </div>
-              <button type="button" onClick={() => { setMessage(''); setAuthStep('emailPassword'); }} className="mt-4 w-full text-sm font-semibold text-green">Already have a Phenom account? Sign in with password</button>
+
+              <Button variant="cream" className="mt-3 w-full border border-line" onClick={loginWithGoogle} disabled={busy}>{busy ? 'Opening Google sign-in…' : 'Continue with Google'}</Button>
+              <p className="mt-2 text-center text-xs text-muted">Google can be used to sign in or create an account.</p>
             </> : null}
 
             {authStep === 'otp' ? <div className="mt-5">
