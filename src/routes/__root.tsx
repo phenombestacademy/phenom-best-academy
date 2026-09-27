@@ -56,9 +56,11 @@ function RootDocument() {
         <HeadContent />
       </head>
       <body>
-        <SiteShell>
-          <Outlet />
-        </SiteShell>
+        <AppQueryProvider>
+          <SiteShell>
+            <Outlet />
+          </SiteShell>
+        </AppQueryProvider>
         <Scripts />
       </body>
     </html>
