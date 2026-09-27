@@ -134,7 +134,7 @@ export async function signInWithEmailPassword(identifier: string, password: stri
     email = result.email.trim().toLowerCase();
   }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new Error('Use correct Phenom User ID or email address and password and try again.');
+  if (error) throw new Error('Sign-in failed. Check your Phenom User ID/email and password.');
   return getMyProfile();
 }
 
