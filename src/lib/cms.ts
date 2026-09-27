@@ -295,7 +295,7 @@ export async function listAllPaymentProviders(): Promise<
 
   const { data, error } = await supabase
     .from("payment_provider_settings")
-    .select("*")
+    .select("provider,enabled,public_label,public_note,direct_bank_name,direct_account_name,direct_account_number,direct_instructions")
     .order("provider");
 
   if (error) throw error;
