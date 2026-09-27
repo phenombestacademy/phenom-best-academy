@@ -23,8 +23,6 @@ export type Profile = {
 const CATEGORY_KEY = 'phenom-pending-account-category-v1';
 const ROLE_KEY = 'phenom-pending-account-role-v1';
 
-// Authentication methods are mutually exclusive. This prevents a Google OAuth
-// redirect and an email OTP request from ever being started at the same time.
 let activeAuthFlow: 'google' | 'emailOtp' | null = null;
 
 function beginAuthFlow(flow: 'google' | 'emailOtp') {
@@ -77,8 +75,6 @@ export async function signInWithGoogle() {
       options: { redirectTo },
     });
     if (error) throw error;
-    // In the browser Supabase redirects away from this page. If the provider
-    // does not redirect, release the guard so another method remains usable.
     window.setTimeout(() => endAuthFlow('google'), 5000);
   } catch (error) {
     endAuthFlow('google');
@@ -93,6 +89,31 @@ export async function sendEmailOtp(email: string) {
     if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) throw new Error('Enter your email address.');
+
+    // First ask Supabase whether an existing account can receive an OTP.
+    // shouldCreateUser:false prevents an existing email from silently entering
+    // the sign-up flow. A successful request means the account already exists.
+    const existingAccountCheck = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { shouldCreateUser: false },
+    });
+
+    if (!existingAccountCheck.error) {
+      throw new Error('You already have a Phenom account. Please sign in instead.');
+    }
+
+    // Supabase documents user_not_found as the condition for a missing account.
+    // Only that condition is allowed to fall through into account creation;
+    // transport, rate-limit and service errors must never create an account.
+    const errorCode = existingAccountCheck.error.code;
+    const errorMessage = existingAccountCheck.error.message.toLowerCase();
+    const accountDoesNotExist =
+      errorCode === 'user_not_found' ||
+      errorCode === 'user_not_found_or_invalid' ||
+      errorMessage.includes('user not found');
+
+    if (!accountDoesNotExist) throw existingAccountCheck.error;
+
     const otpRequest = supabase.auth.signInWithOtp({
       email: cleanEmail,
       options: { shouldCreateUser: true },
@@ -131,13 +152,27 @@ export async function verifyEmailOtp(email: string, token: string) {
   return data.session;
 }
 
-export async function signInWithEmailPassword(email: string, password: string) {
+export async function signInWithEmailPassword(identifier: string, password: string) {
   const supabase = getSupabase();
   if (!supabase) throw new Error('Connect Supabase before enabling accounts.');
-  const { error } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
+  const cleanIdentifier = identifier.trim();
+  if (!cleanIdentifier) throw new Error('Enter your Phenom User ID or email address.');
+
+  // Phenom User ID is an approved login identifier. Resolve it through the
+  // authenticated profile table when the supplied identifier is not an email.
+  let email = cleanIdentifier.toLowerCase();
+  if (!cleanIdentifier.includes('@')) {
+    const { data: profile, error: lookupError } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('phenom_user_id', cleanIdentifier)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+    if (!profile?.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
+    email = String(profile.email).trim().toLowerCase();
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return getMyProfile();
 }
@@ -155,10 +190,6 @@ export async function setAccountPassword(password: string) {
   if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
-
-  // Account creation is complete at this point. Keep the authenticated
-  // session, obtain the permanent Phenom User ID, and give the user a clear
-  // confirmation before returning them to the public home page.
   if (typeof window !== 'undefined') {
     const phenomUserId = await getPhenomUserId();
     window.alert(
