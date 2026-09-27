@@ -149,9 +149,8 @@ function AccountPage() {
       if (!supabase) throw new Error('Connect Supabase before enabling password recovery.');
       const currentSession = await supabase.auth.getSession();
       if (!currentSession.data.session) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
-      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-      if (!refreshed.session) throw new Error('Your secure recovery session could not be refreshed. Please verify the recovery code again.');
+      const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
+      if (userCheckError || !userCheck.user) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       const p = await getMyProfile();
