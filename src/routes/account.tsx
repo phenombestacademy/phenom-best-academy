@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Building2, GraduationCap, LogOut, ShieldCheck, UsersRound, HeartHandshake, Settings, Compass, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getSupabase } from '@/lib/cms';
 import { getMyProfile, getPendingAccountChoice, saveAccountChoice, saveChildSafetySettings, saveLearningLanguage, savePreferredLocale, sendEmailOtp, sendWelcomeEmail, setAccountPassword, signInWithEmailPassword, signInWithGoogle, verifyEmailOtp, signOut, type AccountCategory, type OnboardingRole, type Profile } from '@/lib/platform';
 import { getLocale, setLocale, supportedLocales, type SupportedLocale } from '@/lib/i18n';
 
@@ -28,7 +29,7 @@ function AccountPage() {
   const [parentEmail, setParentEmail] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [authStep, setAuthStep] = useState<'method' | 'password' | 'otp' | 'emailPassword'>('method');
+  const [authStep, setAuthStep] = useState<'method' | 'password' | 'otp' | 'emailPassword' | 'forgotOtp' | 'forgotPassword'>('method');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -90,6 +91,72 @@ function AccountPage() {
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Your password could not be created.'); setBusy(false); }
   };
 
+  const startForgotPassword = async () => {
+    try {
+      setBusy(true); setMessage('');
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Connect Supabase before enabling password recovery.');
+      let recoveryEmail = email.trim().toLowerCase();
+      if (!recoveryEmail) throw new Error('Enter your Phenom User ID or email address first.');
+      if (!recoveryEmail.includes('@')) {
+        const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: null, p_user_id: recoveryEmail });
+        if (lookupError) throw lookupError;
+        const result = lookup as { found?: boolean; email?: string } | null;
+        if (!result?.found || !result.email) throw new Error('We could not find that Phenom User ID. Check the ID and try again.');
+        recoveryEmail = result.email.trim().toLowerCase();
+      }
+      const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: recoveryEmail, p_user_id: null });
+      if (lookupError) throw lookupError;
+      if (!Boolean((lookup as { exists?: boolean } | null)?.exists)) throw new Error('We could not find a Phenom account for that email address. Please check the details and try again.');
+      const { error } = await supabase.auth.signInWithOtp({ email: recoveryEmail, options: { shouldCreateUser: false } });
+      if (error) throw error;
+      setEmail(recoveryEmail);
+      setOtp('');
+      setPassword('');
+      setPasswordConfirm('');
+      setAuthStep('forgotOtp');
+      setMessage('A 6-digit password recovery code has been sent to your email address. Enter it here.');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'We could not start password recovery.');
+    } finally { setBusy(false); }
+  };
+
+  const verifyForgotPasswordOtp = async () => {
+    try {
+      setBusy(true); setMessage('');
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Connect Supabase before enabling password recovery.');
+      const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: otp.replace(/\D/g, ''), type: 'email' });
+      if (error) throw error;
+      if (!data.session) throw new Error('The recovery code was accepted, but a secure session was not created. Please try again.');
+      setPassword(''); setPasswordConfirm(''); setShowPassword(false); setAuthStep('forgotPassword'); setMessage('Your email has been verified. Create a new password now.');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'The recovery code could not be accepted.');
+    } finally { setBusy(false); }
+  };
+
+  const createNewPassword = async () => {
+    try {
+      setBusy(true); setMessage('');
+      if (password.length < 8) throw new Error('Use at least 8 characters for your new password.');
+      if (password !== passwordConfirm) throw new Error('The passwords do not match.');
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('Connect Supabase before enabling password recovery.');
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      const p = await getMyProfile();
+      const userId = p?.phenomUserId || 'Being prepared';
+      window.alert(`Welcome back! You have successfully created a new password.\n\nYour Phenom User ID is: ${userId}\n\nClick OK to continue.`);
+      setProfile(p);
+      setAuthStep('method');
+      setMessage('Welcome back! You are signed in.');
+      setPassword(''); setPasswordConfirm(''); setOtp('');
+      window.location.assign('/');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Your new password could not be created.');
+    } finally { setBusy(false); }
+  };
+
   const saveSafety = async () => {
     try { await saveChildSafetySettings({ accountType, parentEmail }); setMessage('Safety settings saved.'); }
     catch (e) { setMessage(e instanceof Error ? e.message : 'Could not save settings.'); }
@@ -103,9 +170,9 @@ function AccountPage() {
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-navy-deep/70 p-4 backdrop-blur-sm">
           <div role="dialog" aria-modal="true" aria-labelledby="phenom-auth-title" className="w-full max-w-md rounded-3xl bg-cream p-6 text-ink shadow-card sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[.18em] text-orange">Phenom Best Academy</p>
-            <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">{authStep === 'method' ? 'Create or sign in to your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with password' : 'Create your password'}</h2>
+            <h2 id="phenom-auth-title" className="mt-2 font-display text-3xl font-bold">{authStep === 'method' ? 'Create or sign in to your account' : authStep === 'otp' ? 'Verify your email' : authStep === 'emailPassword' ? 'Sign in with password' : authStep === 'forgotOtp' ? 'Enter password recovery code' : authStep === 'forgotPassword' ? 'Create new password' : 'Create your password'}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">
-              {authStep === 'method' ? 'Choose how you want to continue.' : authStep === 'otp' ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</> : authStep === 'emailPassword' ? 'Use your Phenom User ID or the email address registered to your Phenom account, together with your password.' : 'Your email has been verified. Create your password now. Next time, you can sign in with your Phenom User ID or email address and this password.'}
+              {authStep === 'method' ? 'Choose how you want to continue.' : authStep === 'otp' ? <>We sent a 6-digit code to <strong>{email}</strong>. Enter it here to continue.</> : authStep === 'emailPassword' ? 'Use your Phenom User ID or the email address registered to your Phenom account, together with your password.' : authStep === 'forgotOtp' ? <>We sent a 6-digit password recovery code to <strong>{email}</strong>. Enter it here to verify your identity.</> : authStep === 'forgotPassword' ? 'Your recovery code has been verified. Create and confirm your new password.' : 'Your email has been verified. Create your password now. Next time, you can sign in with your Phenom User ID or email address and this password.'}
             </p>
 
             {authStep === 'method' ? <>
@@ -143,6 +210,24 @@ function AccountPage() {
                 catch (e) { setMessage(e instanceof Error ? e.message : 'Phenom User ID/email and password sign-in failed.'); }
                 finally { setBusy(false); }
               }} disabled={busy || !email.trim() || !password}>{busy ? 'Signing in…' : 'Sign in'}</Button>
+              <button type="button" onClick={startForgotPassword} disabled={busy || !email.trim()} className="mt-4 w-full text-sm font-semibold text-green disabled:opacity-50">Forgot password or Phenom User ID?</button>
+              <p className="mt-1 text-center text-xs text-muted">We will send a 6-digit recovery code to the email registered to your Phenom account.</p>
+            </div> : null}
+
+            {authStep === 'forgotOtp' ? <div className="mt-5">
+              <label htmlFor="phenom-forgot-otp" className="text-sm font-semibold">6-digit password recovery code</label>
+              <input id="phenom-forgot-otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} className="mt-2 w-full rounded-xl border border-line bg-white p-4 text-center text-2xl tracking-[.35em]" />
+              <Button className="mt-4 w-full" onClick={verifyForgotPasswordOtp} disabled={busy || otp.length !== 6}>{busy ? 'Verifying…' : 'Verify recovery code'}</Button>
+              <button type="button" onClick={() => { setMessage(''); setAuthStep('emailPassword'); }} className="mt-3 w-full text-sm font-semibold text-green">Back to sign in</button>
+            </div> : null}
+
+            {authStep === 'forgotPassword' ? <div className="mt-5">
+              <label htmlFor="phenom-new-password" className="text-sm font-semibold">Create new password</label>
+              <div className="relative mt-2"><input id="phenom-new-password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-line bg-white p-3 pr-20 text-sm" /><button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green">{showPassword ? 'Hide' : 'Show'}</button></div>
+              <label htmlFor="phenom-new-password-confirm" className="mt-3 block text-sm font-semibold">Confirm new password</label>
+              <div className="relative mt-2"><input id="phenom-new-password-confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} className="w-full rounded-xl border border-line bg-white p-3 pr-20 text-sm" /><button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-green">{showPassword ? 'Hide' : 'Show'}</button></div>
+              <Button className="mt-4 w-full" onClick={createNewPassword} disabled={busy || password.length < 8 || password !== passwordConfirm}>{busy ? 'Creating new password…' : 'Create new password'}</Button>
+              {password && password !== passwordConfirm ? <p className="mt-2 text-xs text-orange">The passwords do not match.</p> : null}
             </div> : null}
 
             {authStep === 'password' ? <div className="mt-5">
@@ -154,7 +239,7 @@ function AccountPage() {
             </div> : null}
 
             {message ? <p className="mt-4 rounded-xl bg-paper p-3 text-sm text-muted">{message}</p> : null}
-            {authStep !== 'method' ? <button type="button" onClick={() => setAuthStep('method')} className="mt-3 w-full text-xs text-muted">Back to sign-in options</button> : null}
+            {authStep !== 'method' && authStep !== 'forgotOtp' && authStep !== 'forgotPassword' ? <button type="button" onClick={() => setAuthStep('method')} className="mt-3 w-full text-xs text-muted">Back to sign-in options</button> : null}
             <p className="mt-4 text-center text-xs text-muted">Phenom Best Academy keeps your authentication secure. Your password is never shown to the Academy.</p>
           </div>
         </div>
