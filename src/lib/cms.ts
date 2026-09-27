@@ -71,10 +71,15 @@ let supabaseClient: SupabaseClient | null | undefined;
 export function getSupabase(): SupabaseClient | null {
   if (supabaseClient !== undefined) return supabaseClient;
 
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  // The publishable key is safe for browser use. Keep environment variables as the
+  // preferred configuration, with the connected Phenom project as a resilient fallback
+  // so the public application does not become disconnected when deployment variables are absent.
+  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+    "https://hajrdejlamuiqjjhdnsv.supabase.co";
   const key = (
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    "sb_publishable_y5GETBcTdXRRKpcZjlKe6Q_slLQUCA-"
   ) as string | undefined;
 
   if (!url || !key) {
