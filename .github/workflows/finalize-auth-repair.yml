@@ -1,0 +1,104 @@
+name: Finalize Phenom authentication repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.head_commit.message != 'fix: finalize account creation and password recovery'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch authentication flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/lib/platform.ts')
+          s = p.read_text(encoding='utf-8')
+
+          old = """  const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw new Error('Sign-in failed. Check your Phenom User ID/email and password.');
+            return getMyProfile();"""
+          new = """  const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw new Error('Sign-in failed. Check your Phenom User ID/email and password.');
+            try {
+              return await getMyProfile();
+            } catch {
+              return null;
+            }"""
+          if old not in s:
+              raise SystemExit('Expected sign-in block not found')
+          s = s.replace(old, new, 1)
+
+          old = """  if (typeof window !== 'undefined') {
+            const phenomUserId = await getPhenomUserId();
+            window.alert(`Phenom account created successfully.\\n\\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\\n\\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
+            window.location.assign('/');
+          }
+        }"""
+          new = """  if (typeof window !== 'undefined') {
+            let phenomUserId: string | null = null;
+            try {
+              const { data } = await supabase.rpc('get_my_phenom_user_id');
+              phenomUserId = data ? String(data) : null;
+            } catch {
+              try { phenomUserId = await getPhenomUserId(); } catch { phenomUserId = null; }
+            }
+            window.alert(`Phenom account created successfully.\\n\\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\\n\\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
+            window.location.assign('/');
+          }
+        }"""
+          if old not in s:
+              raise SystemExit('Expected account-password success block not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          a = Path('src/routes/account.tsx')
+          a_s = a.read_text(encoding='utf-8')
+
+          old = """      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      const p = await getMyProfile();
+      const userId = p?.phenomUserId || 'Being prepared';
+      window.alert(`Welcome back! You have successfully created a new password.\\n\\nYour Phenom User ID is: ${userId}\\n\\nClick OK to continue.`);
+      setProfile(p);"""
+          new = """      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      let p: Profile | null = null;
+      try { p = await getMyProfile(); } catch { p = null; }
+      let userId = p?.phenomUserId || '';
+      if (!userId) {
+        try {
+          const { data } = await supabase.rpc('get_my_phenom_user_id');
+          userId = data ? String(data) : '';
+        } catch { /* password was already updated; do not report reset failure */ }
+      }
+      window.alert(`Welcome back! You have successfully created a new password.\\n\\nYour Phenom User ID is: ${userId || 'Being prepared'}\\n\\nClick OK to continue.`);
+      setProfile(p);"""
+          if old not in a_s:
+              raise SystemExit('Expected recovery success block not found')
+          a_s = a_s.replace(old, new, 1)
+          a.write_text(a_s, encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit repaired authentication flow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/platform.ts src/routes/account.tsx
+          git diff --cached --quiet || git commit -m "fix: finalize account creation and password recovery"
+          git push
