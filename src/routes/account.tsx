@@ -200,9 +200,6 @@ function AccountPage() {
                 </Button>
                 <button type="button" onClick={startForgotPassword} disabled={busy || !email.trim()} className="mt-3 w-full text-sm font-semibold text-green disabled:opacity-50">Forgot password or Phenom User ID?</button>
               </div>
-
-              <Button variant="cream" className="mt-3 w-full border border-line" onClick={loginWithGoogle} disabled={busy}>{busy ? 'Opening Google sign-in…' : 'Continue with Google'}</Button>
-              <p className="mt-2 text-center text-xs text-muted">Sign in securely with your Google account.</p>
             </> : null}
 
             {authStep === 'otp' ? <div className="mt-5">
