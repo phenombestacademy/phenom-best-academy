@@ -32,8 +32,7 @@ function SignInPage() {
       }
 
       const profile = await signInWithEmailPassword(email, password);
-      if (!profile) throw new Error('Sign-in succeeded, but your Phenom profile could not be loaded.');
-      setMessage(profile.phenomUserId ? `Signed in. Phenom User ID: ${profile.phenomUserId}` : 'Signed in successfully.');
+      setMessage(profile?.phenomUserId ? `Signed in. Phenom User ID: ${profile.phenomUserId}` : 'Signed in successfully.');
       setTimeout(() => navigate({ to: '/' }), 250);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Sign-in failed.');
@@ -60,7 +59,6 @@ function SignInPage() {
 
         <Button className="mt-5 w-full" onClick={signIn} disabled={busy || !identifier.trim() || !password}>{busy ? 'Signing in…' : 'Sign in'}</Button>
         {message && <p className="mt-4 rounded-xl bg-paper p-3 text-sm text-muted">{message}</p>}
-        <Link to="/account" className="mt-5 block text-center text-sm font-semibold text-green">Create a new Phenom account</Link>
       </div>
     </div>
   );

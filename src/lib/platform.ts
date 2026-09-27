@@ -140,7 +140,12 @@ export async function signInWithEmailPassword(identifier: string, password: stri
   }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw new Error('Sign-in failed. Check your Phenom User ID/email and password.');
-  return getMyProfile();
+  try {
+    return await getMyProfile();
+  } catch {
+    // Authentication succeeded; profile loading must not block the user's return to the homepage.
+    return null;
+  }
 }
 
 export async function sendWelcomeEmail() {
@@ -161,7 +166,12 @@ export async function setAccountPassword(password: string) {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
   if (typeof window !== 'undefined') {
-    const phenomUserId = await getPhenomUserId();
+    let phenomUserId: string | null = null;
+    try {
+      phenomUserId = await getPhenomUserId();
+    } catch {
+      // Password creation has already succeeded; profile lookup must not turn success into a false failure.
+    }
     window.alert(`Phenom account created successfully.\n\nYour Phenom User ID is: ${phenomUserId || 'Being prepared'}\n\nPlease keep this ID safe. You can use it or your email address to sign in next time.`);
     window.location.assign('/');
   }
@@ -191,7 +201,7 @@ export async function getPhenomUserId(): Promise<string | null> {
   const session = await getSession();
   if (!session) return null;
   const { data, error } = await supabase.from('profiles').select('phenom_user_id').eq('id', session.user.id).maybeSingle();
-  if (error) throw error;
+  if (error) return null;
   return data?.phenom_user_id ? String(data.phenom_user_id) : null;
 }
 

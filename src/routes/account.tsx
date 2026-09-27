@@ -154,9 +154,16 @@ function AccountPage() {
       if (!currentSession.data.session) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
       const { data: userCheck, error: userCheckError } = await supabase.auth.getUser();
       if (userCheckError || !userCheck.user) throw new Error('Your recovery session is no longer active. Please verify the recovery code again.');
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshed.session) throw new Error('Your recovery session could not be refreshed. Please verify the recovery code again.');
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      const p = await getMyProfile();
+      let p = null;
+      try {
+        p = await getMyProfile();
+      } catch {
+        // Password reset has already succeeded; profile loading must not turn success into a false failure.
+      }
       const userId = p?.phenomUserId || 'Being prepared';
       window.alert(`Welcome back! You have successfully created a new password.\n\nYour Phenom User ID is: ${userId}\n\nClick OK to continue.`);
       setProfile(p);
