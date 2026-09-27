@@ -191,7 +191,7 @@ function AccountPage() {
                     const p = await signInWithEmailPassword(email, password);
                     setProfile(p);
                     if (p) { setCategory(p.accountCategory); setRole(p.onboardingRole); setAccountType(p.accountType); setParentEmail(p.parentEmail || ''); }
-                    setMessage('Signed in successfully. Welcome back.');
+                    window.location.assign('/');
                   } catch (e) {
                     setMessage(e instanceof Error ? e.message : 'Phenom User ID/email and password sign-in failed.');
                   } finally { setBusy(false); }
@@ -215,8 +215,8 @@ function AccountPage() {
               <label htmlFor="phenom-login-password" className="mt-3 block text-sm font-semibold">Password</label>
               <input id="phenom-login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-line bg-white p-3 text-sm" />
               <Button className="mt-4 w-full" onClick={async () => {
-                try { setBusy(true); setMessage(''); const p = await signInWithEmailPassword(email, password); setProfile(p); if (p) { setCategory(p.accountCategory); setRole(p.onboardingRole); } setAuthStep('method'); setMessage('Signed in successfully.'); }
-                catch (e) { setMessage(e instanceof Error ? e.message : 'Phenom User ID/email and password sign-in failed.'); }
+                try { setBusy(true); setMessage(''); const p = await signInWithEmailPassword(email, password); setProfile(p); if (p) { setCategory(p.accountCategory); setRole(p.onboardingRole); } window.location.assign('/'); }
+                catch (e) { setMessage(e instanceof Error ? e.message : 'Use correct Phenom User ID or email address and password and try again.'); }
                 finally { setBusy(false); }
               }} disabled={busy || !email.trim() || !password}>{busy ? 'Signing in…' : 'Sign in'}</Button>
               <button type="button" onClick={startForgotPassword} disabled={busy || !email.trim()} className="mt-4 w-full text-sm font-semibold text-green disabled:opacity-50">Forgot password or Phenom User ID?</button>
