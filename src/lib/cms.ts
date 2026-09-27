@@ -79,7 +79,7 @@ export function getSupabase(): SupabaseClient | null {
   const key = (
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    "sb_publishable_y5GETBcTdXRRKpcZjlKe6Q_slLQUCA-"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhanJkZWpsYW11aXFqamhkbnN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1Njk2OTIsImV4cCI6MjEwNTE0NTY5Mn0.o1hNqDcOzxYUNij_zVFlcaetwMIOrzNOziA0JABpLVI"
   ) as string | undefined;
 
   if (!url || !key) {
