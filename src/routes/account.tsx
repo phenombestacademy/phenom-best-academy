@@ -50,7 +50,10 @@ function AccountPage() {
         setLearningLocale((p.learningLocale as SupportedLocale | null) || '');
         setSupportLocale((p.supportLocale as SupportedLocale | null) || getLocale());
       }
-    }).catch(() => setMessage('Connect Supabase before enabling accounts.'));
+    }).catch((error) => {
+      const text = error instanceof Error ? error.message : 'We could not load your account information.';
+      setMessage(text.includes('Connect Supabase') ? text : `Account connection error: ${text}`);
+    });
   }, []);
 
   const selectRole = (r: OnboardingRole) => {
