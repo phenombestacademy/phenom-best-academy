@@ -740,20 +740,25 @@ function ToolsPage() {
   }, []);
 
   useEffect(() => {
-    if (!("speechSynthesis" in window)) return;
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    if (!synth || typeof synth.getVoices !== "function") return;
     const chooseVoice = () => {
-      if (speechVoice) return;
       const preferredSpeech = toolLocale.toLowerCase();
-      const voices = window.speechSynthesis.getVoices();
-      const exact = voices.find((voice) => voice.lang.toLowerCase() === preferredSpeech);
-      const language = preferredSpeech.split("-")[0];
-      const regional = voices.find((voice) => voice.lang.toLowerCase().startsWith(`${language}-`));
-      if (exact || regional) setSpeechVoice((exact || regional)!.name);
+      try {
+        const voices = synth.getVoices();
+        const exact = voices.find((voice) => voice.lang.toLowerCase() === preferredSpeech);
+        const language = preferredSpeech.split("-")[0];
+        const regional = voices.find((voice) => voice.lang.toLowerCase().startsWith(`${language}-`));
+        if (exact || regional) setSpeechVoice((exact || regional)!.name);
+      } catch {
+        // Some mobile WebViews expose speechSynthesis before its voice engine is ready.
+      }
     };
     chooseVoice();
-    window.speechSynthesis.addEventListener("voiceschanged", chooseVoice);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", chooseVoice);
-  }, [toolLocale, speechVoice]);
+    synth.addEventListener?.("voiceschanged", chooseVoice);
+    return () => synth.removeEventListener?.("voiceschanged", chooseVoice);
+  }, [toolLocale]);
 
 
   useEffect(() => {
@@ -1015,18 +1020,23 @@ ${input}`,
   }
 
   function speak(text: string, language = "en-GB") {
-    if (!("speechSynthesis" in window)) {
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    if (!synth || typeof synth.speak !== "function") {
       setTranslationOutput("Speech synthesis is not available on this device/browser.");
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
-    const voice = window.speechSynthesis
-      .getVoices()
-      .find((candidate) => candidate.name === speechVoice);
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language;
+      const voices = typeof synth.getVoices === "function" ? synth.getVoices() : [];
+      const voice = voices.find((candidate) => candidate.name === speechVoice);
+      if (voice) utterance.voice = voice;
+      synth.cancel();
+      synth.speak(utterance);
+    } catch {
+      setTranslationOutput("Speech synthesis is not ready on this device. Please try again.");
+    }
   }
 
   async function translate() {
