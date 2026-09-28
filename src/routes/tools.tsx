@@ -1923,7 +1923,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
                     englishOutput ||
                     ocrResult ||
                     result;
-                  if (t && "speechSynthesis" in window) {
+                  if (t && typeof window !== "undefined" && window.speechSynthesis && typeof window.speechSynthesis.speak === "function") {
                     const u = new SpeechSynthesisUtterance(t);
                     window.speechSynthesis.speak(u);
                   }
