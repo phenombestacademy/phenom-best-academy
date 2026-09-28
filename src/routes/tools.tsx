@@ -645,6 +645,7 @@ function ToolsPage() {
   const [translationOutput, setTranslationOutput] = useState("");
   const [translationBusy, setTranslationBusy] = useState(false);
   const [speechVoice, setSpeechVoice] = useState("");
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [translationPremium, setTranslationPremium] = useState(false);
   const [speechPremium, setSpeechPremium] = useState(false);
   const [activeSubscriptions, setActiveSubscriptions] = useState<ActiveSubscription[]>([]);
@@ -747,12 +748,13 @@ function ToolsPage() {
       const preferredSpeech = toolLocale.toLowerCase();
       try {
         const voices = synth.getVoices();
+        setSpeechVoices(voices);
         const exact = voices.find((voice) => voice.lang.toLowerCase() === preferredSpeech);
         const language = preferredSpeech.split("-")[0];
         const regional = voices.find((voice) => voice.lang.toLowerCase().startsWith(`${language}-`));
-        if (exact || regional) setSpeechVoice((exact || regional)!.name);
+        if (exact || regional) setSpeechVoice((current) => current || (exact || regional)!.name);
       } catch {
-        // Some mobile WebViews expose speechSynthesis before its voice engine is ready.
+        setSpeechVoices([]);
       }
     };
     chooseVoice();
@@ -1745,7 +1747,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <label className="text-sm font-semibold">Device voice
               <select className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={speechVoice} onChange={(e) => setSpeechVoice(e.target.value)}>
                 <option value="">System default voice</option>
-                {typeof window !== "undefined" ? window.speechSynthesis.getVoices().map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name}>{voice.name} — {voice.lang}</option>) : null}
+                {speechVoices.map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name}>{voice.name} — {voice.lang}</option>)}
               </select>
             </label>
             <div className="rounded-xl border border-line bg-white p-3 text-sm">
