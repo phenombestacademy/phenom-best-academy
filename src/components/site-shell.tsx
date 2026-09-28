@@ -100,7 +100,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
     setCurrentLocale(initLocale());
     const onChange = () => setCurrentLocale(getLocale());
     window.addEventListener("phenom-locale-change", onChange);
-    return () => window.removeEventListener("phenom-locale-change", onChange);
+    window.addEventListener("phenom-locale-translations-ready", onChange);
+    return () => {
+      window.removeEventListener("phenom-locale-change", onChange);
+      window.removeEventListener("phenom-locale-translations-ready", onChange);
+    };
   }, []);
 
   useEffect(() => {
