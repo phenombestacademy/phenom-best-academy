@@ -47,15 +47,77 @@ export function getLocale(): SupportedLocale {
   return browser || 'en-NG';
 }
 
+const AI_TRANSLATIONS_KEY = "phenom-ai-ui-translations-v1";
+let aiTranslations: Record<string, Record<string, string>> = {};
+
+function loadCachedAiTranslations() {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(AI_TRANSLATIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (parsed && typeof parsed === "object") aiTranslations = parsed;
+  } catch {
+    aiTranslations = {};
+  }
+}
+
+function saveCachedAiTranslations() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(AI_TRANSLATIONS_KEY, JSON.stringify(aiTranslations));
+  } catch {}
+}
+
+async function loadAiTranslations(locale: SupportedLocale) {
+  if (typeof window === "undefined" || locale.startsWith("en-")) return;
+  if (aiTranslations[locale] && Object.keys(aiTranslations[locale]).length) return;
+  const supabase = (await import("@/lib/cms")).getSupabase();
+  if (!supabase) return;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) return;
+
+  const labels = ["About","Services","Programmes","Leadership","Contact","Careers","Media & Resources","Library","Phenom Tool Hub","Platform","Sign in","Sign up","Super Admin","Admin","Make an enquiry","Enquire","Find your path","Notifications","No new notifications.","Explore the Academy","About the Academy","Programmes & languages","Settings","My Profile","My Programmes","Sign out","Home","Path","More","Your Phenom access points"];
+
+  try {
+    const { data, error } = await supabase.functions.invoke("ai-router", {
+      body: {
+        mode: "fast",
+        prompt: [
+          "You are the Phenom Best Academy interface translation engine.",
+          "Translate each supplied UI label into the target locale.",
+          "Return JSON only as an object mapping each original label to its translation.",
+          "Preserve Phenom product names where appropriate. Do not add explanations or markdown.",
+          "Target locale: " + locale,
+          JSON.stringify(labels),
+        ].join("\n"),
+      },
+    });
+    if (error || !data?.text) return;
+    const cleaned = String(data.text).replace(/^\s*\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return;
+    const translations: Record<string, string> = {};
+    for (const label of labels) {
+      if (typeof parsed[label] === "string" && parsed[label].trim()) translations[label] = parsed[label].trim();
+    }
+    if (!Object.keys(translations).length) return;
+    aiTranslations[locale] = translations;
+    saveCachedAiTranslations();
+    window.dispatchEvent(new CustomEvent("phenom-locale-translations-ready", { detail: locale }));
+  } catch {}
+}
+
 export function setLocale(locale: SupportedLocale) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, locale);
   document.documentElement.lang = locale;
   document.documentElement.dir = locale === 'ar' || locale === 'fa-IR' || locale === 'ur-PK' || locale === 'he-IL' ? 'rtl' : 'ltr';
   window.dispatchEvent(new CustomEvent('phenom-locale-change', { detail: locale }));
+  void loadAiTranslations(locale);
 }
 
 export function initLocale(): SupportedLocale {
+  loadCachedAiTranslations();
   const locale = getLocale();
   if (typeof document !== 'undefined') {
     document.documentElement.lang = locale;
@@ -104,6 +166,6 @@ export function startAutoTranslation(..._args: unknown[]): () => void {
 }
 
 export function t(text: string, locale: SupportedLocale = getLocale()): string {
-  if (locale.startsWith('en-')) return text;
-  return CORE_LABELS[text]?.[locale] || text;
+  if (locale.startsWith("en-")) return text;
+  return aiTranslations[locale]?.[text] || CORE_LABELS[text]?.[locale] || text;
 }
