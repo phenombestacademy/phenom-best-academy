@@ -9,7 +9,8 @@
   },
   "vars": {
     "SUPABASE_URL": "https://hajrdejlamuiqjjhdnsv.supabase.co",
-    "MIGRATION_MODE": "idle"
+    "MIGRATION_MODE": "idle",
+    // R2 activation verified before migration rollout
   },
   "queues": {
     "producers": [
