@@ -206,10 +206,18 @@ async function enqueueFromSupabase(env: Env, queue: Queue, limit = 20) {
   );
   if (!r.ok) throw new Error("Could not read curriculum queue: " + await r.text());
   const jobs: any[] = await r.json();
+  let queued = 0;
   for (const job of jobs) {
+    const claim = await db(env, "lms_curriculum_content_jobs?id=eq." + encodeURIComponent(job.id) + "&status=eq.queued", {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "processing", error_message: null })
+    });
+    if (!claim.ok) continue;
     await queue.send({ job_id: job.id, job_type: job.job_type });
+    queued++;
   }
-  return jobs.length;
+  return queued;
 }
 
 export default {
@@ -249,17 +257,27 @@ export default {
           continue;
         }
 
-        const claim = await db(env, "lms_curriculum_content_jobs?id=eq." + encodeURIComponent(job.id) + "&status=eq.queued", {
-          method: "PATCH",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify({ status: "processing", error_message: null })
-        });
-        if (!claim.ok) throw new Error("Job claim failed: " + await claim.text());
+        if (job.status !== "processing") {
+          message.ack();
+          continue;
+        }
 
         await processContentJob(env, job);
         message.ack();
       } catch (error) {
         console.error("curriculum queue failure", error);
+        const jobId = String(message.body?.job_id || "");
+        if (jobId) {
+          await db(env, "lms_curriculum_content_jobs?id=eq." + encodeURIComponent(jobId), {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify({
+              status: "queued",
+              error_message: String(error instanceof Error ? error.message : error),
+              metadata: { last_failure_at: new Date().toISOString(), architecture: "cloudflare-queues" }
+            })
+          }).catch(() => undefined);
+        }
         message.retry();
       }
     }
