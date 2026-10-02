@@ -15,10 +15,6 @@
       {
         "binding": "CONTENT_QUEUE",
         "queue": "phenom-lms-content"
-      },
-      {
-        "binding": "ASSET_QUEUE",
-        "queue": "phenom-lms-assets"
       }
     ],
     "consumers": [
@@ -30,15 +26,6 @@
         "dead_letter_queue": "phenom-lms-content-dlq",
         "max_concurrency": 1,
         "retry_delay": 60
-      },
-      {
-        "queue": "phenom-lms-assets",
-        "max_batch_size": 2,
-        "max_batch_timeout": 10,
-        "max_retries": 5,
-        "dead_letter_queue": "phenom-lms-assets-dlq",
-        "max_concurrency": 1,
-        "retry_delay": 120
       }
     ]
   },
