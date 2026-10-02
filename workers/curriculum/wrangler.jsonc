@@ -4,7 +4,16 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "queues": {
+    "producers": [
+      {
+        "queue": "phenom-curriculum-content",
+        "binding": "CURRICULUM_QUEUE"
+      }
+    ],
     "consumers": [
       {
         "queue": "phenom-curriculum-content",
