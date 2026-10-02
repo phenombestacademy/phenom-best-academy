@@ -1,0 +1,21 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "phenom-curriculum-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "queues": {
+    "consumers": [
+      {
+        "queue": "phenom-curriculum-content",
+        "max_batch_size": 5,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "phenom-curriculum-dead-letter"
+      }
+    ]
+  },
+  "vars": {
+    "SUPABASE_URL": "https://hajrdejlamuiqjjhdnsv.supabase.co"
+  }
+}
