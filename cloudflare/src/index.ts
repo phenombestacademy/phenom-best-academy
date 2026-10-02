@@ -4,6 +4,7 @@ interface Env {
   AI_ROUTER_WORKER_TOKEN: string;
   CONTENT_QUEUE: Queue;
   LMS_ASSETS: R2Bucket;
+  MIGRATION_MODE?: string;
 }
 
 type Job = {
@@ -324,6 +325,7 @@ export default {
   },
 
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    if (env.MIGRATION_MODE !== "content") return;
     const jobs = await claimContentJobs(env, 5);
     for (const job of jobs) {
       try {
