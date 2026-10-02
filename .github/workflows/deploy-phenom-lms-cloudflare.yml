@@ -3,7 +3,7 @@ name: Deploy Phenom LMS Cloudflare Worker
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "* * * * *"
   push:
     branches:
       - cloudflare-background-workers
