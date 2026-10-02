@@ -29,11 +29,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          STATUS=$(curl -sS -o /tmp/r2.json -w "%{http_code}" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/phenom-lms-assets" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-          if [ "$STATUS" = "200" ]; then
+          if npx wrangler r2 bucket list | grep -q 'phenom-lms-assets'; then
             echo "R2 bucket already exists"
           else
-            curl -fsS -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets"               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"               -H "Content-Type: application/json"               --data '{"name":"phenom-lms-assets","storageClass":"Standard"}' | jq -e '.success == true or (.errors[0].code == 10000)'
+            npx wrangler r2 bucket create phenom-lms-assets
           fi
       - name: Deploy Worker
         env:
