@@ -30,6 +30,8 @@ jobs:
 
       - name: Configure Cloudflare secrets
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           AI_ROUTER_WORKER_TOKEN: ${{ secrets.AI_ROUTER_WORKER_TOKEN }}
         run: |
