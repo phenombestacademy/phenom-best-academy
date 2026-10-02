@@ -24,17 +24,6 @@ jobs:
           node-version: 22
       - name: Install Wrangler
         run: npm install --no-package-lock
-      - name: Ensure workers.dev subdomain
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          CURRENT=$(curl -fsS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN")
-          if echo "$CURRENT" | jq -e '.success == true and .result.subdomain != null' >/dev/null; then
-            echo "workers.dev subdomain already configured"
-          else
-            curl -fsS -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"               -H "Content-Type: application/json"               --data '{"subdomain":"phenom-best-academy"}' | jq -e '.success == true'
-          fi
       - name: Deploy Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
