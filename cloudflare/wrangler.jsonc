@@ -38,5 +38,6 @@
   ],
   "triggers": {
     "crons": []
-  }
+  },
+  "workers_dev": false
 }
