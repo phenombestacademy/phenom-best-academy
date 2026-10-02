@@ -8,7 +8,8 @@
     "head_sampling_rate": 0.2
   },
   "vars": {
-    "SUPABASE_URL": "https://hajrdejlamuiqjjhdnsv.supabase.co"
+    "SUPABASE_URL": "https://hajrdejlamuiqjjhdnsv.supabase.co",
+    "MIGRATION_MODE": "idle"
   },
   "queues": {
     "producers": [
@@ -36,8 +37,6 @@
     }
   ],
   "triggers": {
-    "crons": [
-      "*/2 * * * *"
-    ]
+    "crons": []
   }
 }
