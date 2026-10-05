@@ -5,7 +5,7 @@ export const academy = {
   tagline: "Empowering minds. Enriching cultures. Inspiring global leaders.",
   rc: "9704482",
   tin: "2622434760319",
-  emails: ["phenombestacademy@gmail.com", "phenombesta@gmail.com"],
+  emails: ["info@phenombestacademy.com", "admin@phenombestacademy.com", "phenombestacademy@gmail.com"],
   phones: [
     { display: "+234 916 787 2339", href: "tel:+2349167872339", wa: "https://wa.me/message/WN7IL67RAVZTM1", label: "Official Academy WhatsApp" },
     { display: "+234 806 486 8964", href: "tel:+2348064868964", wa: "https://wa.me/2348064868964", label: "Personal / secondary contact" },
