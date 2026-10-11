@@ -18,6 +18,35 @@ This is an initial migration inventory, not a declaration that every dependency 
 | `src/routes/signin.tsx`, `src/routes/account.tsx` | Direct auth and identity lookup RPCs, OTP/password recovery and profile onboarding. | Port end-to-end identity journeys, including recovery and OAuth callback handling; test against migrated account IDs. |
 | Admin and school routes | Additional direct data access and RPCs for CMS, users, school operations, learning content, results, subscriptions and payments. | Complete per-route mapping before deleting the client library; never infer authorization from UI visibility. |
 
+## Direct source-code mapping pass
+
+A read-only pass over 62 TypeScript/TSX files under `src/lib`, `src/routes` and `src/components` identified these additional direct dependencies. The route list is not a substitute for runtime tests; helper-mediated access is attributed to the library that performs it.
+
+### Component-level data access
+
+- `src/components/curriculum-browser.tsx`: `lms_curriculum_levels`, `curriculum_subject_catalogue`, `lms_curriculum_topics`.
+- `src/components/tertiary-programme-browser.tsx`: `lms_tertiary_programme_catalogue`.
+- `src/components/site-shell.tsx`: auth-state/session events.
+
+### Route-level data access
+
+- `src/routes/admin-control.tsx`: `profiles`, `safety_alerts`, `moderation_reports`, `payment_orders`, `service_enquiries`, `premium_service_grants`.
+- `src/routes/admin.tsx`: `cms_content_blocks`; Edge Functions `send-admin-email`, `admin-directory`, `manage-user-role`.
+- `src/routes/chat.tsx`: `conversation_members`, `conversations`, `friend_requests`, `profiles`, `messages`, `conversation_member_restrictions`; RPC `get_classmates`; Realtime channels.
+- `src/routes/community.tsx`: `profiles`, `friend_requests`, `service_consents`; Realtime channels.
+- `src/routes/account.tsx`: RPC `lookup_phenom_profile` plus Auth flows.
+- `src/routes/signin.tsx`: RPC `lookup_auth_email_by_phenom_user_id`.
+- `src/routes/parent.tsx`: RPC `parent_child_summary`.
+- `src/routes/payments.tsx`: Edge Function `create-payment`.
+- `src/routes/tools.tsx`: RPC `has_premium_access`; Edge Function `ai-router`.
+- `src/routes/schools.tsx`: direct access to `schools`, `media`, `school_members`, `profiles`, `student_school_records`, `class_members`, `student_guardians`, `school_classes`, `academic_subject_catalog`, `school_curricula`, `school_subjects`, `student_attendance`, `school_assignment_tasks`, `school_cbt_exams`, `school_cbt_exam_questions`, `school_cbt_exam_media`, `school_cbt_question_resources`, `school_cbt_exam_assignments`, `student_result_entries`, `school_result_publications`, `school_fee_payments`, `staff_records`, `payroll_runs` and `school_elections`. It also calls RPCs `promote_student`, `is_class_teacher_for`, `list_school_lms_assessment_sources`, `get_student_assignment_items`, `submit_school_assignment`, `get_teacher_assignment_items`, `update_school_assignment_item`, `create_school_assignment_from_lms_quiz`, `super_admin_delete_result_entry`, and Edge Functions `school-member-invite` and `send-result-release`. Storage use includes `school-cbt-media` and `media`.
+
+### Additional RPC names discovered
+
+`subscribe_email`, `lookup_phenom_profile`, `activate_school_membership_for_current_user`, `create_school_for_current_user_v2`, `get_classmates`, `lookup_auth_email_by_phenom_user_id`, `parent_child_summary`, `has_premium_access`, `promote_student`, `is_class_teacher_for`, `list_school_lms_assessment_sources`, `get_student_assignment_items`, `submit_school_assignment`, `get_teacher_assignment_items`, `update_school_assignment_item`, `create_school_assignment_from_lms_quiz`, `super_admin_delete_result_entry`.
+
+The final mapping must de-duplicate these against the full live SQL-function register and capture every RPC invoked indirectly by helpers, triggers, other SQL functions and Edge Functions.
+
 ## Deployed Edge Functions observed
 
 The connected project reported 19 active functions:
