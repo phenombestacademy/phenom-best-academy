@@ -267,14 +267,17 @@ async function handle(request: Request, env: Env): Promise<Response> {
     if (object.size !== manifest.byte_count) {
       return json({ error: "Destination byte count does not match source manifest", expected: manifest.byte_count, actual: object.size }, 409);
     }
-    const checksum = object.checksums?.sha256 ? hex(object.checksums.sha256) : object.customMetadata?.sha256?.toLowerCase();
+    const checksum = object.checksums?.sha256 ? hex(object.checksums.sha256) : null;
     if (!checksum || checksum !== manifest.sha256) {
       return json({ error: "Destination SHA-256 is missing or does not match the source manifest" }, 409);
     }
-    await env.DB.prepare(
+    const updated = await env.DB.prepare(
       "UPDATE migration_object_manifest SET verified = 1, verified_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), " +
-      "last_error = NULL WHERE source_type = ? AND source_id = ? AND destination_key = ? AND sha256 = ? AND byte_count = ?"
+      "last_error = NULL WHERE source_type = ? AND source_id = ? AND destination_key = ? AND sha256 = ? AND byte_count = ? AND source_deleted = 0"
     ).bind(sourceType, sourceId, manifest.destination_key, manifest.sha256, manifest.byte_count).run();
+    if (!updated.success || updated.meta.changes !== 1) {
+      return json({ error: "Manifest changed concurrently; reload and retry verification" }, 409);
+    }
     return json({ verified: true, source_type: sourceType, source_id: sourceId, byte_count: object.size, sha256: checksum });
   }
 
