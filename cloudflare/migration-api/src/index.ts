@@ -146,8 +146,13 @@ async function handle(request: Request, env: Env): Promise<Response> {
     if (!body) return json({ error: "A JSON object is required" }, 400);
     const id = runMatch[1];
     const current = await env.DB.prepare(
-      "SELECT status FROM migration_runs WHERE id = ?"
-    ).bind(id).first<{ status: RunStatus }>();
+      "SELECT status, records_seen, records_written, records_verified FROM migration_runs WHERE id = ?"
+    ).bind(id).first<{
+      status: RunStatus;
+      records_seen: number;
+      records_written: number;
+      records_verified: number;
+    }>();
     if (!current) return json({ error: "Migration run not found" }, 404);
 
     const nextStatus = body.status === undefined ? current.status : body.status as RunStatus;
@@ -182,6 +187,19 @@ async function handle(request: Request, env: Env): Promise<Response> {
       body.last_error === null ? null : textField(body.last_error, 500);
     if (body.last_error !== undefined && body.last_error !== null && lastError === null) {
       return json({ error: "last_error must be at most 500 characters" }, 400);
+    }
+    const finalCounts = {
+      records_seen: counters.records_seen ?? current.records_seen,
+      records_written: counters.records_written ?? current.records_written,
+      records_verified: counters.records_verified ?? current.records_verified
+    };
+    if ((nextStatus === "verified" || nextStatus === "complete") &&
+        !(finalCounts.records_seen === finalCounts.records_written &&
+          finalCounts.records_written === finalCounts.records_verified)) {
+      return json({
+        error: "A run can only be verified or completed when records_seen, records_written and records_verified match",
+        counts: finalCounts
+      }, 409);
     }
     const completedAt = nextStatus === "complete" ? new Date().toISOString() : null;
     const assignments = ["status = ?", "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"];
