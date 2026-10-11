@@ -8,6 +8,8 @@ This Worker is a protected control plane for tracking the Supabase exit migratio
 - `GET /internal/migration/status` — counts migration runs, object manifests and record manifests.
 - `POST /internal/migration/runs` — starts a tracked migration run for an entity type.
 - `PATCH /internal/migration/runs/:uuid` — updates status, cursor, counters and error state with validated status transitions and a compare-and-swap status check.
+- `POST /internal/migration/records/register` — records a source table/ID, destination table/ID and expected source-record SHA-256. Verified records cannot be silently re-registered.
+- `POST /internal/migration/records/verify` — accepts the destination-record SHA-256 computed by the trusted migrator and marks the manifest verified only when it matches the registered source hash.
 - `POST /internal/migration/objects/register` — records the source ID, R2 destination key, source SHA-256 and byte count before copying.
 - `POST /internal/migration/objects/verify` — verifies the destination R2 object's byte count and R2-native SHA-256 before marking it verified.
 
@@ -20,9 +22,13 @@ All `/internal/migration/*` routes require `Authorization: Bearer <MIGRATION_ADM
 3. Add D1 binding `DB` and R2 binding `LMS_ASSETS` to a new Worker configuration.
 4. Apply `../migrations/0001_migration_control.sql` to the new D1 database.
 5. Configure `MIGRATION_ADMIN_TOKEN` using `wrangler secret put MIGRATION_ADMIN_TOKEN`.
-6. Set up staging deployment and test the auth gate, state transitions, object-size checks and R2-native SHA-256 checks before running any import.
+6. Set up staging deployment and test the auth gate, state transitions, record-manifest matching, object-size checks and R2-native SHA-256 checks before running any import.
 
 The actual Cloudflare D1 database ID and account resources have not yet been provisioned through the available connection. Consequently, this Worker has no deployable config and has not been deployed. Do not invent a database ID or point it at a production resource before confirming the target account and database.
+
+## Record reconciliation integrity
+
+The record endpoints track one source row per `(source_system, source_table, source_id)` and prevent re-registration after verification. The trusted migrator must compute source and destination hashes using the same documented canonicalisation algorithm and include all fields required by the migration contract. The API compares the hashes; it does not query arbitrary destination application tables because their primary-key and row shapes differ. Therefore, the migrator must fetch the actual destination row before computing `destination_hash`; never submit the source hash again as a substitute for reading the destination. A matching hash is meaningful only when that process is enforced and audited.
 
 ## Object-copy integrity
 
