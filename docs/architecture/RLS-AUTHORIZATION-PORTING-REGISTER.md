@@ -71,6 +71,12 @@ These are the first policies to validate against product intent and table grants
 | `subscription_plans` | `subscription plans active read` | SELECT | ((active = true) OR is_staff() OR is_admin()) | — |
 | `ui_translation_resources` | `ui_translation_resources_public_read` | SELECT | (status = 'published'::text) | — |
 
+## RLS-enabled table coverage check
+
+A read-only cross-check of all 171 public base tables found one table with RLS disabled and no policies: `cloudflare_migration_manifest`. Its table privileges were also checked: `anon` and `authenticated` have no SELECT, INSERT or UPDATE privilege; `service_role` has SELECT and UPDATE. This appears to be an internal migration table rather than a browser-exposed table. Keep the replacement migration ledger private to the migration service and do not expose it through a public API.
+
+The other 170 public base tables have RLS enabled. This is useful inventory evidence, but does not replace policy-by-policy and grant-by-grant validation.
+
 ## Migration rules
 
 1. D1 does not implement PostgreSQL RLS; do not attempt to port policies as comments and then allow browser SQL access.
