@@ -12,7 +12,7 @@ This is a staged migration. Supabase remains intact as the source of truth until
 - Working branch: `migration/cloudflare-native-backend`
 - Existing website: React 19, TypeScript, TanStack Start/Router, Vite and Tailwind.
 - Current browser data/auth client: `src/lib/cms.ts` creates a Supabase JS client and contains a fallback project URL/key.
-- Several platform services call Supabase directly from the browser; this is not a one-file endpoint replacement.
+- Several platform services call Supabase directly from the browser; this is not a one-file endpoint replacement. Initial code review confirms direct Auth/RPC use in `src/lib/platform.ts`, direct data access and a hard-coded fallback URL/publishable key in `src/lib/cms.ts`, Edge Function calls in `src/lib/ai.ts`, `src/lib/quiz.ts` and `src/lib/school.ts`, and direct database plus Realtime channel use in `src/routes/chat.tsx` and `src/routes/community.tsx`.
 - Existing Cloudflare background Worker at `cloudflare/src/index.ts` still uses the Supabase REST API and the Supabase `ai-router` Edge Function. It is a transitional worker, not yet Supabase-independent.
 - Existing Cloudflare Worker config has an R2 binding and queue declarations, but `triggers.crons` is empty and no verified R2 migration manifest records exist.
 - The project also contains a separate `workers/curriculum` area; inspect it before consolidating or replacing worker responsibilities.
@@ -23,6 +23,7 @@ The connected Supabase project reported:
 
 | Item | Observed state |
 |---|---:|
+| Database size including indexes | 486 MB (510,004,371 bytes) |
 | Public tables | 171 |
 | Public SQL functions | 67 |
 | Public RLS policies | 314 |
@@ -48,7 +49,7 @@ Storage inventory:
 - `media`: 2 objects; summed object metadata size approximately 2.2 MB.
 - `profile-avatars` and `school-cbt-media`: currently 0 objects each.
 
-These are inventory observations, not a completed backup or verified migration. The row figures for large tables are PostgreSQL planner estimates, and object metadata sizes are not a substitute for a byte-for-byte export/hash check.
+These are inventory observations, not a completed backup or verified migration. The row figures for large tables are PostgreSQL planner estimates, and object metadata sizes are not a substitute for a byte-for-byte export/hash check. The current database size is below D1's paid per-database ceiling, but close to the D1 Free storage allowance before growth; a paid D1 target and growth headroom must be confirmed. D1 has SQLite semantics, a 10 GB paid per-database ceiling, a 2 MB maximum row size and a 100-column-per-table limit, so every schema object still needs compatibility checks.
 
 The project has a broad PostgreSQL-specific surface: 171 tables, 67 SQL functions, 47 triggers and 314 policies. Porting these requires deliberate conversion of stored procedures, tenant/learner authorization, audit logic, transactions and data constraints. A blanket SQL syntax conversion would be unsafe.
 
@@ -114,6 +115,10 @@ The project has a broad PostgreSQL-specific surface: 171 tables, 67 SQL function
 - Keep the old project read-only for a rollback window; only archive or delete it after explicit acceptance and a verified final backup.
 
 **Definition of done:** production journeys work on the new backend, security tests pass, data reconciliation is signed off, monitoring/restore procedures exist, and no application runtime depends on Supabase.
+
+## Migration-control foundation committed on the working branch
+
+`cloudflare/migrations/0001_migration_control.sql` creates D1-compatible run, object and record manifests. It supports restartable batches and records hashes/counts, and enforces that a source object cannot be marked deleted before destination verification. The SQL syntax and the delete-before-verify guard were tested against SQLite locally. This is migration tooling only; it has not been applied to a live D1 database because a D1 target has not yet been provisioned through the available connections.
 
 ## Immediate next work
 
