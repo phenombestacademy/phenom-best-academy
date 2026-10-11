@@ -101,6 +101,34 @@ The live project inventory reported 171 public tables, 67 public SQL functions, 
 
 Do not mechanically translate `auth.uid()`, `SECURITY DEFINER`, PostgreSQL JSON/array behaviour, RPCs or RLS expressions. D1 does not provide PostgreSQL RLS, so every data-access route must enforce the equivalent user, school, student, parent, teacher and admin scope on the server.
 
+## Latest automated dependency scan (11 October 2026)
+
+The successful preflight at commit `58a325e7` scanned 171 repository files and found 329 heuristic matches across 37 files. These are reference counts, not 329 unique API calls and not a complete runtime dependency count; the scanner also examines configuration, SQL and documentation. Each hit must be triaged against the source context before it is treated as an active production dependency.
+
+| Scanner category | Matches | Migration interpretation |
+|---|---:|---|
+| Direct table access (`.from(...)`) | 160 | Map table + operation + caller + required role/tenant checks. Deduplicate repeated accesses and trace helper-mediated calls. |
+| Supabase environment variables | 64 | Inventory browser/server use; remove browser secrets and replace configuration only after corresponding services exist. |
+| Auth API | 41 | Build a full identity journey matrix: sign-in, OAuth, OTP, recovery, session refresh/revocation and profile bootstrap. |
+| RPC calls | 23 | Map each RPC to its SQL definition, dependencies, caller, authorization and transaction semantics. |
+| Edge Function calls | 16 | Map each invocation to the deployed function, authentication mode, secrets, side effects and replacement Worker route. |
+| Supabase client imports | 10 | Remove only after all callers have been ported and tested. |
+| Storage bucket references | 5 | Map each bucket to object count, privacy policy, upload/download caller and R2 access path. |
+| Supabase project URLs | 5 | Review hard-coded/configured URLs; keep source endpoints available during migration and rollback. |
+| Realtime channels | 3 | Identify the event contract, participant authorisation and required WebSocket/Durable Object replacement. |
+| Supabase REST/functions URLs | 2 | Trace direct HTTP calls that may bypass the client-library scan. |
+
+### Immediate implementation order
+
+1. **Identity and authorisation:** define the replacement user/session model and server-side school, student, parent, teacher and administrator scopes before porting data routes.
+2. **Core data-access layer:** build a central Cloudflare API client and route contracts; migrate one feature slice at a time instead of replacing the SDK globally.
+3. **Payments and webhooks:** preserve provider signature verification, idempotency, replay protection and reconciliation before changing payment traffic.
+4. **Curriculum and object storage:** define D1 compatibility and data-shape decisions; make R2 copies private by default and independently verify object size/checksum.
+5. **Communications:** explicitly replace Realtime chat/call signalling; do not silently remove the live feature.
+6. **Dependency removal:** only remove Supabase packages, environment variables and project references after scanner findings are individually resolved or documented as intentional migration tooling.
+
+The current application build still generates a Vercel/Nitro output. That is a separate deployment-target migration gate: a successful Vite build does not prove that the frontend has been configured for Cloudflare Pages/Workers or that production traffic has moved.
+
 ## Required next inventory pass
 
 - List every browser table/RPC/function/storage/realtime reference across all routes and components.
