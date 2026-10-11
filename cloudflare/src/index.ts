@@ -97,7 +97,7 @@ async function askAI(
     })
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const payload: { text?: unknown; error?: unknown } = await response.json().catch(() => ({}));
   if (!response.ok || !payload.text) {
     throw new Error(payload.error || "AI router unavailable");
   }
