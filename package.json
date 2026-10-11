@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "audit:supabase": "node scripts/migration/audit-supabase-dependencies.mjs"
+    "audit:supabase": "node scripts/migration/audit-supabase-dependencies.mjs",
+    "typecheck:migration-api": "tsc --noEmit -p cloudflare/migration-api/tsconfig.json"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
