@@ -116,13 +116,19 @@ The project has a broad PostgreSQL-specific surface: 171 tables, 67 SQL function
 
 **Definition of done:** production journeys work on the new backend, security tests pass, data reconciliation is signed off, monitoring/restore procedures exist, and no application runtime depends on Supabase.
 
+## Additional live schema assessment committed on the working branch
+
+- `docs/architecture/LIVE-SUPABASE-SCHEMA-INVENTORY.md` captures the 171 public tables, 1,699 columns, primary keys, planner-estimated rows, relation sizes, 215 foreign-key relationships, 314 complete RLS policy definitions, 67 public function signatures, 47 trigger-event definitions and RLS status.
+- `docs/architecture/D1-COMPATIBILITY-ASSESSMENT.md` records PostgreSQL type frequencies, the four public views, extensions and D1 conversion risks. The initial inspection found no public base table without a declared primary key. That does not eliminate the need to validate composite-key pagination, constraints and exact row counts.
+- The inventory is metadata only; no full production data export or backup has yet been verified.
+
 ## Migration-control foundation committed on the working branch
 
 `cloudflare/migrations/0001_migration_control.sql` creates D1-compatible run, object and record manifests. It supports restartable batches and records hashes/counts, and enforces that a source object cannot be marked deleted before destination verification. The SQL syntax and the delete-before-verify guard were tested against SQLite locally. This is migration tooling only; it has not been applied to a live D1 database because a D1 target has not yet been provisioned through the available connections.
 
 ## Immediate next work
 
-1. Finish a route/service-to-table/RPC inventory from the repository and deployed schema.
+1. Complete the route/service-to-table/RPC mapping and extract the full definitions/bodies of every function, trigger and view.
 2. Export and measure the actual database before locking in D1 versus a non-Supabase PostgreSQL destination.
 3. Audit the 19 deployed Edge Functions and both Cloudflare worker directories, then define one canonical API/worker layout.
 4. Implement the first vertical slice on a migration branch and test it before touching production traffic.
