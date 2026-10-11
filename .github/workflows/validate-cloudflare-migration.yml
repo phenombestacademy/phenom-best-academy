@@ -1,0 +1,72 @@
+name: Validate Cloudflare migration branch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cloudflare/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - ".github/workflows/validate-cloudflare-migration.yml"
+  push:
+    branches: [migration/cloudflare-native-backend]
+    paths:
+      - "cloudflare/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - ".github/workflows/validate-cloudflare-migration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check application
+        run: npm run typecheck
+
+      - name: Build application
+        run: npm run build
+
+  cloudflare-worker-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cloudflare/package.json
+
+      - name: Install Worker dependencies
+        working-directory: cloudflare
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      - name: Type-check Worker
+        working-directory: cloudflare
+        run: npx tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler --lib ES2022,WebWorker src/index.ts
+
+      - name: Bundle Worker without deploying
+        working-directory: cloudflare
+        run: npx wrangler deploy --dry-run --outdir ../.wrangler-dry-run
