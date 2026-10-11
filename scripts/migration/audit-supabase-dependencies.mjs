@@ -39,6 +39,8 @@ const RULES = [
 function redact(value) {
   return value
     .replace(/(Bearer\s+)[A-Za-z0-9._-]+/gi, "$1[REDACTED]")
+    .replace(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "[REDACTED_JWT]")
+    .replace(/\bsb_publishable_[A-Za-z0-9_-]+\b/g, "[REDACTED_PUBLISHABLE_KEY]")
     .replace(/((?:api[_-]?key|service[_-]?role[_-]?key|password|secret)\s*[:=]\s*["']?)[^\s,"'\x60}]+/gi, "$1[REDACTED]")
     .slice(0, 180);
 }
