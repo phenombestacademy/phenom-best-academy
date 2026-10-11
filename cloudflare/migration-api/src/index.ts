@@ -233,6 +233,97 @@ async function handle(request: Request, env: Env): Promise<Response> {
     return json({ id, status: nextStatus, updated: true });
   }
 
+  if (url.pathname === "/internal/migration/records/register" && method === "POST") {
+    const body = await readJson(request);
+    const sourceTable = textField(body?.source_table, 200);
+    const sourceId = textField(body?.source_id, 500);
+    const destinationTable = textField(body?.destination_table, 200);
+    const destinationId = textField(body?.destination_id, 500);
+    const sourceHash = textField(body?.source_hash, 64)?.toLowerCase() ?? null;
+    if (!sourceTable || !sourceId || !destinationTable || !destinationId ||
+        !sourceHash || !/^[a-f0-9]{64}$/.test(sourceHash)) {
+      return json({
+        error: "source_table, source_id, destination_table, destination_id and a SHA-256 source_hash are required"
+      }, 400);
+    }
+
+    try {
+      const existing = await env.DB.prepare(
+        "SELECT verified FROM migration_record_manifest WHERE source_system = 'supabase' AND source_table = ? AND source_id = ?"
+      ).bind(sourceTable, sourceId).first<{ verified: number }>();
+      if (existing?.verified) {
+        return json({ error: "A verified record cannot be re-registered" }, 409);
+      }
+      const result = await env.DB.prepare(
+        "INSERT INTO migration_record_manifest " +
+        "(source_system, source_table, source_id, destination_table, destination_id, source_hash, destination_hash, verified, verified_at) " +
+        "VALUES ('supabase', ?, ?, ?, ?, ?, NULL, 0, NULL) " +
+        "ON CONFLICT(source_system, source_table, source_id) DO UPDATE SET " +
+        "destination_table = excluded.destination_table, destination_id = excluded.destination_id, " +
+        "source_hash = excluded.source_hash, destination_hash = NULL, verified = 0, verified_at = NULL, " +
+        "migrated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') " +
+        "WHERE migration_record_manifest.verified = 0"
+      ).bind(sourceTable, sourceId, destinationTable, destinationId, sourceHash).run();
+      if (!result.success || result.meta.changes !== 1) {
+        return json({ error: "Record could not be registered; reload the manifest and retry" }, 409);
+      }
+      return json({
+        registered: true,
+        source_table: sourceTable,
+        source_id: sourceId,
+        destination_table: destinationTable,
+        destination_id: destinationId
+      }, 201);
+    } catch {
+      return json({ error: "Could not register record; verify the migration schema and unique source key" }, 503);
+    }
+  }
+
+  if (url.pathname === "/internal/migration/records/verify" && method === "POST") {
+    const body = await readJson(request);
+    const sourceTable = textField(body?.source_table, 200);
+    const sourceId = textField(body?.source_id, 500);
+    const destinationHash = textField(body?.destination_hash, 64)?.toLowerCase() ?? null;
+    if (!sourceTable || !sourceId || !destinationHash || !/^[a-f0-9]{64}$/.test(destinationHash)) {
+      return json({ error: "source_table, source_id and a SHA-256 destination_hash are required" }, 400);
+    }
+
+    const manifest = await env.DB.prepare(
+      "SELECT source_hash, destination_hash, verified FROM migration_record_manifest " +
+      "WHERE source_system = 'supabase' AND source_table = ? AND source_id = ?"
+    ).bind(sourceTable, sourceId).first<{
+      source_hash: string | null;
+      destination_hash: string | null;
+      verified: number;
+    }>();
+    if (!manifest) return json({ error: "Record is not registered" }, 404);
+    if (!manifest.source_hash || manifest.source_hash !== destinationHash) {
+      return json({
+        error: "Destination record hash does not match the registered source hash",
+        verified: false
+      }, 409);
+    }
+    if (manifest.verified && manifest.destination_hash === destinationHash) {
+      return json({ verified: true, source_table: sourceTable, source_id: sourceId, destination_hash: destinationHash });
+    }
+
+    const result = await env.DB.prepare(
+      "UPDATE migration_record_manifest SET destination_hash = ?, verified = 1, " +
+      "verified_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') " +
+      "WHERE source_system = 'supabase' AND source_table = ? AND source_id = ? " +
+      "AND source_hash = ? AND verified = 0"
+    ).bind(destinationHash, sourceTable, sourceId, manifest.source_hash).run();
+    if (!result.success || result.meta.changes !== 1) {
+      return json({ error: "Manifest changed concurrently; reload and retry verification" }, 409);
+    }
+    return json({
+      verified: true,
+      source_table: sourceTable,
+      source_id: sourceId,
+      destination_hash: destinationHash
+    });
+  }
+
   if (url.pathname === "/internal/migration/objects/register" && method === "POST") {
     const body = await readJson(request);
     const sourceType = textField(body?.source_type, 100);
