@@ -120,11 +120,20 @@ The project has a broad PostgreSQL-specific surface: 171 tables, 67 SQL function
 
 - `docs/architecture/LIVE-SUPABASE-SCHEMA-INVENTORY.md` captures the 171 public tables, 1,699 columns, primary keys, planner-estimated rows, relation sizes, 215 foreign-key relationships, 314 complete RLS policy definitions, 67 public function signatures, 47 trigger-event definitions and RLS status.
 - `docs/architecture/D1-COMPATIBILITY-ASSESSMENT.md` records PostgreSQL type frequencies, the four public views, extensions and D1 conversion risks. The initial inspection found no public base table without a declared primary key. That does not eliminate the need to validate composite-key pagination, constraints and exact row counts.
+- `docs/architecture/SQL-FUNCTION-TRIGGER-PORTING-REVIEW.md` records all 67 public function signatures, security-definer prevalence and compatibility markers for 47 trigger-event entries.
+- `docs/architecture/EDGE-FUNCTION-MIGRATION-INVENTORY.md` inventories all 19 deployed Edge Functions, their current JWT-gateway settings, tables/RPCs touched and authentication/webhook review requirements.
+- `docs/architecture/RLS-AUTHORIZATION-PORTING-REGISTER.md` records policy counts and identifies unconditional policies requiring contextual review. No live policies were changed.
+- `cloudflare/migration-api/src/index.ts` adds a protected, not-yet-deployed migration control API for run tracking and R2-native SHA-256/size verification. Its setup and deployment blockers are documented in `cloudflare/migration-api/README.md`.
+- `scripts/migration/audit-supabase-dependencies.mjs` and `npm run audit:supabase` add a read-only static code scanner to find remaining runtime dependencies as the app is ported.
 - The inventory is metadata only; no full production data export or backup has yet been verified.
 
 ## Migration-control foundation committed on the working branch
 
 `cloudflare/migrations/0001_migration_control.sql` creates D1-compatible run, object and record manifests. It supports restartable batches and records hashes/counts, and enforces that a source object cannot be marked deleted before destination verification. The SQL syntax and the delete-before-verify guard were tested against SQLite locally. This is migration tooling only; it has not been applied to a live D1 database because a D1 target has not yet been provisioned through the available connections.
+
+## Source-project quota gate
+
+The owner received a Supabase organisation egress-quota notice reporting 16.57 GB against a 5.5 GB quota, with project requests dropped until the quota refills on 16 October 2026. Do not start a bulk export or 53,130-object transfer until service availability and the quota state are confirmed, or the plan/quota has been deliberately changed. Continue with repository-side migration engineering and non-invasive metadata review in the meantime. No bulk data export or file copy has been performed.
 
 ## Immediate next work
 
