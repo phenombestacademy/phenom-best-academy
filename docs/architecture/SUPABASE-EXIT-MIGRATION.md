@@ -123,6 +123,8 @@ The project has a broad PostgreSQL-specific surface: 171 tables, 67 SQL function
 - `docs/architecture/SQL-FUNCTION-TRIGGER-PORTING-REVIEW.md` records all 67 public function signatures, security-definer prevalence and compatibility markers for 47 trigger-event entries.
 - `docs/architecture/EDGE-FUNCTION-MIGRATION-INVENTORY.md` inventories all 19 deployed Edge Functions, their current JWT-gateway settings, tables/RPCs touched and authentication/webhook review requirements.
 - `docs/architecture/RLS-AUTHORIZATION-PORTING-REGISTER.md` records policy counts and identifies unconditional policies requiring contextual review. No live policies were changed.
+- `docs/architecture/VIEW-PORTING-REVIEW.md` records all four public view definitions and highlights visibility/quiz-answer considerations.
+- `docs/architecture/SUPABASE-MIGRATION-HISTORY.md` captures the 107 migration versions recorded by the live project; the latest is `cloudflare_background_job_claims` (2 October 2026).
 - `cloudflare/migration-api/src/index.ts` adds a protected, not-yet-deployed migration control API for run tracking and R2-native SHA-256/size verification. Its setup and deployment blockers are documented in `cloudflare/migration-api/README.md`.
 - `scripts/migration/audit-supabase-dependencies.mjs` and `npm run audit:supabase` add a read-only static code scanner to find remaining runtime dependencies as the app is ported.
 - The inventory is metadata only; no full production data export or backup has yet been verified.
