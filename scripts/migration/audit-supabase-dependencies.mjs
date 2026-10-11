@@ -19,7 +19,7 @@ const SKIP_DIRS = new Set([
 ]);
 const EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".jsonc",
-  ".html", ".css", ".sql", ".md", ".yml", ".yaml", ".toml"
+  ".html", ".css", ".sql", ".yml", ".yaml", ".toml"
 ]);
 const SELF = path.normalize("scripts/migration/audit-supabase-dependencies.mjs");
 
