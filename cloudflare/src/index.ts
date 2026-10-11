@@ -99,7 +99,7 @@ async function askAI(
 
   const payload: { text?: unknown; error?: unknown } = await response.json().catch(() => ({}));
   if (!response.ok || !payload.text) {
-    throw new Error(payload.error || "AI router unavailable");
+    throw new Error(typeof payload.error === "string" && payload.error.trim() ? payload.error : "AI router unavailable");
   }
 
   const raw = String(payload.text);
