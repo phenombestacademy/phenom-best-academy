@@ -16,7 +16,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists school_cbt_guard_exam_status on public.school_cbt_exams;
 create trigger school_cbt_guard_exam_status
@@ -41,7 +41,7 @@ begin
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists school_cbt_question_draft_only on public.school_cbt_exam_questions;
 create trigger school_cbt_question_draft_only
