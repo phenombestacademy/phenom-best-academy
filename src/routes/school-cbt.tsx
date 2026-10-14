@@ -17,6 +17,7 @@ type Question = {
   options: Record<string, string> | null; correct_answer: string | null;
   explanation: string | null; marks: number; resource_notes: string | null;
 };
+type StudentQuestion = { id: string; position: number; question_text: string; options: Record<string, string> | null; marks: number };
 const emptyQuestion = (examId: string, position: number): Question => ({
   exam_id: examId, position, question_text: '', options: { A: '', B: '', C: '', D: '' },
   correct_answer: 'A', explanation: null, marks: 1, resource_notes: null,
@@ -34,7 +35,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
   const db = getSupabase();
   const [exams, setExams] = useState<Exam[]>([]);
   const [selected, setSelected] = useState<Exam | null>(null);
-  const [questions, setQuestions] = useState<Array<{id:string;position:number;question_text:string;options:Record<string,string>|null;marks:number}>>([]);
+  const [questions, setQuestions] = useState<StudentQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string,string>>({});
   const [attemptId, setAttemptId] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -84,7 +85,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
       if(payload.status==='expired_submitted'){setSelected(exam);setResult({score:Number(payload.score||0),total_marks:Number(payload.total_marks||0),correct_count:Number(payload.correct_count||0)});setNotice('Your previous attempt expired and has been submitted automatically.');return;}
       const {data:q,error:qe}=await db.from('school_cbt_exam_questions_student').select('id,position,question_text,options,marks,image_url,media').eq('exam_id',exam.id).order('position');
       if(qe) throw qe;
-      setSelected(exam);setQuestions((q||[]) as typeof questions);setDeadline(payload.deadline || '');setRemaining(payload.deadline?Math.max(0,Math.floor((new Date(payload.deadline).getTime()-Date.now())/1000)):0);setAttemptId(payload.attempt_id);setAnswers({});
+      setSelected(exam);setQuestions((q||[]) as StudentQuestion[]);setDeadline(payload.deadline || '');setRemaining(payload.deadline?Math.max(0,Math.floor((new Date(payload.deadline).getTime()-Date.now())/1000)):0);setAttemptId(payload.attempt_id);setAnswers({});
       setNotice('Your attempt has started. Answers are saved automatically.');
     } catch(e){setError(e instanceof Error?e.message:'Could not start exam.');} finally{setBusy(false);}
   }
@@ -102,7 +103,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
     <header className="rounded-3xl bg-navy-deep p-7 text-cream"><p className="text-xs uppercase tracking-[.18em] text-gold">Phenom Best LMS · Student CBT</p><h1 className="mt-3 text-4xl font-bold">My examinations</h1><p className="mt-3 text-sm text-cream/80">{context.school.name}</p></header>
     {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{notice&&<p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-green-900">{notice}</p>}
     {!selected && <section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Assigned exams</h2><div className="mt-4 space-y-3">{exams.map(e=><article key={e.id} className="rounded-xl border p-4"><h3 className="font-semibold">{e.title}</h3><p className="text-sm text-muted">{e.subject} · {e.duration_minutes||'—'} minutes · Opens {e.starts_at?new Date(e.starts_at).toLocaleString():'as scheduled'}</p><p className="mt-2 text-sm">{e.instructions}</p><button disabled={busy} onClick={()=>start(e)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-cream disabled:opacity-50">Start / Resume exam</button></article>)}{!exams.length&&<p>No currently scheduled examinations are available to your account.</p>}</div></section>}
-    {selected&&attemptId&&<section className="mt-6 rounded-2xl border p-5"><div className="sticky top-2 z-10 flex items-center justify-between rounded-xl bg-cream p-3"><div><h2 className="font-semibold">{selected.title}</h2><p className="text-xs text-muted">Autosaves every 15 seconds</p></div><strong aria-live="polite" className="text-xl tabular-nums">{clock}</strong></div><div className="mt-5 space-y-5">{questions.map((q,i)=><article key={q.id} className="rounded-xl border p-4"><p className="font-semibold">{i+1}. {q.question_text}</p><div className="mt-3 space-y-2">{Object.entries(q.options||{}).map(([key,value])=><label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border p-3"><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(old=>({...old,[q.id]:key}))}/><span><b>{key}.</b> {value}</span></label>)}</div></article>)}</div><button disabled={busy} onClick={()=>{if(window.confirm('Submit your answers now? You cannot edit them afterwards.'))submit();}} className="mt-6 rounded-xl bg-navy-deep px-5 py-3 font-semibold text-cream disabled:opacity-50">{busy?'Submitting…':'Submit examination'}</button></section>}
+    {selected&&attemptId&&<section className="mt-6 rounded-2xl border p-5"><div className="sticky top-2 z-10 flex items-center justify-between rounded-xl bg-cream p-3"><div><h2 className="font-semibold">{selected.title}</h2><p className="text-xs text-muted">Autosaves every 15 seconds</p></div><strong aria-live="polite" className="text-xl tabular-nums">{clock}</strong></div><div className="mt-5 space-y-5">{questions.map((q,i)=><article key={q.id} className="rounded-xl border p-4"><p className="font-semibold">{i+1}. {q.question_text} <span className="ml-2 text-xs font-normal text-muted">({q.marks} marks)</span></p>{q.options && Object.keys(q.options).length > 0 ? <div className="mt-3 space-y-2">{Object.entries(q.options).map(([key,value])=><label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border p-3"><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(old=>({...old,[q.id]:key}))}/><span><b>{key}.</b> {value}</span></label>)}</div> : <textarea aria-label="Essay answer" className="mt-3 min-h-32 w-full rounded-lg border p-3" placeholder="Type your answer here…" value={answers[q.id] || ''} onChange={e=>setAnswers(old=>({...old,[q.id]:e.target.value}))}/>}</article>)}</div><button disabled={busy} onClick={()=>{if(window.confirm('Submit your answers now? You cannot edit them afterwards.'))submit();}} className="mt-6 rounded-xl bg-navy-deep px-5 py-3 font-semibold text-cream disabled:opacity-50">{busy?'Submitting…':'Submit examination'}</button></section>}
     {result&&selected&&<section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Submission received</h2>{selected.results_visible_to_students?<p className="mt-2">Score: {result.score} / {result.total_marks} ({result.correct_count} correct answers)</p>:<p className="mt-2">Your answers have been recorded. Results will be shown when your school releases them.</p>}<button onClick={()=>{setSelected(null);setQuestions([]);setAnswers({});setResult(null);refresh().catch(()=>{});}} className="mt-4 rounded-lg border px-4 py-2">Return to exams</button></section>}
   </main>;
 }
@@ -185,12 +186,15 @@ function SchoolCbtPage() {
 
   async function saveQuestion(q: Question) {
     if (!db || !chosen) return;
+    if (chosen.status !== 'draft') { setError('Questions can only be changed while an exam is a draft.'); return; }
     if (!q.question_text.trim()) { setError('Question text is required.'); return; }
+    if (!Number.isFinite(q.marks) || q.marks <= 0) { setError('Marks must be a positive number.'); return; }
     if (q.options && (!q.correct_answer || !(q.correct_answer in q.options))) { setError('Select a valid correct option.'); return; }
+    if (q.options && Object.values(q.options).some(value => !value.trim())) { setError('Complete all four options or change the question to essay.'); return; }
     setBusy(true); setError(''); setNotice('');
     try {
       const payload = { exam_id: chosen.id, position: q.position, question_text: q.question_text.trim(), options: q.options,
-        correct_answer: q.correct_answer, explanation: q.explanation, marks: Math.max(0.01, Number(q.marks) || 1), resource_notes: q.resource_notes };
+        correct_answer: q.options ? q.correct_answer : null, explanation: q.explanation, marks: q.marks, resource_notes: q.resource_notes };
       const result = q.id
         ? await db.from('school_cbt_exam_questions').update(payload).eq('id', q.id).eq('exam_id', chosen.id)
         : await db.from('school_cbt_exam_questions').insert(payload);
@@ -202,7 +206,7 @@ function SchoolCbtPage() {
   }
 
   async function removeQuestion(q: Question) {
-    if (!db || !chosen || !q.id || !window.confirm('Delete this question? This is allowed only while the exam remains a draft.')) return;
+    if (!db || !chosen || chosen.status !== 'draft' || !q.id || !window.confirm('Delete this question? This is allowed only while the exam remains a draft.')) return;
     setBusy(true); setError('');
     try {
       const { error: e } = await db.from('school_cbt_exam_questions').delete().eq('id', q.id).eq('exam_id', chosen.id);
@@ -213,6 +217,7 @@ function SchoolCbtPage() {
 
   async function importCsv(file?: File) {
     if (!file || !chosen) return;
+    if (chosen.status !== 'draft') { setError('Questions can only be imported while an exam is a draft.'); return; }
     setError('');
     try {
       const text = await file.text();
@@ -302,12 +307,13 @@ function SchoolCbtPage() {
         {chosen && <div className="mt-6 border-t border-line pt-5">
           <h3 className="text-xl font-semibold">{chosen.title}: Question Bank</h3>
           <p className="mt-1 text-sm text-muted">Answer keys are stored in the existing staff-managed question table. Verify student-safe views and server-side marking before live use.</p>
-          <div className="mt-3 flex flex-wrap gap-2"><button onClick={()=>setQuestions(q=>[...q,emptyQuestion(chosen.id,q.length+1)])} className="rounded-lg border px-3 py-2 text-sm">Add question</button><button onClick={exportQuestions} className="rounded-lg border px-3 py-2 text-sm">Export CSV</button><label className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Import CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={e=>importCsv(e.target.files?.[0])}/></label><button onClick={()=>download('cbt-question-template.csv','question_text,option_a,option_b,option_c,option_d,correct_answer,marks,explanation,topic\r\n"Example question","Option A","Option B","Option C","Option D","A",1,"Explanation","Topic"')} className="rounded-lg border px-3 py-2 text-sm">Download template</button></div>
+          <div className="mt-3 flex flex-wrap gap-2"><button disabled={busy || chosen.status !== 'draft'} onClick={()=>setQuestions(q=>[...q,emptyQuestion(chosen.id,q.length+1)])} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Add objective</button><button disabled={busy || chosen.status !== 'draft'} onClick={()=>setQuestions(q=>[...q,{...emptyQuestion(chosen.id,q.length+1),options:null,correct_answer:null}])} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Add essay</button><button onClick={exportQuestions} className="rounded-lg border px-3 py-2 text-sm">Export CSV</button><label className="cursor-pointer rounded-lg border px-3 py-2 text-sm">Import CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={e=>importCsv(e.target.files?.[0])}/></label><button onClick={()=>download('cbt-question-template.csv','question_text,option_a,option_b,option_c,option_d,correct_answer,marks,explanation,topic\r\n"Example question","Option A","Option B","Option C","Option D","A",1,"Explanation","Topic"')} className="rounded-lg border px-3 py-2 text-sm">Download template</button></div>
           <div className="mt-4 space-y-4">{questions.map((q,i)=><article key={q.id || 'new-'+i} className="rounded-xl border border-line p-4">
             <div className="flex items-start justify-between gap-3"><h4 className="font-semibold">Question {i+1}</h4>{q.id&&<button onClick={()=>removeQuestion(q)} className="text-sm text-red-700">Delete</button>}</div>
             <textarea value={q.question_text} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,question_text:e.target.value}:x))} placeholder="Question text" className="mt-2 w-full rounded-lg border p-3"/>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">{(['A','B','C','D'] as const).map(k=><label key={k} className="text-sm">{'Option '+k}<input value={q.options?.[k] || ''} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,options:{...(x.options||{}),[k]:e.target.value}}:x))} className="mt-1 w-full rounded-lg border p-2"/></label>)}</div>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2"><label className="text-sm">Correct option<select value={q.correct_answer || 'A'} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,correct_answer:e.target.value}:x))} className="mt-1 w-full rounded-lg border p-2">{(['A','B','C','D'] as const).map(k=><option key={k} value={k}>{k}</option>)}</select></label><label className="text-sm">Marks<input type="number" min=".01" step=".01" value={q.marks} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,marks:Number(e.target.value)}:x))} className="mt-1 w-full rounded-lg border p-2"/></label></div>
+            <label className="mt-2 block text-sm">Question type<select value={q.options ? 'objective' : 'essay'} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i ? (e.target.value === 'essay' ? {...x,options:null,correct_answer:null} : {...x,options:{A:'',B:'',C:'',D:''},correct_answer:'A'}) : x))} className="mt-1 w-full rounded-lg border p-2"><option value="objective">Objective</option><option value="essay">Essay / free response</option></select></label>
+            {q.options ? <><div className="mt-2 grid gap-2 sm:grid-cols-2">{(['A','B','C','D'] as const).map(k=><label key={k} className="text-sm">{'Option '+k}<input value={q.options?.[k] || ''} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,options:{...(x.options||{}),[k]:e.target.value}}:x))} className="mt-1 w-full rounded-lg border p-2"/></label>)}</div><label className="mt-2 block text-sm">Correct option<select value={q.correct_answer || 'A'} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,correct_answer:e.target.value}:x))} className="mt-1 w-full rounded-lg border p-2">{(['A','B','C','D'] as const).map(k=><option key={k} value={k}>{k}</option>)}</select></label></> : <p className="mt-2 text-sm text-muted">Essay responses require manual marking. Confirm the server-side save, submit and marking functions support text answers before using essay questions in a live examination.</p>}
+            <div className="mt-2"><label className="text-sm">Marks<input type="number" min=".01" step=".01" value={q.marks} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,marks:Number(e.target.value)}:x))} className="mt-1 w-full rounded-lg border p-2"/></label></div>
             <label className="mt-2 block text-sm">Explanation (optional)<textarea value={q.explanation || ''} onChange={e=>setQuestions(old=>old.map((x,j)=>j===i?{...x,explanation:e.target.value}:x))} className="mt-1 w-full rounded-lg border p-2"/></label>
             <button disabled={busy} onClick={()=>saveQuestion(q)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save question</button>
           </article>)}</div>
