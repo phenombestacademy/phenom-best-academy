@@ -2,6 +2,24 @@
 -- Additive only. Review and test against a staging database before applying anywhere.
 begin;
 
+alter table public.schools
+  add column if not exists report_grading_bands jsonb not null default
+  '[{"grade":"A1","min":75,"max":100,"remark":"Excellent"},{"grade":"B2","min":70,"max":74.99,"remark":"Very Good"},{"grade":"B3","min":65,"max":69.99,"remark":"Good"},{"grade":"C4","min":60,"max":64.99,"remark":"Credit"},{"grade":"C5","min":55,"max":59.99,"remark":"Credit"},{"grade":"C6","min":50,"max":54.99,"remark":"Credit"},{"grade":"D7","min":45,"max":49.99,"remark":"Pass"},{"grade":"E8","min":40,"max":44.99,"remark":"Pass"},{"grade":"F9","min":0,"max":39.99,"remark":"Fail"}]'::jsonb;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'schools_report_grading_bands_array_check'
+      and conrelid = 'public.schools'::regclass
+  ) then
+    alter table public.schools
+      add constraint schools_report_grading_bands_array_check
+      check (jsonb_typeof(report_grading_bands) = 'array');
+  end if;
+end;
+$$;
+
 -- Install lifecycle guards in the same transaction as the protected RPCs and grants.
 create or replace function public.school_cbt_guard_exam_status()
 returns trigger
@@ -691,6 +709,90 @@ begin
 end;
 $$;
 
+create or replace function public.school_report_update_grading_bands(p_school uuid, p_bands jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  band jsonb;
+  band_min numeric;
+  band_max numeric;
+  minimum_value numeric;
+  maximum_value numeric;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  if not (public.is_super_admin() or public.is_school_member(p_school, array['school_admin'])) then
+    raise exception 'Not authorised to update grading bands';
+  end if;
+  if p_bands is null or jsonb_typeof(p_bands) <> 'array' then
+    raise exception 'Grading bands must be a JSON array';
+  end if;
+  if jsonb_array_length(p_bands) < 1 or jsonb_array_length(p_bands) > 20 then
+    raise exception 'Provide between 1 and 20 grading bands';
+  end if;
+
+  for band in select value from jsonb_array_elements(p_bands)
+  loop
+    if jsonb_typeof(band) <> 'object'
+       or nullif(btrim(band ->> 'grade'), '') is null
+       or nullif(btrim(band ->> 'remark'), '') is null
+       or band ->> 'min' is null or band ->> 'max' is null then
+      raise exception 'Each band needs a grade, remark, minimum and maximum';
+    end if;
+    begin
+      band_min := (band ->> 'min')::numeric;
+      band_max := (band ->> 'max')::numeric;
+    exception when others then
+      raise exception 'Band minimum and maximum must be numeric';
+    end;
+    if band_min < 0 or band_max > 100 or band_min > band_max then
+      raise exception 'Grade ranges must be within 0–100 and minimum must not exceed maximum';
+    end if;
+  end loop;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_bands) a
+    join jsonb_array_elements(p_bands) b on a.ordinality < b.ordinality
+    where lower(a.value ->> 'grade') = lower(b.value ->> 'grade')
+  ) then raise exception 'Grade labels must be unique'; end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_bands) a
+    join jsonb_array_elements(p_bands) b on a.ordinality < b.ordinality
+    where (a.value ->> 'min')::numeric <= (b.value ->> 'max')::numeric
+      and (b.value ->> 'min')::numeric <= (a.value ->> 'max')::numeric
+  ) then raise exception 'Grade ranges must not overlap'; end if;
+
+  select min((value ->> 'min')::numeric), max((value ->> 'max')::numeric)
+    into minimum_value, maximum_value
+  from jsonb_array_elements(p_bands);
+  if minimum_value <> 0 or maximum_value <> 100 then
+    raise exception 'Grade bands must cover the 0–100 range';
+  end if;
+
+  if exists (
+    select 1
+    from (
+      select (value ->> 'min')::numeric as band_min,
+             lag((value ->> 'max')::numeric) over (order by (value ->> 'min')::numeric) as previous_max
+      from jsonb_array_elements(p_bands)
+    ) ordered_bands
+    where previous_max is not null and band_min > previous_max + 0.01
+  ) then raise exception 'Grade bands must not leave gaps in the 0–100 range'; end if;
+
+  update public.schools
+  set report_grading_bands = p_bands
+  where id = p_school;
+  if not found then raise exception 'School not found'; end if;
+  return p_bands;
+end;
+$$;
+
 create or replace function public.school_report_class_roster(p_school uuid, p_class uuid)
 returns jsonb
 language plpgsql
@@ -868,6 +970,8 @@ $$;
 
 revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
 grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
+revoke all on function public.school_report_update_grading_bands(uuid, jsonb) from public, anon;
+grant execute on function public.school_report_update_grading_bands(uuid, jsonb) to authenticated;
 revoke all on function public.school_report_class_roster(uuid, uuid) from public, anon;
 grant execute on function public.school_report_class_roster(uuid, uuid) to authenticated;
 revoke all on function public.school_report_student_profile(uuid, uuid) from public, anon;
