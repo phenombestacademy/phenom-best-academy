@@ -219,6 +219,61 @@ begin
 end;
 $$;
 
+create or replace function public.school_cbt_save_answers(p_attempt uuid, p_answers jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  t public.school_cbt_exam_attempts%rowtype;
+  e public.school_cbt_exams%rowtype;
+  uid uuid := auth.uid();
+  deadline timestamptz;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  if jsonb_typeof(coalesce(p_answers, '{}'::jsonb)) <> 'object' then
+    raise exception 'Answers must be a JSON object';
+  end if;
+  if pg_column_size(p_answers) > 262144 then raise exception 'Answer payload is too large'; end if;
+  if exists(select 1 from jsonb_each_text(p_answers) item where char_length(item.value) > 20000) then
+    raise exception 'An answer exceeds the 20000-character limit';
+  end if;
+
+  select * into t
+  from public.school_cbt_exam_attempts
+  where id = p_attempt and student_id = uid
+  for update;
+  if not found then raise exception 'Attempt not found'; end if;
+  if t.status <> 'in_progress' or t.submitted_at is not null then raise exception 'Attempt is closed'; end if;
+
+  select * into e from public.school_cbt_exams where id = t.exam_id;
+  if not found then raise exception 'Exam not found'; end if;
+  deadline := least(t.started_at + make_interval(mins => e.duration_minutes), e.ends_at);
+  if now() >= deadline then raise exception 'Time is up'; end if;
+
+  if exists (
+    select 1
+    from jsonb_each_text(p_answers) item
+    where not exists (
+      select 1 from public.school_cbt_exam_questions_student question
+      where question.exam_id = e.id and question.id::text = item.key
+    )
+  ) then raise exception 'Answer references a question outside this exam'; end if;
+
+  if exists (
+    select 1
+    from jsonb_each_text(p_answers) item
+    join public.school_cbt_exam_questions_student question
+      on question.id::text = item.key and question.exam_id = e.id
+    where question.options is not null and not (question.options ? item.value)
+  ) then raise exception 'An objective answer is not one of the available options'; end if;
+
+  update public.school_cbt_exam_attempts set answers = p_answers where id = p_attempt;
+  return jsonb_build_object('saved', true, 'deadline', deadline);
+end;
+$;
+
 create or replace function public.school_cbt_submit_attempt(p_attempt uuid)
 returns jsonb
 language plpgsql
@@ -424,6 +479,9 @@ begin
   if p_visible and not public.school_has_cbt_access(e.school_id) and not public.is_super_admin() then
     raise exception 'School CBT entitlement is inactive';
   end if;
+  if p_visible and e.status <> 'closed' and (e.ends_at is null or e.ends_at > now()) then
+    raise exception 'Close the exam or wait until its scheduled end before releasing results';
+  end if;
 
   if p_visible then
     -- Finalise attempts whose authoritative server deadline has elapsed.
@@ -552,6 +610,8 @@ revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) f
 grant execute on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) to authenticated;
 revoke all on function public.school_cbt_list_essay_responses(uuid) from public, anon;
 grant execute on function public.school_cbt_list_essay_responses(uuid) to authenticated;
+revoke all on function public.school_cbt_save_answers(uuid, jsonb) from public, anon;
+grant execute on function public.school_cbt_save_answers(uuid, jsonb) to authenticated;
 revoke all on function public.school_cbt_submit_attempt(uuid) from public, anon;
 grant execute on function public.school_cbt_submit_attempt(uuid) to authenticated;
 revoke all on function public.school_cbt_start_attempt(uuid) from public, anon;
