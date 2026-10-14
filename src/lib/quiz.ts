@@ -67,7 +67,7 @@ function localQuestions(subject: string, topic: string, count: number, level: nu
         [`Which statement is most directly related to ${topicSafe}?`, ['It is a subject concept to be learned and applied','It has no connection to learning','It cannot be practised','It never requires evidence'], 'A', `The first option describes a normal learning relationship with ${topicSafe}.`],
         [`A good learner studying ${topicSafe} should usually do what?`, ['Learn, practise and review','Skip all practice','Avoid feedback','Memorise without understanding'], 'A', 'Active practice and review support understanding and retention.'],
         [`Which approach is useful when learning ${topicSafe}?`, ['Use examples and check corrections','Ignore errors','Avoid questions','Never review notes'], 'A', 'Examples and corrections help learners identify and fix misconceptions.'],
-      ][k % 3]; out.push(makeQuestion(i+1, examples[0], examples[1] as string[], examples[2] as string, examples[3] as string));
+      ][k % 3]; out.push(makeQuestion(i+1, String(examples[0]), examples[1] as string[], examples[2] as string, examples[3] as string));
     }
   }
   return out;

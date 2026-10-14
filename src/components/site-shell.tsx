@@ -32,7 +32,6 @@ import {
   listMyNotifications,
   markNotificationRead,
   subscribeEmail,
-  type Announcement,
   type UserNotification,
 } from "@/lib/notifications";
 

@@ -9,7 +9,7 @@ export function TertiaryProgrammeBrowser(){
  const [level,setLevel]=useState('nd');
  const [sector,setSector]=useState('all');
  const [loading,setLoading]=useState(true);
- useEffect(()=>{const s=getSupabase();if(!s)return;setLoading(true);s.from('lms_tertiary_programme_catalogue').select('id,country_code,sector,qualification_level,programme_name,delivery_status,practical_requirement,duration_months').eq('active',true).order('sector').order('programme_name').then(({data})=>setRows((data||[]) as Row[])).finally(()=>setLoading(false));},[]);
+ useEffect(()=>{const s=getSupabase();if(!s)return;setLoading(true);s.from('lms_tertiary_programme_catalogue').select('id,country_code,sector,qualification_level,programme_name,delivery_status,practical_requirement,duration_months').eq('active',true).order('sector').order('programme_name').then(({data})=>{setRows((data||[]) as Row[]);setLoading(false);},()=>{setRows([]);setLoading(false);});},[]);
  const sectors=useMemo(()=>[...new Set(rows.filter(x=>x.country_code===country&&x.qualification_level===level).map(x=>x.sector))].sort(),[rows,country,level]);
  const filtered=rows.filter(x=>x.country_code===country&&x.qualification_level===level&&(sector==='all'||x.sector===sector));
  return <div className="rounded-2xl border border-line bg-cream p-5">

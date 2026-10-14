@@ -22,7 +22,8 @@ function CPDPage(){
   const p=items.find(x=>x.id===selected);
   const lessons=useMemo(()=>p?.modules.flatMap(m=>m.lessons)||[],[p]);
 
-  const questions=[
+  type CPDQuestion = [string, string, string[], string, string];
+  const questions: CPDQuestion[] = [
     ['q1','What is the purpose of structured professional learning?',['A. To avoid assessment','B. To build and demonstrate capability','C. To remove all practice'],'B','Structured learning connects knowledge, practice and demonstrated capability.'],
     ['q2','What should happen before an assessed certificate is issued?',['A. Configured completion requirements should be met','B. Any page should be opened once','C. The learner should skip the assessment'],'A','A certificate should follow the programme’s published completion and assessment rules.'],
     ['q3','What is a useful learning habit?',['A. Read, practise, assess and reflect','B. Never review corrections','C. Ignore feedback'],'A','Reviewing feedback and practising again strengthens learning.']
@@ -110,7 +111,7 @@ function CPDPage(){
                     {l.body&&<p className="mt-1 text-xs leading-5 text-muted">{l.body}</p>}
                     {l.url&&<a className="mt-1 block text-xs font-semibold text-blue" href={l.url} target="_blank" rel="noreferrer">Open learning resource</a>}
                   </div>
-                  <Button size="sm" variant={done.includes(l.id)?'outline':'default'} onClick={()=>setDone(x=>x.includes(l.id)?x:x.concat(l.id))}>{done.includes(l.id)?'Completed':'Mark complete'}</Button>
+                  <Button size="sm" variant={done.includes(l.id)?'outline':'primary'} onClick={()=>setDone(x=>x.includes(l.id)?x:x.concat(l.id))}>{done.includes(l.id)?'Completed':'Mark complete'}</Button>
                 </div>
               </div>)}
             </div>

@@ -160,11 +160,15 @@ function AdminStudio() {
 
     try {
       setSettings(await getSiteSettings());
-    } catch {}
+    } catch {
+      // Keep the existing settings if the optional settings source is unavailable.
+    }
 
     try {
       setPaymentSettings(await listAllPaymentProviders());
-    } catch {}
+    } catch {
+      // Payment-provider settings can be configured later without blocking admin access.
+    }
   }
 
   async function refresh() {

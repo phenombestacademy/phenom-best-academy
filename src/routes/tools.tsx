@@ -479,7 +479,7 @@ function evaluateExpression(
   source = source.replace(/\bAns\b/gi, "ANS");
   source = source.replace(/\be\^/gi, "exp(");
 
-  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+  if (!/^[0-9A-Za-z_+*/().,%-]*$/.test(source)) {
     throw new Error("Unsupported character in expression.");
   }
 
@@ -912,7 +912,7 @@ function ToolsPage() {
     });
   }
 
-  function useMemory(action: "MC" | "MR" | "M+" | "M-" | "MS") {
+  function applyMemory(action: "MC" | "MR" | "M+" | "M-" | "MS") {
     if (action === "MC") return setMemory(0);
     if (action === "MR") return setExpr((value) => `${value}${memory}`);
     if (action === "MS") {
@@ -1514,7 +1514,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => useMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
+            {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => applyMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
             <Button size="sm" variant="outline" onClick={() => setExpr((value) => value.slice(0, -1))}>⌫</Button>
             <Button size="sm" variant="outline" onClick={clearCalculator}>AC</Button>
             <Button size="sm" variant="outline" onClick={() => setExpr((value) => `${value}Ans`)}>Ans</Button>
@@ -1653,8 +1653,8 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-display text-xl font-semibold">Live world currency</h3><p className="text-sm text-muted">Rates come from the Academy currency service. Refresh to request current rates.</p></div><Button variant="outline" onClick={() => { setCurrencyLoading(true); void getLiveCurrencyRates(true).then(setCurrency).finally(() => setCurrencyLoading(false)); }}><RefreshCw className="mr-2 size-4" />Refresh</Button></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm font-semibold">Amount<input type="number" className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={currencyAmount} onChange={(e) => setCurrencyAmount(e.target.value)} /></label>
-              <SelectField label="From" value={currencyFrom} onChange={setCurrencyFrom} options={codes} labels={codes.map(currencyName)} />
-              <SelectField label="To" value={currencyTo} onChange={setCurrencyTo} options={codes} labels={codes.map(currencyName)} />
+              <SelectField label="From" value={currencyFrom} onChange={setCurrencyFrom} options={codes} labels={codes.map((code) => currencyName(code))} />
+              <SelectField label="To" value={currencyTo} onChange={setCurrencyTo} options={codes} labels={codes.map((code) => currencyName(code))} />
             </div>
             <div className="mt-4 rounded-xl bg-paper p-4 text-2xl font-bold">{currencyLoading ? "Loading live rates…" : convertedCurrency === null ? "—" : `${convertedCurrency.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${currencyTo}`}</div>
           </div>
@@ -1692,7 +1692,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <label className="text-sm font-semibold lg:col-span-2">Vertical scale<input type="range" min="10" max="80" value={graphScale} onChange={(e) => setGraphScale(Number(e.target.value))} className="mt-3 w-full" /></label>
           </div>
           <div className="mt-5 overflow-auto rounded-2xl bg-white p-2">
-            {graph && "width" in graph ? <svg viewBox={`0 0 ${graph.width} ${graph.height}`} className="min-w-[700px] w-full" role="img" aria-label="Mathematical graph">
+            {graph && "width" in graph && typeof graph.height === 'number' ? <svg viewBox={`0 0 ${graph.width} ${graph.height}`} className="min-w-[700px] w-full" role="img" aria-label="Mathematical graph">
               <rect width={graph.width} height={graph.height} fill="white" />
               <line x1="0" y1={graph.height / 2} x2={graph.width} y2={graph.height / 2} stroke="#8b95a7" strokeWidth="1" />
               <line x1={graph.width / 2} y1="0" x2={graph.width / 2} y2={graph.height} stroke="#8b95a7" strokeWidth="1" />
@@ -1763,7 +1763,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
           <div className="flex flex-wrap gap-2">
             {[
               ["ocr", "Image to Text"], ["reader", "Text & Image Reader"], ["codes", "Code Scanner / Creator"],
-            ].map(([id, label]) => <Button key={id} variant={scannerMode === id ? "default" : "outline"} onClick={() => setScannerMode(id as typeof scannerMode)}>{label}</Button>)}
+            ].map(([id, label]) => <Button key={id} variant={scannerMode === id ? "primary" : "outline"} onClick={() => setScannerMode(id as typeof scannerMode)}>{label}</Button>)}
           </div>
 
           {scannerMode === "ocr" ? (
@@ -2007,13 +2007,13 @@ function SelectField({
 }
 
 function evaluateGraphExpression(expression: string, x: number) {
-  let source = expression
+  const source = expression
     .replace(/×/g, "*")
     .replace(/÷/g, "/")
     .replace(/\^/g, "**")
     .replace(/\bpi\b/gi, "PI")
     .replace(/\s+/g, "");
-  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+  if (!/^[0-9A-Za-z_+*/().,%-]*$/.test(source)) {
     throw new Error("Unsupported graph character.");
   }
 

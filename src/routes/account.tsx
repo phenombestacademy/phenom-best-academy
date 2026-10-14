@@ -21,7 +21,7 @@ const accountChoices: Array<{ value: OnboardingRole; label: string; description:
 ];
 
 function AccountPage() {
-  const pending = getPendingAccountChoice();
+  const pending: { category: AccountCategory; role: OnboardingRole } = getPendingAccountChoice();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [category, setCategory] = useState<AccountCategory>(pending.category);
   const [role, setRole] = useState<OnboardingRole>(pending.role);
@@ -110,7 +110,7 @@ function AccountPage() {
       }
       const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: recoveryEmail, p_user_id: null });
       if (lookupError) throw lookupError;
-      if (!Boolean((lookup as { exists?: boolean } | null)?.exists)) throw new Error('We could not find a Phenom account for that email address. Please check the details and try again.');
+      if (!(lookup as { exists?: boolean } | null)?.exists) throw new Error('We could not find a Phenom account for that email address. Please check the details and try again.');
       const { error } = await supabase.auth.signInWithOtp({ email: recoveryEmail, options: { shouldCreateUser: false } });
       if (error) throw error;
       setEmail(recoveryEmail);

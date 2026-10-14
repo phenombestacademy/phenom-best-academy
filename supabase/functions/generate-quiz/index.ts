@@ -15,7 +15,7 @@ type Generated = {
 };
 
 function cleanJson(raw: string) {
-  return raw.replace(/^\s*\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`\s*$/i, '').trim();
+  return raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 }
 
 async function generateBatch(prompt: string, count: number): Promise<Generated[]> {

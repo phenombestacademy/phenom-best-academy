@@ -46,9 +46,9 @@ function endAuthFlow(flow: 'google' | 'emailOtp') {
   if (activeAuthFlow === flow) activeAuthFlow = null;
 }
 
-export function getPendingAccountChoice() {
+export function getPendingAccountChoice(): { category: AccountCategory; role: OnboardingRole } {
   if (typeof window === 'undefined') return { category: 'individual' as AccountCategory, role: 'individual' as OnboardingRole };
-  const category = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
+  const category: AccountCategory = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
   const savedRole = window.localStorage.getItem(ROLE_KEY) as OnboardingRole | null;
   const validRoles: OnboardingRole[] = ['school_admin','teacher','non_teaching_staff','student','child','teenager','adult','professional','parent'];
   const role = validRoles.includes(savedRole as OnboardingRole) ? savedRole as OnboardingRole : category === 'school' ? 'school_admin' : 'individual';
@@ -98,7 +98,7 @@ export async function sendEmailOtp(email: string) {
     if (!cleanEmail) throw new Error('Enter your email address.');
     const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: cleanEmail, p_user_id: null });
     if (lookupError) throw lookupError;
-    if (Boolean((lookup as { exists?: boolean } | null)?.exists)) throw new Error('You already have a Phenom account. Please sign in instead.');
+    if ((lookup as { exists?: boolean } | null)?.exists) throw new Error('You already have a Phenom account. Please sign in instead.');
     const otpRequest = supabase.auth.signInWithOtp({ email: cleanEmail, options: { shouldCreateUser: true } });
     const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.')), 20_000));
     const { error } = await Promise.race([otpRequest, timeout]);
