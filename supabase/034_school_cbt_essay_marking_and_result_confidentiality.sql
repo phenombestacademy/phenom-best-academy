@@ -235,6 +235,7 @@ begin
   if jsonb_typeof(coalesce(p_answers, '{}'::jsonb)) <> 'object' then
     raise exception 'Answers must be a JSON object';
   end if;
+  p_answers := coalesce(p_answers, '{}'::jsonb);
   if pg_column_size(p_answers) > 262144 then raise exception 'Answer payload is too large'; end if;
   if exists(select 1 from jsonb_each_text(p_answers) item where char_length(item.value) > 20000) then
     raise exception 'An answer exceeds the 20000-character limit';
