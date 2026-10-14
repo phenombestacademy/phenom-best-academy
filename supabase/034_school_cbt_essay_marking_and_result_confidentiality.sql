@@ -691,6 +691,51 @@ begin
 end;
 $$;
 
+create or replace function public.school_report_class_roster(p_school uuid, p_class uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  result jsonb;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  if not (public.is_super_admin() or public.is_school_member(p_school, array['school_admin'])) then
+    raise exception 'Not authorised to view class performance data';
+  end if;
+  if not exists (
+    select 1 from public.school_classes class_row
+    where class_row.id = p_class and class_row.school_id = p_school
+  ) then raise exception 'Class does not belong to this school'; end if;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'student_id', cm.user_id,
+        'admission_number', sr.admission_number,
+        'gender', coalesce(sr.gender, p.gender),
+        'full_name', coalesce(
+          nullif(btrim(p.full_name), ''),
+          nullif(btrim(concat_ws(' ', p.first_name, p.middle_name, p.surname)), ''),
+          'Student ' || coalesce(sr.admission_number, left(cm.user_id::text, 8))
+        )
+      ) order by coalesce(p.surname, p.full_name), coalesce(p.first_name, '')
+    ),
+    '[]'::jsonb
+  )
+  into result
+  from public.class_members cm
+  left join public.student_school_records sr
+    on sr.student_id = cm.user_id and sr.school_id = p_school
+  left join public.profiles p on p.id = cm.user_id
+  where cm.class_id = p_class and lower(cm.role) = 'student';
+
+  return result;
+end;
+$$;
+
 create or replace function public.school_report_student_profile(p_school uuid, p_student uuid)
 returns jsonb
 language plpgsql
@@ -823,6 +868,8 @@ $$;
 
 revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
 grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
+revoke all on function public.school_report_class_roster(uuid, uuid) from public, anon;
+grant execute on function public.school_report_class_roster(uuid, uuid) to authenticated;
 revoke all on function public.school_report_student_profile(uuid, uuid) from public, anon;
 grant execute on function public.school_report_student_profile(uuid, uuid) to authenticated;
 revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) from public, anon;
