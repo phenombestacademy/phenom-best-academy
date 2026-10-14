@@ -67,7 +67,8 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
     if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
     try {
       const {data,error:e}=await db.rpc('school_cbt_start_attempt',{p_exam:exam.id}); if(e) throw e;
-      const payload=data as {attempt_id:string;deadline:string};
+      const payload=data as {attempt_id:string;deadline?:string;status?:string;score?:number;total_marks?:number;correct_count?:number};
+      if(payload.status==='expired_submitted'){setSelected(exam);setResult({score:Number(payload.score||0),total_marks:Number(payload.total_marks||0),correct_count:Number(payload.correct_count||0)});setNotice('Your previous attempt expired and has been submitted automatically.');return;}
       const {data:q,error:qe}=await db.from('school_cbt_exam_questions_student').select('id,position,question_text,options,marks,image_url,media').eq('exam_id',exam.id).order('position');
       if(qe) throw qe;
       setSelected(exam);setQuestions((q||[]) as typeof questions);setAttemptId(payload.attempt_id);setDeadline(payload.deadline);setAnswers({});
