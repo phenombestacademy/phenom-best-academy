@@ -398,17 +398,17 @@ begin
   if uid is null then raise exception 'Authentication required'; end if;
   select * into e from public.school_cbt_exams where id = p_exam;
   if not found then raise exception 'Exam not found'; end if;
-  if not public.school_has_cbt_access(e.school_id) then raise exception 'School CBT subscription is not active'; end if;
-  if e.results_visible_to_students then raise exception 'This exam is closed to new attempts because results have been released'; end if;
-  if e.status not in ('scheduled', 'active') or e.starts_at > now() or e.ends_at <= now() then
-    raise exception 'This exam is not currently open';
-  end if;
-
   select * into a
   from public.school_cbt_exam_assignments
   where exam_id = p_exam and student_id = uid and school_id = e.school_id
   for update;
   if not found then raise exception 'You are not assigned to this exam'; end if;
+
+  if not public.school_has_cbt_access(e.school_id) then raise exception 'School CBT subscription is not active'; end if;
+  if e.results_visible_to_students then raise exception 'This exam is closed to new attempts because results have been released'; end if;
+  if e.status not in ('scheduled', 'active') or e.starts_at > now() or e.ends_at <= now() then
+    raise exception 'This exam is not currently open';
+  end if;
 
   select * into t
   from public.school_cbt_exam_attempts
