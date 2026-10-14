@@ -128,7 +128,7 @@ function SchoolReportPage() {
               ca: ca === null ? null : Number(ca.toFixed(2)),
               exam: exam === null ? null : Number(exam.toFixed(2)),
               total: ca === null || exam === null ? null : Number((ca + exam).toFixed(2)),
-              remark: [...new Set(group.comments)].join(' · ') || undefined,
+              remark: group ? [...new Set(group.comments)].join(' · ') || undefined : undefined,
             };
           });
 
