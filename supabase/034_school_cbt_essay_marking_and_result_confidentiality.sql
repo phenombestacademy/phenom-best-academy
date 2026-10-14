@@ -55,12 +55,15 @@ begin
   if not (
     public.is_super_admin()
     or public.is_school_member(e.school_id, array['school_admin'])
-    or e.teacher_id = uid
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
   ) then raise exception 'Not authorised'; end if;
   if not public.school_has_cbt_access(e.school_id) and not public.is_super_admin() then
     raise exception 'School CBT subscription is not active or does not include CBT';
   end if;
   if e.status not in ('draft', 'scheduled') then raise exception 'Only draft exams can be scheduled'; end if;
+  if not exists (select 1 from public.school_classes class_row where class_row.id = e.class_id and class_row.school_id = e.school_id) then
+    raise exception 'The selected class does not belong to this school';
+  end if;
   if e.starts_at is null or e.ends_at is null or e.duration_minutes is null
      or e.duration_minutes < 1 or e.ends_at <= e.starts_at then
     raise exception 'Set valid opening/closing times and duration';
@@ -76,7 +79,9 @@ begin
     from public.school_cbt_exam_questions
     where exam_id = p_exam
       and (
-        (options is not null and (
+        marks <= 0
+        or btrim(question_text) = ''
+        or (options is not null and (
           correct_answer is null
           or btrim(correct_answer) = ''
           or not (options ? correct_answer)
@@ -141,7 +146,7 @@ begin
   if not (
     public.is_super_admin()
     or public.is_school_member(e.school_id, array['school_admin'])
-    or e.teacher_id = uid
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
   ) then raise exception 'Not authorised'; end if;
   if e.results_visible_to_students then raise exception 'Hide released results before changing marks'; end if;
   if t.school_id is distinct from e.school_id then raise exception 'Attempt school does not match exam'; end if;
@@ -308,7 +313,7 @@ begin
     if not (
       public.is_super_admin()
       or public.is_school_member(e.school_id, array['school_admin'])
-      or e.teacher_id = uid
+      or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
     ) then raise exception 'Not authorised'; end if;
     if t.status = 'in_progress' and now() < deadline then
       raise exception 'Staff can only finalise an attempt after its deadline';
@@ -475,7 +480,7 @@ begin
   if not (
     public.is_super_admin()
     or public.is_school_member(e.school_id, array['school_admin'])
-    or e.teacher_id = uid
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
   ) then raise exception 'Not authorised'; end if;
   if p_visible and not public.school_has_cbt_access(e.school_id) and not public.is_super_admin() then
     raise exception 'School CBT entitlement is inactive';
@@ -620,7 +625,7 @@ begin
   if not (
     public.is_super_admin()
     or public.is_school_member(e.school_id, array['school_admin'])
-    or e.teacher_id = uid
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
   ) then raise exception 'Not authorised'; end if;
 
   select coalesce(
