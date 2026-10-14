@@ -28,7 +28,8 @@ function totalFor(s: SubjectResult): number | null {
   return s.ca === null || s.exam === null ? null : s.ca + s.exam;
 }
 function gradeFor(score: number, maximum: number, bands: GradeBand[]) {
-  const percentage = maximum > 0 ? score / maximum * 100 : 0;
+  const rawPercentage = maximum > 0 ? score / maximum * 100 : 0;
+  const percentage = Math.round(rawPercentage * 100) / 100;
   const band = [...bands].sort((a, b) => b.min - a.min).find((b) => percentage >= b.min && percentage <= b.max);
   return { grade: band?.grade ?? "—", remark: band?.remark ?? "—" };
 }
