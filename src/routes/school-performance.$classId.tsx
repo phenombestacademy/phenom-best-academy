@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { GeneralPerformanceSheet, type GeneralPerformanceData, type PerformanceStudentRow } from '@/components/school/GeneralPerformanceSheet';
+import { DEFAULT_GRADE_BANDS, normaliseGradeBands, type GradeBand } from '@/components/school/OfficialReportSheet';
 import { getSupabase } from '@/lib/cms';
 import { getMySchoolMembership } from '@/lib/school';
 
