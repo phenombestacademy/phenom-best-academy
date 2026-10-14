@@ -63,6 +63,19 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
     },15000);
     return ()=>window.clearInterval(id);
   },[db,attemptId,answers,remaining,result]);
+  useEffect(()=>{
+    if(remaining!==0 || !attemptId || result || !db) return;
+    let live=true;
+    (async()=>{
+      try {
+        await db.rpc('school_cbt_save_answers',{p_attempt:attemptId,p_answers:answers});
+        const {data,error:e}=await db.rpc('school_cbt_submit_attempt',{p_attempt:attemptId});
+        if(e) throw e;
+        if(live){setResult(data as {score:number;total_marks:number;correct_count:number});setAttemptId('');setNotice('Time expired. Your examination was submitted automatically.');}
+      } catch(e) { if(live) setError(e instanceof Error?e.message:'Automatic submission failed. Please submit manually.'); }
+    })();
+    return ()=>{live=false;};
+  },[remaining,attemptId,result,db]);
   async function start(exam:Exam) {
     if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
     try {
