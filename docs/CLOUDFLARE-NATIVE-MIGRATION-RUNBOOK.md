@@ -25,6 +25,20 @@ Gemini configuration is outside this migration scope and must remain unchanged.
 - Cloudflare resource provisioning and live data/object transfer have not been verified. The migration-control Worker is not deployed.
 - A previously reported Supabase egress quota warning was a transfer gate; re-check current quota and reset date before starting bulk exports.
 
+## Cloudflare staging resources provisioned (14 October 2026)
+
+The provisioning workflow created the following isolated resources in the Cloudflare account selected by the repository's Cloudflare credentials:
+
+- D1 database: `phenom-best-lms-migration-20261014`
+- D1 database ID: `4951f4e1-ad59-4a49-a420-e816d55cdf61`
+- D1 schema: all 171 public table names/column sets are present as a SQLite-affinity scaffold; Wrangler reported 175 non-internal tables total, including the three migration-control tables and Wrangler's D1 migration tracking table.
+- R2 buckets: `phenom-media-migration-20261014`, `phenom-curriculum-assets-migration-20261014`, `phenom-profile-avatars-migration-20261014`, `phenom-school-cbt-media-migration-20261014`
+- Queues: `phenom-best-lms-migration-jobs-20261014` and `phenom-best-lms-migration-dlq-20261014`
+- Workers.dev subdomain registered: `phenombestacademy-lms`
+- Migration-control Worker deployment reported by Wrangler: `https://phenom-best-migration-control.phenombestacademy-lms.workers.dev`
+
+The 171-table D1 catalogue is only a structural scaffold. It does not yet include full PostgreSQL foreign-key/unique/check constraints, indexes, views, triggers, stored functions, extensions, RLS equivalents, or authentication. No Supabase rows or Storage objects have been copied. The current deployment has no `MIGRATION_ADMIN_TOKEN` secret, so migration-admin routes fail closed (503); only the minimal health route is intended to be public. The first automated HTTPS health probe encountered a TLS handshake error after deployment; treat the endpoint health as **unverified** until the retrying workflow passes. This is a staging control plane, not the application backend and not a production cutover.
+
 ## Execution phases
 
 ### 0. Access and safety gate
