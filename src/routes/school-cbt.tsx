@@ -412,7 +412,7 @@ function SchoolCbtPage() {
               </label>
               <button disabled={busy || response.marks_awarded === null} onClick={() => saveEssayMark(response)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save mark</button>
             </article>)}
-          </section>
+          </section>}
           <p className="mt-3 text-xs text-muted">Publishing, attempt handling, marking and result visibility are enforced by server-side RPCs. Keep this pull request in draft until staging security tests pass.</p>
           </div>}
       </section>
