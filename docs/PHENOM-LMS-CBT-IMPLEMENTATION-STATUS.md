@@ -13,13 +13,13 @@ The connected Supabase project `hajrdejlamuiqjjhdnsv` is healthy and already has
 - Updated integration documentation to distinguish delivered UI from the server-side controls still required.
 
 ## Work still required before production
-1. Implement or verify server-side authorised exam start, answer autosave, timed submission and attempt-limit enforcement against the existing attempt tables.
-2. Confirm the student interface reads only `school_cbt_exam_questions_student`; never expose `correct_answer` to student clients.
-3. Complete server-side objective marking, manual marking, teacher review, approval/publication and auditable correction.
-4. Generate the General Performance Sheet and Official School Report Sheet from existing approved school result/grading/attendance/student/trait records.
-5. Enforce a CBT-specific feature entitlement using the existing subscription feature-grant system; a generic premium-subscription predicate is not sufficient for CBT-only plans.
-6. Add and run automated tests for two-school isolation, role permissions, answer-key secrecy, scheduling, timers, autosave, scoring, approval, reports and entitlement boundaries.
-7. Run `npm run typecheck`, `npm run lint`, and `npm run build` in the project environment and fix all failures.
+1. **Partially implemented in `supabase/033_school_cbt_secure_lifecycle.sql`:** authenticated server-side publish/assignment, start/resume, autosave, deadline checks, objective scoring, attempt limits, result visibility and a CBT-specific entitlement predicate. The migration is committed to the feature branch but has not been applied to the live database.
+2. **Implemented in the student UI:** the candidate view reads `school_cbt_exam_questions_student`, autosaves answers, shows a timer and requests server-side submission. Verify this through automated tests before production.
+3. **Still required:** teacher marking/review/approval and audited score corrections; persist CBT scores into `student_result_entries` only after the school configures a valid result component and approves the scores.
+4. **Still required:** connect General Performance Sheet and Official School Report Sheet to existing approved result, grading, attendance, student and trait records. Do not create duplicate report tables.
+5. **Entitlement configuration still required:** the predicate recognises explicit CBT feature codes in plan features, feature grants or tool entitlements. The actual commercial plan/feature code must be configured before any school can rely on access.
+6. **Still required:** automated tests for two-school isolation, role permissions, answer-key secrecy, scheduling, timers, autosave, scoring, approval, reports and entitlement boundaries.
+7. **Build verification pending:** a quality workflow was added. The first run failed during Node setup because the repository has no lockfile and npm caching was enabled; the workflow was corrected to use `npm install`, but a successful typecheck/lint/build result has not yet been observed.
 
 ## Deployment and safety
 - The duplicate migration was removed from this branch; no live Supabase schema changes were applied by this work.
