@@ -589,6 +589,10 @@ declare
   a public.school_cbt_exam_attempts%rowtype;
 begin
   if uid is null then raise exception 'Authentication required'; end if;
+  if not exists (
+    select 1 from public.school_cbt_exam_assignments assignment
+    where assignment.exam_id = p_exam and assignment.student_id = uid
+  ) then raise exception 'Not authorised'; end if;
   select * into e from public.school_cbt_exams where id = p_exam;
   if not found then raise exception 'Exam not found'; end if;
   if not exists (
