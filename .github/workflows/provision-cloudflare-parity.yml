@@ -45,8 +45,8 @@ jobs:
           AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
           account="$CLOUDFLARE_ACCOUNT_ID"
 
-          api_get() { curl --fail-with-body --silent --show-error "${AUTH[@]}" "$API$1"; }
-          api_post() { curl --fail-with-body --silent --show-error "${AUTH[@]}" -X POST "$API$1" "${AUTH[@]}" --data "$2"; }
+          api_get() { curl --silent --show-error "${AUTH[@]}" "$API$1"; }
+          api_post() { curl --silent --show-error -X POST "$API$1" "${AUTH[@]}" --data "$2"; }
           assert_success() {
             local payload="$1" label="$2"
             if [[ "$(jq -r '.success // false' <<<"$payload")" != "true" ]]; then
