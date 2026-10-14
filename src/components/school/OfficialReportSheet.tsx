@@ -12,6 +12,29 @@ export const DEFAULT_GRADE_BANDS: GradeBand[] = [
   { grade: "E8", min: 40, max: 44.99, remark: "Pass" },
   { grade: "F9", min: 0, max: 39.99, remark: "Fail" },
 ];
+
+export function normaliseGradeBands(value: unknown): GradeBand[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 20) return DEFAULT_GRADE_BANDS;
+  const valid = value.every((item): item is GradeBand =>
+    typeof item === 'object' && item !== null
+    && typeof (item as GradeBand).grade === 'string' && (item as GradeBand).grade.trim().length > 0
+    && typeof (item as GradeBand).remark === 'string' && (item as GradeBand).remark.trim().length > 0
+    && typeof (item as GradeBand).min === 'number' && Number.isFinite((item as GradeBand).min)
+    && typeof (item as GradeBand).max === 'number' && Number.isFinite((item as GradeBand).max)
+    && (item as GradeBand).min >= 0 && (item as GradeBand).max <= 100
+    && (item as GradeBand).min <= (item as GradeBand).max
+  );
+  if (!valid) return DEFAULT_GRADE_BANDS;
+  const sorted = [...value].sort((a, b) => a.min - b.min);
+  if (sorted[0].min !== 0 || sorted[sorted.length - 1].max !== 100) return DEFAULT_GRADE_BANDS;
+  if (new Set(sorted.map(band => band.grade.toLowerCase())).size !== sorted.length) return DEFAULT_GRADE_BANDS;
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (sorted[index].min <= sorted[index - 1].max || sorted[index].min > sorted[index - 1].max + 0.01) {
+      return DEFAULT_GRADE_BANDS;
+    }
+  }
+  return value as GradeBand[];
+}
 export type SubjectResult = { subject: string; ca: number | null; exam: number | null; total?: number | null; grade?: string | null; remark?: string | null };
 export type RatedTrait = { label: string; rating: string | number | null };
 export type OfficialReportData = {
