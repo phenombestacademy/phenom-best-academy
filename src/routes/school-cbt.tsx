@@ -319,7 +319,7 @@ function SchoolCbtPage() {
     }
   }
 
-  async function setExamStatus(status: 'draft' | 'scheduled' | 'active' | 'closed')
+  async function setExamStatus(status: 'draft' | 'scheduled' | 'active' | 'closed') {
     if (!db || !chosen) return;
     setBusy(true); setError(''); setNotice('');
     try {
