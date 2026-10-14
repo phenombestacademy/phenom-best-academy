@@ -509,8 +509,45 @@ begin
 end;
 $;
 
+create or replace function public.school_report_student_profile(p_school uuid, p_student uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  uid uuid := auth.uid();
+  profile_data jsonb;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  if not (public.is_super_admin() or public.is_school_member(p_school, array['school_admin'])) then
+    raise exception 'Not authorised to view student profile for this report';
+  end if;
+  if not exists (
+    select 1 from public.student_school_records record
+    where record.school_id = p_school and record.student_id = p_student
+  ) then raise exception 'Student does not belong to this school'; end if;
+
+  select jsonb_build_object(
+    'full_name', p.full_name,
+    'first_name', p.first_name,
+    'middle_name', p.middle_name,
+    'surname', p.surname,
+    'gender', p.gender,
+    'date_of_birth', p.date_of_birth
+  )
+  into profile_data
+  from public.profiles p
+  where p.id = p_student;
+  if profile_data is null then raise exception 'Student profile not found'; end if;
+  return profile_data;
+end;
+$;
+
 revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
 grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
+revoke all on function public.school_report_student_profile(uuid, uuid) from public, anon;
+grant execute on function public.school_report_student_profile(uuid, uuid) to authenticated;
 revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) from public, anon;
 grant execute on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) to authenticated;
 revoke all on function public.school_cbt_list_essay_responses(uuid) from public, anon;
