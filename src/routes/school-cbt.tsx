@@ -360,10 +360,11 @@ function SchoolCbtPage() {
       } else if (status === 'active') {
         throw new Error('An exam becomes available during its scheduled window. Direct client-side activation is disabled.');
       } else {
-        const { error: e } = await db.from('school_cbt_exams').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', chosen.id).eq('school_id', context!.school.id);
+        const { data, error: e } = await db.rpc('school_cbt_close_exam', { p_exam: chosen.id });
         if (e) throw e;
         await refresh(context!.school.id);
-        setNotice('Exam closed. Existing attempts remain in the record.');
+        const submitted = Number((data as { attempts_submitted?: number } | null)?.attempts_submitted || 0);
+        setNotice(`Exam closed. ${submitted} in-progress attempt(s) were submitted by the server.`);
       }
     } catch (e) { setError(e instanceof Error ? e.message : 'Status update failed.'); }
     finally { setBusy(false); }
