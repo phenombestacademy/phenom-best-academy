@@ -111,7 +111,7 @@ function CPDPage(){
                     {l.body&&<p className="mt-1 text-xs leading-5 text-muted">{l.body}</p>}
                     {l.url&&<a className="mt-1 block text-xs font-semibold text-blue" href={l.url} target="_blank" rel="noreferrer">Open learning resource</a>}
                   </div>
-                  <Button size="sm" variant={done.includes(l.id)?'outline':'default'} onClick={()=>setDone(x=>x.includes(l.id)?x:x.concat(l.id))}>{done.includes(l.id)?'Completed':'Mark complete'}</Button>
+                  <Button size="sm" variant={done.includes(l.id)?'outline':'primary'} onClick={()=>setDone(x=>x.includes(l.id)?x:x.concat(l.id))}>{done.includes(l.id)?'Completed':'Mark complete'}</Button>
                 </div>
               </div>)}
             </div>
