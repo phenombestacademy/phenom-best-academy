@@ -25,8 +25,7 @@ export function CurriculumBrowser({ onTopicSelected }: Props) {
     const supabase=getSupabase(); if(!supabase) return;
     setLoading(true);
     supabase.from('lms_curriculum_levels').select('id,stage,display_name').eq('curriculum_id',curriculumId).eq('active',true).order('sequence_no')
-      .then(({data})=>{const rows=(data||[]) as Level[];setLevels(rows);setLevelId(rows[0]?.id||'');})
-      .finally(()=>setLoading(false));
+      .then(({data})=>{const rows=(data||[]) as Level[];setLevels(rows);setLevelId(rows[0]?.id||'');setLoading(false);},()=>{setLevels([]);setLevelId('');setLoading(false);});
   },[curriculumId]);
 
   useEffect(()=>{
