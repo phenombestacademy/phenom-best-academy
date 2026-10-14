@@ -97,3 +97,39 @@ A basic scan of the deployed function source did not find common hard-coded prov
 ## Important scope note
 
 No Edge Function was changed, redeployed or disabled during this inventory. The next porting work should proceed in dependency order: shared auth/authorization primitives, queue claim semantics, quiz/learning data, then payments/webhooks and communication.
+
+
+## Live source dependency check (14 October 2026)
+
+The current deployed source files were fetched read-only for all 19 active functions. No source was changed in Supabase. This dependency summary is based on environment-variable references and direct Supabase client calls in the fetched source; it is not a completed Cloudflare port.
+
+| Function | Required secret/config names referenced in source | Additional dependencies |
+|---|---|---|
+| `generate-quiz` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Calls `ai-router`; reads/writes `learning_quizzes`, `quiz_questions` |
+| `submit-quiz` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` | Reads `quiz_questions`; writes `quiz_attempts` |
+| `create-payment` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEYS`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS`, `FLW_SECRET_KEY`, `PAYSTACK_SECRET_KEY`, `STRIPE_SECRET_KEY`, `INTERSWITCH_ACCESS_TOKEN`, `INTERSWITCH_MERCHANT_CODE`, `INTERSWITCH_PAY_ITEM_ID` | Payment order persistence and multiple payment-provider contracts |
+| `generate-result-comment` | `SUPABASE_URL`, `SUPABASE_ANON_KEY` | Calls `ai-router` |
+| `admin-directory` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` | Reads `profiles` |
+| `ai-router` | `AI_ROUTER_WORKER_TOKEN`, `SUPABASE_URL`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION` | Multi-provider model routing; must preserve rate limits, provider fallback and caller authentication |
+| `send-admin-email` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `RESEND_API_KEY`, `RESEND_FROM` | Reads `profiles`, `email_subscribers`; Resend delivery |
+| `flutterwave-webhook` | `FLW_WEBHOOK_HASH`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS` | Payment signature validation; reads/writes payment and subscription records |
+| `manage-user-role` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEYS` | Role change and audit logging |
+| `send-result-release` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEYS`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS`, `RESEND_API_KEY`, `ACADEMY_FROM_EMAIL` | Result release notifications; Resend delivery |
+| `payment-webhook` | `PAYSTACK_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `INTERSWITCH_WEBHOOK_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS` | Multiple provider signature checks and subscription updates |
+| `translate-ui` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Calls `ai-router`; reads/writes `profiles`, `ui_translation_resources` |
+| `send-welcome-email` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM` | Resend delivery |
+| `curriculum-ingest` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Curriculum sources, topics and ingestion-run persistence |
+| `school-member-invite` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Uses `is_school_admin_for` and `is_super_admin` RPCs; invite lifecycle |
+| `curriculum-asset-worker` | `CURRICULUM_WORKER_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Calls `claim_curriculum_asset_jobs`; asset/library tables |
+| `phenom-library-upload` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Asset and library-item persistence |
+| `curriculum-content-worker` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Calls `ai-router`; curriculum topics, content jobs, resource packs and catalogue |
+| `curriculum-iqa-worker` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Calls `ai-router`; quality review persistence |
+
+### Porting rules
+
+1. Store all provider credentials as Cloudflare Worker secrets, not as `vars`, code literals or browser environment variables.
+2. Do not reuse the Cloudflare API token as an application or migration-control bearer token.
+3. Keep payment webhooks unauthenticated at the platform JWT layer only where required by provider callbacks; validate the provider's signature against the raw request body and enforce idempotency before changing orders/subscriptions.
+4. Replace Supabase JWT validation with the new session/authentication implementation before moving user-facing functions. Do not accept a client-supplied user ID as proof of identity.
+5. Port RPC semantics explicitly, especially `claim_curriculum_asset_jobs`, `is_school_admin_for` and `is_super_admin`.
+6. These source files depend on the existing Supabase schema and Auth. They are not deployable as-is on Cloudflare D1/Workers.
