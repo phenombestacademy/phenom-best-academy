@@ -142,7 +142,7 @@ function SchoolPerformancePage() {
           if (total !== null) completed.push(total);
         }
         const total = completed.length ? Number(completed.reduce((sum, value) => sum + value, 0).toFixed(2)) : null;
-        const average = completed.length ? Number((completed.reduce((sum, value) => sum + value, 0) / completed.length).toFixed(2)) : null;
+        const average = subjects.length > 0 && completed.length === subjects.length ? Number((completed.reduce((sum, value) => sum + value, 0) / completed.length).toFixed(2)) : null;
         return {
           studentId: student.student_id,
           fullName: student.full_name || `Student ${student.admission_number || student.student_id.slice(0, 8)}`,
@@ -175,7 +175,7 @@ function SchoolPerformancePage() {
         lowestAverage: averages.length ? Math.min(...averages) : null,
       };
       setData(performance);
-      setMessage('Performance data loaded from the selected class, session and term. Missing CA or exam components remain blank rather than being treated as zero.');
+      setMessage('Performance data loaded from the selected class, session and term. Missing CA or exam components remain blank; students with incomplete subject results are not ranked.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not load class performance.');
     } finally {
