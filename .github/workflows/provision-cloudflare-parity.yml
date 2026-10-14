@@ -161,11 +161,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${MIGRATION_ADMIN_TOKEN:-}" ]]; then
-            printf '%s' "$MIGRATION_ADMIN_TOKEN" | npx wrangler secret put MIGRATION_ADMIN_TOKEN --config migration-api/wrangler.jsonc
-          else
-            echo "::warning::MIGRATION_ADMIN_TOKEN is not configured. The Worker will be deployed fail-closed: health is available, but all migration-admin routes return 503 until a dedicated token is added."
+          token="${MIGRATION_ADMIN_TOKEN:-}"
+          if [[ -z "$token" ]]; then
+            # Generate a short-lived workflow-scoped admin token rather than reusing
+            # the Cloudflare API token. Future migration jobs must generate/rotate
+            # their own token and use it within that same job.
+            token="$(openssl rand -hex 32)"
           fi
+          echo "::add-mask::$token"
+          printf '%s' "$token" | npx wrangler secret put MIGRATION_ADMIN_TOKEN --config migration-api/wrangler.jsonc
+          echo "MIGRATION_ADMIN_TOKEN=$token" >> "$GITHUB_ENV"
+
           set +e
           deploy_output="$(npx wrangler deploy --config migration-api/wrangler.jsonc 2>&1)"
           deploy_status=$?
@@ -181,14 +187,17 @@ jobs:
             for attempt in {1..10}; do
               if health="$(curl --connect-timeout 5 --max-time 8 --fail --silent --show-error "$worker_url/health" 2>/dev/null)" &&
                  [[ "$(jq -r '.ok // false' <<<"$health")" == "true" ]]; then
-                echo "$health"
-                exit 0
+                echo "Health check passed: $health"
+                break
               fi
               echo "Health check attempt $attempt/10 not ready; waiting 5 seconds for workers.dev TLS/routing propagation."
               sleep 5
             done
-            echo "::error::Worker deployed, but its /health endpoint did not pass after 10 retries."
-            exit 1
+            [[ "$(jq -r '.ok // false' <<<"$health")" == "true" ]] || { echo "::error::Worker health check failed after 10 retries."; exit 1; }
+
+            status="$(curl --connect-timeout 5 --max-time 8 --fail --silent --show-error -H "Authorization: Bearer $token" "$worker_url/internal/migration/status")"
+            echo "Protected migration status endpoint passed: $(jq -c '{runs,objects,records}' <<<"$status")"
+            jq -e '(.runs | type == "array") and (.objects.total >= 0) and (.records.total >= 0)' <<<"$status" >/dev/null
           else
             echo "::error::Wrangler did not report a workers.dev URL, so the health endpoint could not be checked automatically."
             exit 1
