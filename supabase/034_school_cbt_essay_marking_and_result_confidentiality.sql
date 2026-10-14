@@ -486,9 +486,6 @@ begin
     or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
   ) then raise exception 'Not authorised'; end if;
   if e.status = 'draft' then raise exception 'A draft exam cannot be closed'; end if;
-  if e.status = 'closed' then
-    return jsonb_build_object('exam_id', p_exam, 'status', 'closed', 'attempts_submitted', 0);
-  end if;
 
   update public.school_cbt_exams
   set status = 'closed',
