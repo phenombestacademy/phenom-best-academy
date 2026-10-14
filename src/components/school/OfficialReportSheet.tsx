@@ -15,7 +15,7 @@ export const DEFAULT_GRADE_BANDS: GradeBand[] = [
 export type SubjectResult = { subject: string; ca: number | null; exam: number | null; total?: number | null; grade?: string | null; remark?: string | null };
 export type RatedTrait = { label: string; rating: string | number | null };
 export type OfficialReportData = {
-  schoolName: string; schoolAddress?: string; academicYear: string; term: string; className: string;
+  schoolName: string; schoolAddress?: string; reportTitle?: string; schoolMotto?: string; reportHeader?: string; reportFooter?: string; teacherSignatureUrl?: string; headTeacherSignatureUrl?: string; academicYear: string; term: string; className: string;
   student: { fullName: string; admissionNumber: string; gender?: string; dateOfBirth?: string };
   subjects: SubjectResult[];
   attendance?: { schoolDays?: number | null; daysPresent?: number | null; daysAbsent?: number | null };
@@ -55,11 +55,11 @@ export function OfficialReportSheet({ data, gradeBands = DEFAULT_GRADE_BANDS, ca
   const average = obtainable ? obtained / obtainable * 100 : null;
   const overall = average === null ? null : gradeFor(average, 100, gradeBands);
   const meta = (label: string, value?: string) => <div className="flex gap-2"><span className="font-semibold">{label}:</span><span>{value || "—"}</span></div>;
-  const signature = (label: string, name?: string): ReactNode => <div className="min-w-0 flex-1 border-t border-black pt-2 text-center text-sm"><div className="font-semibold">{name || " "}</div><div>{label}</div></div>;
+  const signature = (label: string, name?: string, signatureUrl?: string): ReactNode => <div className="min-w-0 flex-1 border-t border-black pt-2 text-center text-sm"><div className="flex h-10 items-end justify-center">{signatureUrl ? <img src={signatureUrl} alt={label + " signature"} className="max-h-10 max-w-full object-contain" /> : null}</div><div className="font-semibold">{name || " "}</div><div>{label}</div></div>;
   return <article className="mx-auto w-full max-w-4xl bg-white p-5 text-black print:max-w-none print:p-0 sm:p-8">
     <header className="border-b-2 border-black pb-4 text-center"><h1 className="text-2xl font-bold uppercase">{data.schoolName}</h1>
       {data.schoolAddress ? <p className="mt-1 text-sm">{data.schoolAddress}</p> : null}
-      <h2 className="mt-3 text-lg font-bold uppercase">Official School Report Sheet</h2><p className="mt-1 text-sm">Academic Year: {data.academicYear} · {data.term}</p>
+      <h2 className="mt-3 text-lg font-bold uppercase">{data.reportTitle || "Official School Report Sheet"}</h2>{data.schoolMotto ? <p className="mt-1 text-sm italic">{data.schoolMotto}</p> : null}{data.reportHeader ? <p className="mt-2 text-sm">{data.reportHeader}</p> : null}<p className="mt-1 text-sm">Academic Year: {data.academicYear} · {data.term}</p>
     </header>
     <section className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
       {meta("Student", data.student.fullName)}{meta("Admission Number", data.student.admissionNumber)}{meta("Class", data.className)}
@@ -83,7 +83,7 @@ export function OfficialReportSheet({ data, gradeBands = DEFAULT_GRADE_BANDS, ca
     <TraitTable title="Affective Traits" traits={data.affectiveTraits ?? []}/><TraitTable title="Psychomotor Skills" traits={data.psychomotorSkills ?? []}/>
     <section className="mt-5 space-y-4 break-inside-avoid text-sm"><div><h3 className="font-bold uppercase">Class Teacher’s Comment</h3><p className="mt-1 min-h-8 border-b border-black pb-2">{data.teacherComment || " "}</p></div>
       <div><h3 className="font-bold uppercase">Head Teacher’s Comment</h3><p className="mt-1 min-h-8 border-b border-black pb-2">{data.headTeacherComment || " "}</p></div></section>
-    <footer className="mt-10 flex gap-8 break-inside-avoid">{signature("Class Teacher", data.teacherName)}{signature("Head Teacher / Principal", data.headTeacherName)}{signature("Date", data.date)}</footer>
-    <p className="mt-6 text-center text-xs">Report view only — verify marks and authorise publication before official use.</p>
+    <footer className="mt-10 flex gap-8 break-inside-avoid">{signature("Class Teacher", data.teacherName, data.teacherSignatureUrl)}{signature("Head Teacher / Principal", data.headTeacherName, data.headTeacherSignatureUrl)}{signature("Date", data.date)}</footer>
+    <p className="mt-6 text-center text-xs">{data.reportFooter || "Report view only — verify marks and authorise publication before official use."}</p>
   </article>;
 }
