@@ -64,7 +64,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
     return ()=>window.clearInterval(id);
   },[db,attemptId,answers,remaining,result]);
   useEffect(()=>{
-    if(remaining!==0 || !attemptId || result || !db) return;
+    if(!deadline || remaining!==0 || !attemptId || result || !db) return;
     let live=true;
     (async()=>{
       try {
@@ -75,7 +75,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
       } catch(e) { if(live) setError(e instanceof Error?e.message:'Automatic submission failed. Please submit manually.'); }
     })();
     return ()=>{live=false;};
-  },[remaining,attemptId,result,db,answers]);
+  },[deadline,remaining,attemptId,result,db,answers]);
   async function start(exam:Exam) {
     if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
     try {
@@ -84,7 +84,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
       if(payload.status==='expired_submitted'){setSelected(exam);setResult({score:Number(payload.score||0),total_marks:Number(payload.total_marks||0),correct_count:Number(payload.correct_count||0)});setNotice('Your previous attempt expired and has been submitted automatically.');return;}
       const {data:q,error:qe}=await db.from('school_cbt_exam_questions_student').select('id,position,question_text,options,marks,image_url,media').eq('exam_id',exam.id).order('position');
       if(qe) throw qe;
-      setSelected(exam);setQuestions((q||[]) as typeof questions);setAttemptId(payload.attempt_id);setDeadline(payload.deadline);setAnswers({});
+      setSelected(exam);setQuestions((q||[]) as typeof questions);setDeadline(payload.deadline || '');setRemaining(payload.deadline?Math.max(0,Math.floor((new Date(payload.deadline).getTime()-Date.now())/1000)):0);setAttemptId(payload.attempt_id);setAnswers({});
       setNotice('Your attempt has started. Answers are saved automatically.');
     } catch(e){setError(e instanceof Error?e.message:'Could not start exam.');} finally{setBusy(false);}
   }
