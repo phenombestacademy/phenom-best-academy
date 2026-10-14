@@ -145,7 +145,7 @@ begin
   ) then raise exception 'Not authorised'; end if;
   if e.results_visible_to_students then raise exception 'Hide released results before changing marks'; end if;
   if t.school_id is distinct from e.school_id then raise exception 'Attempt school does not match exam'; end if;
-  if t.status not in ('submitted', 'marked') or t.submitted_at is null then
+  if t.status not in ('submitted', 'graded') or t.submitted_at is null then
     raise exception 'Only submitted attempts can be marked';
   end if;
 
@@ -234,17 +234,30 @@ declare
   v_correct integer := 0;
   v_essay_score numeric := 0;
   uid uuid := auth.uid();
+  deadline timestamptz;
 begin
   if uid is null then raise exception 'Authentication required'; end if;
 
   select * into t
   from public.school_cbt_exam_attempts
-  where id = p_attempt and student_id = uid
+  where id = p_attempt
   for update;
   if not found then raise exception 'Attempt not found'; end if;
 
   select * into e from public.school_cbt_exams where id = t.exam_id;
   if not found then raise exception 'Exam not found'; end if;
+  deadline := least(t.started_at + make_interval(mins => e.duration_minutes), e.ends_at);
+
+  if t.student_id is distinct from uid then
+    if not (
+      public.is_super_admin()
+      or public.is_school_member(e.school_id, array['school_admin'])
+      or e.teacher_id = uid
+    ) then raise exception 'Not authorised'; end if;
+    if t.status = 'in_progress' and now() < deadline then
+      raise exception 'Staff can only finalise an attempt after its deadline';
+    end if;
+  end if;
 
   if t.status <> 'in_progress' then
     if e.results_visible_to_students then
@@ -395,38 +408,56 @@ security definer
 set search_path = public
 as $$
 declare
-  sid uuid;
+  e public.school_cbt_exams%rowtype;
   uid uuid := auth.uid();
+  pending record;
 begin
-  select school_id into sid from public.school_cbt_exams where id = p_exam for update;
-  if sid is null then raise exception 'Exam not found'; end if;
+  select * into e from public.school_cbt_exams where id = p_exam for update;
+  if not found then raise exception 'Exam not found'; end if;
   if not (
     public.is_super_admin()
-    or public.is_school_member(sid, array['school_admin'])
-    or exists(select 1 from public.school_cbt_exams where id = p_exam and teacher_id = uid)
+    or public.is_school_member(e.school_id, array['school_admin'])
+    or e.teacher_id = uid
   ) then raise exception 'Not authorised'; end if;
-  if p_visible and not public.school_has_cbt_access(sid) and not public.is_super_admin() then
+  if p_visible and not public.school_has_cbt_access(e.school_id) and not public.is_super_admin() then
     raise exception 'School CBT entitlement is inactive';
   end if;
 
-  if p_visible and exists (
-    select 1 from public.school_cbt_exam_attempts attempt
-    where attempt.exam_id = p_exam and attempt.status = 'in_progress'
-  ) then
-    raise exception 'Wait until all in-progress attempts have been submitted before releasing results';
-  end if;
+  if p_visible then
+    -- Finalise attempts whose authoritative server deadline has elapsed.
+    for pending in
+      select attempt.id
+      from public.school_cbt_exam_attempts attempt
+      where attempt.exam_id = p_exam
+        and attempt.status = 'in_progress'
+        and least(
+          attempt.started_at + make_interval(mins => e.duration_minutes),
+          e.ends_at
+        ) <= now()
+    loop
+      perform public.school_cbt_submit_attempt(pending.id);
+    end loop;
 
-  if p_visible and exists (
-    select 1
-    from public.school_cbt_exam_attempts attempt
-    join public.school_cbt_exam_questions question on question.exam_id = attempt.exam_id and question.options is null
-    left join public.school_cbt_essay_marks mark
-      on mark.attempt_id = attempt.id and mark.question_id = question.id
-    where attempt.exam_id = p_exam
-      and attempt.status = 'submitted'
-      and mark.attempt_id is null
-  ) then
-    raise exception 'Mark all submitted essay responses before releasing results';
+    if exists (
+      select 1 from public.school_cbt_exam_attempts attempt
+      where attempt.exam_id = p_exam and attempt.status = 'in_progress'
+    ) then
+      raise exception 'Wait until all in-progress attempts have reached their deadline before releasing results';
+    end if;
+
+    if exists (
+      select 1
+      from public.school_cbt_exam_attempts attempt
+      join public.school_cbt_exam_questions question
+        on question.exam_id = attempt.exam_id and question.options is null
+      left join public.school_cbt_essay_marks mark
+        on mark.attempt_id = attempt.id and mark.question_id = question.id
+      where attempt.exam_id = p_exam
+        and attempt.status in ('submitted', 'graded')
+        and mark.attempt_id is null
+    ) then
+      raise exception 'Mark all submitted essay responses before releasing results';
+    end if;
   end if;
 
   update public.school_cbt_exams
@@ -434,55 +465,6 @@ begin
   where id = p_exam;
 end;
 $$;
-
-create or replace function public.school_cbt_list_essay_responses(p_exam uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-as $
-declare
-  e public.school_cbt_exams%rowtype;
-  uid uuid := auth.uid();
-  result jsonb;
-begin
-  if uid is null then raise exception 'Authentication required'; end if;
-  select * into e from public.school_cbt_exams where id = p_exam;
-  if not found then raise exception 'Exam not found'; end if;
-  if not (
-    public.is_super_admin()
-    or public.is_school_member(e.school_id, array['school_admin'])
-    or e.teacher_id = uid
-  ) then raise exception 'Not authorised'; end if;
-
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'attempt_id', attempt.id,
-        'student_id', attempt.student_id,
-        'question_id', question.id,
-        'question_text', question.question_text,
-        'answer', attempt.answers ->> question.id::text,
-        'max_marks', question.marks,
-        'marks_awarded', mark.marks_awarded,
-        'feedback', mark.feedback,
-        'marked_by', mark.marked_by
-      ) order by attempt.started_at, question.position
-    ),
-    '[]'::jsonb
-  )
-  into result
-  from public.school_cbt_exam_attempts attempt
-  join public.school_cbt_exam_questions question
-    on question.exam_id = attempt.exam_id and question.options is null
-  left join public.school_cbt_essay_marks mark
-    on mark.attempt_id = attempt.id and mark.question_id = question.id
-  where attempt.exam_id = p_exam
-    and attempt.status = 'submitted';
-
-  return result;
-end;
-$;
 
 revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) from public, anon;
 grant execute on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) to authenticated;
