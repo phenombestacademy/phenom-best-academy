@@ -22,7 +22,8 @@ function CPDPage(){
   const p=items.find(x=>x.id===selected);
   const lessons=useMemo(()=>p?.modules.flatMap(m=>m.lessons)||[],[p]);
 
-  const questions=[
+  type CPDQuestion = [string, string, string[], string, string];
+  const questions: CPDQuestion[] = [
     ['q1','What is the purpose of structured professional learning?',['A. To avoid assessment','B. To build and demonstrate capability','C. To remove all practice'],'B','Structured learning connects knowledge, practice and demonstrated capability.'],
     ['q2','What should happen before an assessed certificate is issued?',['A. Configured completion requirements should be met','B. Any page should be opened once','C. The learner should skip the assessment'],'A','A certificate should follow the programme’s published completion and assessment rules.'],
     ['q3','What is a useful learning habit?',['A. Read, practise, assess and reflect','B. Never review corrections','C. Ignore feedback'],'A','Reviewing feedback and practising again strengthens learning.']
