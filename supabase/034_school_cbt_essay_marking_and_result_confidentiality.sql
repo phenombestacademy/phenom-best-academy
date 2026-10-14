@@ -7,7 +7,7 @@ create or replace function public.school_cbt_guard_exam_status()
 returns trigger
 language plpgsql
 set search_path = public
-as $
+as $$
 begin
   if new.status is distinct from old.status
      and new.status in ('scheduled', 'active')
@@ -28,7 +28,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   exam_uuid uuid;
   exam_status text;
