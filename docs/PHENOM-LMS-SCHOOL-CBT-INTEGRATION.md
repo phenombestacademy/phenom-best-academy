@@ -1,27 +1,36 @@
-# Phenom Best LMS — School CBT Subscription Integration
+# Phenom Best LMS — School CBT Integration
 
-## Product boundary
-CBT is a separately subscribable capability inside the existing Phenom Best LMS. It is not a detached application, second school tenant, duplicate student database or replacement for Continuous Learning or school administration.
+## Non-negotiable data boundary
+CBT is a separately subscribable capability inside the existing Phenom Best LMS. It must reuse existing school, user, class, subject, teacher assignment, student record, attendance, result and subscription records. Do not create a second school/assessment/student database.
 
-## Existing capabilities reused
-- Existing schools, school_members, school_classes, school_subjects, class_subjects and class_members remain the tenant, identity, class, subject and teacher-assignment source of truth.
-- Existing student records, attendance, results and result-publication controls remain authoritative.
-- Continuous Learning owns programmes, lessons and learning resources.
-- Existing administrative LMS areas continue to own admissions, student/staff records, payroll, receipts, fees and other operations.
+## Verified live schema
+The connected Supabase project already contains:
+- `school_cbt_exams`
+- `school_cbt_exam_questions` (staff-managed question bank, including answer keys)
+- `school_cbt_exam_questions_student` (student-safe question projection)
+- `school_cbt_exam_assignments`
+- `school_cbt_exam_attempts` and `school_cbt_attempts`
+- `school_cbt_exam_media` and `school_cbt_question_resources`
+- `school_members`, `school_classes`, `school_subjects`, `class_subjects`, `class_members`
+- `student_school_records`, `school_result_components`, `school_assessment_traits`
+- existing subscription and feature-entitlement tables
 
-## Migration and security
-Apply `supabase/032_school_cbt_assessment_suite.sql` after existing migrations. It adds assessment authoring metadata, attempts, responses, audit events, school-specific grading bands and configurable report components. It does not replace existing core school tables. RLS scopes data to school membership and assigned teachers. Question answer keys are not readable by students; objective marking occurs through a PostgreSQL RPC. Short-answer and essay items remain pending manual marking.
+Recorded migrations already establish CBT tenant scoping, student question security, private media and media visibility. The duplicate-table migration `032_school_cbt_assessment_suite.sql` was removed from this PR because it would create a parallel source of truth.
 
-## Initial route
-`/school-cbt` provides a school-scoped assessment list and draft creation/scheduling controls. The route requires authenticated school membership and the migration to be applied.
+## UI delivered in this branch
+`/school-cbt` now reads and creates exams in `school_cbt_exams` and supports staff question creation/editing, CSV import/export, question-template download, and draft/scheduled/active/closed status controls. It reuses the school's existing classes and subjects and does not write to `school_assessments`.
 
-## Subscription model
-CBT-only plans must be enforced by the existing LMS entitlement/billing source of truth. They must not grant unrelated Continuous Learning, payroll or administrative access. This initial route does not bypass entitlements or create new billing records.
+## Important limitation
+The UI layer is not the security boundary. Direct client status changes do not replace server-side schedule, duration, attempt-limit, assignment, submission, grading, approval or entitlement enforcement. The route still requires type-check/build verification and authenticated role testing. Do not use it for live exams until those checks pass.
 
-## Production checklist
-1. Back up Supabase and apply the migration in staging.
-2. Verify `is_super_admin`, `is_school_member` and `is_teacher_for_subject_in_school` against actual roles.
-3. Test two schools, admins, assigned/unassigned teachers, students and parents.
-4. Verify answer keys never appear in student browser payloads and direct response writes are denied.
-5. Run `npm run typecheck`, `npm run lint` and `npm run build`.
-6. Complete question authoring, student test-taking/autosave, manual marking/approval, report rendering and entitlement integration before declaring production complete.
+## Remaining end-to-end release gates
+1. Add/verify server-side RPCs for authorised start, answer autosave, timed submission and attempt-limit enforcement on existing attempt tables.
+2. Ensure all student question reads use `school_cbt_exam_questions_student`; never return `correct_answer` to students.
+3. Complete objective marking server-side, essay/short-answer manual marking, teacher review, result approval and audited correction.
+4. Build General Performance Sheet and Official School Report Sheet from existing approved grading/result/attendance/student/trait records. Do not infer affective or psychomotor ratings from CBT.
+5. Check CBT feature-specific subscription entitlements using the existing feature-grant system. A generic premium-subscription check is not enough for a CBT-only plan.
+6. Run `npm run typecheck`, `npm run lint`, `npm run build`, plus role/RLS tests with synthetic data across at least two schools.
+7. Only after verification, update the implementation status and take the PR out of draft.
+
+## Safety and rollout
+No migration has been applied to live Supabase by this PR. Use synthetic students in tests; never use student photographs or identifiable student data as test fixtures. A Vercel Ready deployment confirms deployment creation only, not security or end-to-end correctness.
