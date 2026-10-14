@@ -21,7 +21,7 @@ const accountChoices: Array<{ value: OnboardingRole; label: string; description:
 ];
 
 function AccountPage() {
-  const pending = getPendingAccountChoice();
+  const pending: { category: AccountCategory; role: OnboardingRole } = getPendingAccountChoice();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [category, setCategory] = useState<AccountCategory>(pending.category);
   const [role, setRole] = useState<OnboardingRole>(pending.role);
