@@ -41,8 +41,6 @@ function SchoolCbtPage() {
   const [subjectId, setSubjectId] = useState('');
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
-  const [session, setSession] = useState('');
-  const [term, setTerm] = useState('1');
   const [duration, setDuration] = useState(30);
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
@@ -88,7 +86,7 @@ function SchoolCbtPage() {
   async function createExam(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!context || !db) return;
     const subject = subjects.find(s => s.id === subjectId);
-    if (!title.trim() || !classId || !subject || !session.trim()) { setError('Complete the title, class, subject and academic session.'); return; }
+    if (!title.trim() || !classId || !subject) { setError('Complete the title, class and subject.'); return; }
     if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) { setError('The closing time must be later than the opening time.'); return; }
     setBusy(true); setError(''); setNotice('');
     try {
@@ -199,9 +197,8 @@ function SchoolCbtPage() {
           <label className="block text-sm font-semibold">Title<input required maxLength={180} value={title} onChange={e=>setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
           <label className="block text-sm font-semibold">Class<select required value={classId} onChange={e=>setClassId(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"><option value="">Choose class</option>{classes.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
           <label className="block text-sm font-semibold">Subject<select required value={subjectId} onChange={e=>setSubjectId(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"><option value="">Choose subject</option>{subjects.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-          <label className="block text-sm font-semibold">Academic session (for your planning)<input required value={session} onChange={e=>setSession(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3" placeholder="2026/2027"/></label>
           <label className="block text-sm font-semibold">Topic<input value={topic} onChange={e=>setTopic(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
-          <div className="grid grid-cols-2 gap-3"><label className="block text-sm font-semibold">Duration (minutes)<input type="number" min={1} max={600} required value={duration} onChange={e=>setDuration(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label><label className="block text-sm font-semibold">Term<input type="number" min={1} max={3} value={Number(term)} onChange={e=>setTerm(String(e.target.value))} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label></div>
+          <label className="block text-sm font-semibold">Duration (minutes)<input type="number" min={1} max={600} required value={duration} onChange={e=>setDuration(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
           <label className="block text-sm font-semibold">Opens at<input type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
           <label className="block text-sm font-semibold">Closes at<input type="datetime-local" value={endsAt} onChange={e=>setEndsAt(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
           <label className="block text-sm font-semibold">Instructions<textarea value={instructions} onChange={e=>setInstructions(e.target.value)} className="mt-1 w-full rounded-xl border border-line bg-white p-3"/></label>
