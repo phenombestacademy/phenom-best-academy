@@ -224,7 +224,7 @@ function SchoolPerformancePage() {
         <summary className="cursor-pointer font-semibold">Configure school grading bands</summary>
         <p className="mt-2 text-sm text-muted">Ranges must cover 0–100 without overlaps or gaps. Changes affect the grades shown on official and general performance sheets for this school.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {gradeBands.map((band, index) => <div key={band.grade + index} className="rounded-lg border border-line bg-white p-3">
+          {gradeBands.map((band, index) => <div key={index} className="rounded-lg border border-line bg-white p-3">
             <label className="block text-xs font-semibold">Grade
               <input value={band.grade} maxLength={8} disabled={loading || savingBands} onChange={event => setGradeBands(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, grade: event.target.value } : row))} className="mt-1 w-full rounded border p-2"/>
             </label>
