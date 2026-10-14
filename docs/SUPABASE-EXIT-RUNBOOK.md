@@ -1,78 +1,73 @@
 # Phenom Best Academy — Supabase Exit Runbook
 
-Status: planning and hosting-preview preparation only. This document is not evidence of a completed migration.
+Status: migration implementation in progress; no production cutover has occurred.
 
-## Non-negotiable safety rule
+## Critical security finding — 14 October 2026
 
-Do not delete, truncate, disable, or empty the production Supabase project until the replacement has passed data reconciliation, identity/authentication tests, security tests, file integrity checks, end-to-end CBT/reporting/payment tests, production cutover, and an agreed rollback window. Keep the existing project recoverable until sign-off.
+The current Supabase inventory reports that `public.cloudflare_migration_manifest` has Row Level Security disabled. The Supabase advisor marks this critical because client roles may read or modify every row. Do not put secrets or sensitive migration data in this table.
 
-## Verified source inventory (14 October 2026)
+Supabase's suggested remediation is:
 
-Supabase project: `hajrdejlamuiqjjhdnsv` (ACTIVE_HEALTHY; PostgreSQL 17.6.1).
+```sql
+ALTER TABLE public.cloudflare_migration_manifest ENABLE ROW LEVEL SECURITY;
+```
 
-Previously recorded read-only inventory:
-- 171 public base tables
-- 314 public RLS policies; RLS enabled on 170 tables
-- 67 public functions and 29 triggers
-- 4 Storage buckets; 53,130 Storage objects (53,128 in `phenom-curriculum-assets`, 2 in `media`)
-- 2 Auth users
-- 18 active Edge Functions were returned by the project API at the time of inspection
+This is deliberately not applied automatically: enabling RLS without appropriate policies can block legitimate migration-worker access. Review the intended server-only access model and apply a controlled migration with the required policy or service-role-only access design.
 
-The numbers are a baseline, not proof that every row/object has been exported. Re-run inventory at migration time and reconcile all schemas, sequences, extensions, views, grants, policies, triggers, scheduled jobs, webhooks, secrets, Auth identities, and Storage metadata.
+## Source project and observed inventory
 
-## Current repository / deployment state
+Project: `hajrdejlamuiqjjhdnsv` — ACTIVE_HEALTHY, PostgreSQL 17.6.1.
 
-- Repository: `phenombestacademy/phenom-best-academy`
-- Hosting preparation branch: `feat/supabase-exit`
-- Draft PR: #4, Cloudflare Workers hosting preview
-- Existing app uses `@supabase/supabase-js` for database queries, Auth, Storage, RPCs and Functions. `src/lib/cms.ts` contains a hard-coded Supabase project fallback. This means the app is still Supabase-dependent.
-- Existing `cloudflare/` Worker is a background content processor that also calls Supabase REST/RPC and the Supabase AI Router. It is not yet an independent replacement.
-- CI quality workflow on the inspected commit completed successfully (install, build, typecheck, lint). This verifies the current branch build only; it does not verify a Cloudflare deployment or Supabase exit.
-- No Cloudflare account connection/deployment action is available to the current assistant tool session. No Cloudflare resources or production DNS were changed.
+Recorded inventory:
+- 171 public base tables; 170 have RLS enabled and one (`cloudflare_migration_manifest`) does not.
+- 314 public RLS policies, 67 public functions and 29 triggers.
+- 4 Storage buckets and 53,130 Storage objects (53,128 in `phenom-curriculum-assets`, 2 in `media`).
+- 2 Auth users.
+- 18 active Edge Functions at inspection time.
+- High-volume curriculum data includes 146,759 curriculum resource-pack rows, 63,188 content-job rows, 76,612 asset rows, 53,496 asset-job rows, 64,208 library-item rows, 53,444 topic links and 14,266 curriculum-topic rows. Counts must be refreshed and reconciled before cutover.
 
-## Architecture decision — required before database implementation
+These are inventory snapshots, not proof that data has been exported or migrated.
 
-The request says all services should move to Cloudflare. Choose one of these deliberately:
+## Repository and implementation state
 
-### Option A — Cloudflare-native data plane
-Cloudflare Workers + D1 + R2 + Queues + Workers/Access/Turnstile as appropriate. This keeps the database on Cloudflare but requires redesigning PostgreSQL-specific SQL, RPCs, triggers, RLS, and transaction patterns for SQLite/D1. Do not treat a PostgreSQL dump as a directly importable D1 migration.
+Repository: `phenombestacademy/phenom-best-academy`
+Branch: `feat/supabase-exit`
+Draft PR: [#4 — Cloudflare Workers preview](https://github.com/phenombestacademy/phenom-best-academy/pull/4)
 
-### Option B — lower-risk PostgreSQL transition
-Cloudflare Workers + Hyperdrive + a PostgreSQL provider, with R2/Queues on Cloudflare. This can reduce application rewrite effort, but the database itself is not hosted by Cloudflare and therefore does not satisfy a literal all-Cloudflare requirement.
+The TanStack Start hosting configuration is prepared for Cloudflare Workers. The application is NOT yet Supabase-independent: `src/lib/cms.ts` contains a hard-coded Supabase URL/key fallback and directly uses Supabase database, Auth and Storage APIs. The background Worker also uses Supabase REST/RPC. The active Edge Functions include CBT, payments/webhooks, user administration, email, curriculum ingestion and media/library processing. They all need replacement implementations and parity tests.
 
-Do not mix these options implicitly. The user requested Cloudflare-only, so Option A is the target unless the user explicitly accepts an external PostgreSQL provider.
+No Cloudflare account/deployment tool or authenticated Wrangler environment is available in the current session. No Cloudflare deployment, production DNS change or production data migration has occurred.
 
-## Required migration workstreams
+## Target architecture
 
-1. **Application inventory:** locate every Supabase SDK import, `.from()`, `.rpc()`, `auth.*`, `storage.*`, `functions.invoke()`, Realtime channel, signed URL, and direct REST call. Map each use to a replacement API and test.
-2. **Schema conversion:** export schema and data from every relevant schema; catalogue all 171 public tables, 67 functions, 29 triggers, RLS policies/grants, constraints/indexes/sequences, views, extensions, and dependencies. Convert and review the schema for D1 before loading any production data.
-3. **Identity:** replace Supabase Auth without breaking sign-in, sessions, password recovery, role claims, school membership, invitations, MFA (if enabled), and user-to-profile foreign keys. Exporting two user rows is not sufficient: verify credentials/password migration strategy and account recovery.
-4. **Authorisation:** replace all 314 RLS policies with server-enforced access checks. School/tenant isolation, Super Admin restrictions, teacher/student/parent access, and least privilege must have negative tests. Never trust client-supplied role flags.
-5. **Files:** inventory every bucket, object, path, content type, size, cache metadata, access rule and reference. Copy objects to R2 with checksums and a durable mapping manifest. Verify signed/private access, public URLs, download behaviour and orphan references.
-6. **Edge Functions:** port each function to a Worker or a suitable Cloudflare service. Preserve JWT verification, payment/webhook signature checks, idempotency, retry rules, rate limits, secrets and error contracts.
-7. **Realtime/jobs:** map subscriptions to Durable Objects/WebSockets or another suitable pattern; map cron, queues, retries and dead-letter handling. Ensure each job is idempotent and observable.
-8. **Secrets/integrations:** inventory payment, AI, email, storage and webhook secrets. Recreate them only in Cloudflare secrets/bindings; never commit values or place private keys in `VITE_*` variables.
-9. **Verification:** compare per-table row counts and stable-key checksums; compare per-bucket object counts and checksums; test all roles and tenant boundaries; run CBT creation, timed attempt, submission, marking, report cards, school billing, payment webhooks, invites, uploads, downloads and admin workflows.
-10. **Cutover:** freeze writes briefly or use a documented delta-sync strategy; run final reconciliation; deploy and smoke-test; switch DNS only after passing gates; monitor errors/latency and retain rollback.
-11. **Decommission:** after an agreed stable period, revoke old app credentials, remove Supabase URLs/keys from app and Worker configuration, confirm zero production traffic, then archive/export the project. Delete the Supabase project only after separate final confirmation and verified backups.
+The user's stated target is Cloudflare-native: Workers, D1, R2, Queues and appropriate Durable Objects/Workflows. D1 uses SQLite, so PostgreSQL schema, functions, triggers, RLS and transactions require reviewed conversion. A PostgreSQL dump cannot simply be imported as a complete D1 application.
 
-## Cutover acceptance gates
+## Required workstreams
 
-- [ ] Cloudflare account access available; preview Worker deployed and reachable.
-- [ ] Replacement schema and all migrations reviewed.
-- [ ] All rows reconciled; no unexplained missing/extra records.
-- [ ] All Storage objects copied and checksums verified.
-- [ ] Auth/session/password recovery and user-role mappings tested.
-- [ ] Tenant-isolation and privilege-escalation negative tests pass.
-- [ ] All Edge Functions and background jobs have replacement equivalents.
-- [ ] CBT, results/report cards, billing/payments, invites and library upload/download E2E tests pass.
+1. Remove Supabase SDK calls and the hard-coded fallback from application and Worker code only as each replacement API is implemented and tested.
+2. Convert every relevant table, view, constraint, index, function, trigger, extension dependency, grant, policy, sequence, job and webhook to the D1/Workers model.
+3. Implement server-side authentication/session lifecycle and account recovery; preserve user IDs and school memberships.
+4. Replace all RLS policies with tested server-side authorization, including tenant isolation and negative privilege tests.
+5. Copy all Storage objects to R2 with metadata/path mapping and checksum reconciliation; replace signed URL and resumable upload workflows.
+6. Port every active Edge Function, preserving JWT validation, payment webhook signatures, idempotency, retries, rate limits and response contracts.
+7. Replace Realtime, scheduled jobs, queues and dead-letter handling; preserve idempotency and observability.
+8. Move secrets to Cloudflare secrets/bindings; never commit credentials or expose private keys to browser bundles.
+9. Reconcile all table rows and storage objects; run end-to-end CBT, marking, report-card, school billing/payment, invites, uploads/downloads and admin tests.
+10. Deploy a separate preview, perform security/performance/restore tests, use a documented write-freeze or delta-sync strategy, then cut over DNS and observe a rollback window.
+11. Decommission Supabase only after zero traffic is verified, backups and rollback are proven, and final approval is recorded.
+
+## Acceptance gates
+
+- [ ] Cloudflare account access and preview deployment verified.
+- [ ] Full schema and authorization conversion reviewed.
+- [ ] All rows and objects reconciled; no unexplained differences.
+- [ ] Authentication, recovery and user-role mapping tested.
+- [ ] Tenant isolation and privilege escalation tests pass.
+- [ ] Every Edge Function and background job has a tested replacement.
+- [ ] CBT, reports, billing/payments, invites and storage end-to-end tests pass.
 - [ ] Logs, alerts, backups, restore test and rollback procedure verified.
-- [ ] Production DNS cutover and smoke tests pass.
-- [ ] Zero Supabase requests observed for the agreed observation period.
-- [ ] Explicit final approval recorded before deleting the old project.
+- [ ] Production cutover and smoke tests pass.
+- [ ] Zero production Supabase traffic observed for an agreed period.
+- [ ] Supabase deletion only after separate explicit final approval.
 
-## Immediate blockers
-
-- The current tool session has GitHub and Supabase access, but no Cloudflare account/deployment API or authenticated Wrangler environment.
-- A full Cloudflare-native D1 conversion is a substantial application and database rewrite; the current hosting PR is not that conversion.
-- Production Supabase must remain intact until the acceptance gates above are met.
+Keep the live Supabase project intact until all gates pass.
