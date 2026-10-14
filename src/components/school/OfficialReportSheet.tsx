@@ -26,7 +26,9 @@ export function normaliseGradeBands(value: unknown): GradeBand[] {
   );
   if (!valid) return DEFAULT_GRADE_BANDS;
   const sorted = [...value].sort((a, b) => a.min - b.min);
-  if (sorted[0].min !== 0 || sorted[sorted.length - 1].max !== 100) return DEFAULT_GRADE_BANDS;
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  if (!first || !last || first.min !== 0 || last.max !== 100) return DEFAULT_GRADE_BANDS;
   if (new Set(sorted.map(band => band.grade.toLowerCase())).size !== sorted.length) return DEFAULT_GRADE_BANDS;
   for (let index = 1; index < sorted.length; index += 1) {
     if (sorted[index].min <= sorted[index - 1].max || sorted[index].min > sorted[index - 1].max + 0.01) {
