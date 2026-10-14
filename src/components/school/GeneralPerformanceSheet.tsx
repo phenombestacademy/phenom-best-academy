@@ -8,7 +8,6 @@ export type PerformanceStudentRow = {
   scores: Record<string, number | null>;
   total: number | null;
   average: number | null;
-  grade: string;
   position: number | null;
 };
 export type GeneralPerformanceData = {
