@@ -102,4 +102,16 @@ The 171-table D1 catalogue is only a structural scaffold. It does not yet includ
 
 ## Current hard blockers
 
-The connected tools available for this run can inspect and modify GitHub and inspect Supabase, but do not expose Cloudflare account/resource management or Worker deployment. Therefore this run cannot honestly provision/verify D1, R2, Queues, secrets, deploy the Worker, or perform the bulk transfer. The next executable step is to make Cloudflare account access available through an authorized Cloudflare connection or a scoped deployment credential in GitHub Actions, then execute phases 0–5. Keep production on the existing backend until then.
+## Current verified status (14 October 2026)
+
+Cloudflare account access is now being exercised through scoped GitHub Actions secrets, and the isolated staging resources have been provisioned and smoke-tested. This supersedes the earlier access-blocker note in the original runbook draft.
+
+- D1: `phenom-best-lms-migration-20261014` (`4951f4e1-ad59-4a49-a420-e816d55cdf61`), with an initial 171-public-table definition scaffold. It is not populated with production records and is not yet a complete PostgreSQL-equivalent schema.
+- R2: `phenom-media-migration-20261014`, `phenom-curriculum-assets-migration-20261014`, `phenom-profile-avatars-migration-20261014`, and `phenom-school-cbt-media-migration-20261014` exist as migration-only buckets. Production objects have not been copied.
+- Queues: `phenom-best-lms-migration-jobs-20261014` and `phenom-best-lms-migration-dlq-20261014` exist.
+- Migration control Worker: `https://phenom-best-migration-control.phenombestacademy-lms.workers.dev`; `/health` and the token-protected `/internal/migration/status` endpoint passed automated smoke tests.
+- CI: the latest Supabase Exit Migration Preflight and Cloudflare migration validation runs on commit `781285fb652d0bf9deb4e3bb722321411f261e96` completed successfully. A Vercel status check on the commit reports failure due to a Vercel build-rate-limit/plan notice; this is separate from the two successful GitHub Actions workflows and does not establish production deployment readiness.
+
+## Remaining work — do not treat as production-ready
+
+The staging infrastructure is only the foundation. No production data rows or Storage objects have been transferred. Complete PostgreSQL-to-D1 fidelity work (constraints, indexes, views, triggers, functions and type/transaction semantics), a secure replacement for Supabase Auth and RLS, the API/application rewrite, all 19 Edge Function ports, Realtime replacements where used, resumable data/object migration with count and checksum reconciliation, end-to-end and security tests, backup/restore and rollback drills, and a reviewed production cutover are still required. Confirm the Supabase egress/quota gate before any bulk export. Keep Supabase as the source of truth and do not delete or disable it until the acceptance criteria and rollback window are satisfied.
