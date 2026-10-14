@@ -337,13 +337,15 @@ begin
   select * into e from public.school_cbt_exams where id = p_exam;
   if not found then raise exception 'Exam not found'; end if;
   if not public.school_has_cbt_access(e.school_id) then raise exception 'School CBT subscription is not active'; end if;
+  if e.results_visible_to_students then raise exception 'This exam is closed to new attempts because results have been released'; end if;
   if e.status not in ('scheduled', 'active') or e.starts_at > now() or e.ends_at <= now() then
     raise exception 'This exam is not currently open';
   end if;
 
   select * into a
   from public.school_cbt_exam_assignments
-  where exam_id = p_exam and student_id = uid and school_id = e.school_id;
+  where exam_id = p_exam and student_id = uid and school_id = e.school_id
+  for update;
   if not found then raise exception 'You are not assigned to this exam'; end if;
 
   select * into t
@@ -466,6 +468,49 @@ begin
 end;
 $$;
 
+create or replace function public.school_cbt_get_my_result(p_exam uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  uid uuid := auth.uid();
+  e public.school_cbt_exams%rowtype;
+  a public.school_cbt_exam_attempts%rowtype;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  select * into e from public.school_cbt_exams where id = p_exam;
+  if not found then raise exception 'Exam not found'; end if;
+  if not exists (
+    select 1 from public.school_cbt_exam_assignments assignment
+    where assignment.exam_id = p_exam
+      and assignment.school_id = e.school_id
+      and assignment.student_id = uid
+  ) then raise exception 'Not authorised'; end if;
+  if not e.results_visible_to_students then
+    return jsonb_build_object('available', false, 'message', 'Results have not been released by your school.');
+  end if;
+
+  select * into a
+  from public.school_cbt_exam_attempts
+  where exam_id = p_exam and student_id = uid and status in ('submitted', 'graded')
+  order by attempt_no desc
+  limit 1;
+  if not found then
+    return jsonb_build_object('available', false, 'message', 'No submitted result is available yet.');
+  end if;
+
+  return jsonb_build_object(
+    'available', true, 'attempt_id', a.id, 'status', a.status,
+    'score', a.score, 'total_marks', a.total_marks,
+    'correct_count', a.correct_count, 'submitted_at', a.submitted_at
+  );
+end;
+$;
+
+revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
+grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
 revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) from public, anon;
 grant execute on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) to authenticated;
 revoke all on function public.school_cbt_list_essay_responses(uuid) from public, anon;
