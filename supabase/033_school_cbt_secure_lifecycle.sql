@@ -1,9 +1,5 @@
--- Secure CBT foundation. Apply 034_school_cbt_essay_marking_and_result_confidentiality.sql in the same controlled rollout.
--- This migration installs entitlement and immutable-after-scheduling guards only.
--- Lifecycle RPCs are intentionally defined in migration 034 so no insecure interim RPCs are exposed.
-
--- Secure server-side CBT lifecycle built on existing LMS CBT tables.
--- This migration is intentionally committed to the feature branch first; validate against a staging database before production rollout.
+-- CBT entitlement helper only. Apply migration 034 to install the lifecycle guards and secure RPCs atomically.
+-- Validate both migrations on a staging database before production rollout.
 begin;
 
 create or replace function public.school_has_cbt_access(p_school uuid)
