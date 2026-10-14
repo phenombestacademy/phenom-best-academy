@@ -255,6 +255,7 @@ begin
 
   select * into e from public.school_cbt_exams where id = t.exam_id;
   if not found then raise exception 'Exam not found'; end if;
+  if e.status not in ('scheduled', 'active') then raise exception 'Exam is closed'; end if;
   deadline := least(t.started_at + make_interval(mins => e.duration_minutes), e.ends_at);
   if now() >= deadline then raise exception 'Time is up'; end if;
 
@@ -460,6 +461,53 @@ begin
     'attempt_id', t.id, 'attempt_no', t.attempt_no, 'started_at', t.started_at,
     'deadline', least(t.started_at + make_interval(mins => e.duration_minutes), e.ends_at),
     'status', t.status
+  );
+end;
+$$;
+
+create or replace function public.school_cbt_close_exam(p_exam uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  e public.school_cbt_exams%rowtype;
+  uid uuid := auth.uid();
+  pending record;
+  submitted_count integer := 0;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  select * into e from public.school_cbt_exams where id = p_exam for update;
+  if not found then raise exception 'Exam not found'; end if;
+  if not (
+    public.is_super_admin()
+    or public.is_school_member(e.school_id, array['school_admin'])
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
+  ) then raise exception 'Not authorised'; end if;
+  if e.status = 'draft' then raise exception 'A draft exam cannot be closed'; end if;
+  if e.status = 'closed' then
+    return jsonb_build_object('exam_id', p_exam, 'status', 'closed', 'attempts_submitted', 0);
+  end if;
+
+  update public.school_cbt_exams
+  set status = 'closed',
+      ends_at = least(coalesce(ends_at, now()), now()),
+      updated_at = now()
+  where id = p_exam;
+
+  for pending in
+    select attempt.id
+    from public.school_cbt_exam_attempts attempt
+    where attempt.exam_id = p_exam and attempt.status = 'in_progress'
+    for update
+  loop
+    perform public.school_cbt_submit_attempt(pending.id);
+    submitted_count := submitted_count + 1;
+  end loop;
+
+  return jsonb_build_object(
+    'exam_id', p_exam, 'status', 'closed', 'attempts_submitted', submitted_count
   );
 end;
 $$;
@@ -671,6 +719,8 @@ revoke all on function public.school_cbt_submit_attempt(uuid) from public, anon;
 grant execute on function public.school_cbt_submit_attempt(uuid) to authenticated;
 revoke all on function public.school_cbt_start_attempt(uuid) from public, anon;
 grant execute on function public.school_cbt_start_attempt(uuid) to authenticated;
+revoke all on function public.school_cbt_close_exam(uuid) from public, anon;
+grant execute on function public.school_cbt_close_exam(uuid) to authenticated;
 revoke all on function public.school_cbt_set_results_visible(uuid, boolean) from public, anon;
 grant execute on function public.school_cbt_set_results_visible(uuid, boolean) to authenticated;
 
