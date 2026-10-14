@@ -1,0 +1,212 @@
+name: Provision isolated Cloudflare parity resources
+
+on:
+  push:
+    branches:
+      - migration/cloudflare-native-backend
+    paths:
+      - ".github/workflows/provision-cloudflare-parity.yml"
+      - "cloudflare/migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phenom-cloudflare-parity-provision-v2
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Validate Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN repository secret is missing"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::CLOUDFLARE_ACCOUNT_ID repository secret is missing"; exit 1; }
+
+      - name: Create or reuse isolated D1, R2 and Queue resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4"
+          AUTH=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          account="$CLOUDFLARE_ACCOUNT_ID"
+
+          api_get() { curl --silent --show-error "${AUTH[@]}" "$API$1"; }
+          api_post() { curl --silent --show-error -X POST "$API$1" "${AUTH[@]}" --data "$2"; }
+          assert_success() {
+            local payload="$1" label="$2"
+            if [[ "$(jq -r '.success // false' <<<"$payload")" != "true" ]]; then
+              echo "::error::$label failed. Cloudflare API returned an error; response details follow."
+              jq '{success,errors,messages}' <<<"$payload"
+              exit 1
+            fi
+          }
+
+          # Unique migration-only names avoid replacing or reusing a production database/bucket.
+          D1_NAME="phenom-best-lms-migration-20261014"
+          d1_list="$(api_get "/accounts/$account/d1/database")"
+          assert_success "$d1_list" "List D1 databases"
+          D1_ID="$(jq -r --arg n "$D1_NAME" '.result[]? | select(.name == $n) | .uuid' <<<"$d1_list" | head -n1)"
+          if [[ -z "$D1_ID" ]]; then
+            d1_created="$(api_post "/accounts/$account/d1/database" "$(jq -nc --arg n "$D1_NAME" '{name:$n}')")"
+            assert_success "$d1_created" "Create D1 database"
+            D1_ID="$(jq -r '.result.uuid' <<<"$d1_created")"
+            echo "Created isolated D1 database: $D1_NAME"
+          else
+            echo "Reusing isolated migration D1 database: $D1_NAME"
+          fi
+          test -n "$D1_ID" && test "$D1_ID" != "null"
+
+          r2_list="$(api_get "/accounts/$account/r2/buckets")"
+          assert_success "$r2_list" "List R2 buckets"
+          for bucket in phenom-media-migration-20261014 phenom-curriculum-assets-migration-20261014 phenom-profile-avatars-migration-20261014 phenom-school-cbt-media-migration-20261014; do
+            exists="$(jq -r --arg n "$bucket" '[(.result.buckets // .result // [])[]? | select(.name == $n)] | length' <<<"$r2_list")"
+            if [[ "$exists" == "0" ]]; then
+              created="$(api_post "/accounts/$account/r2/buckets" "$(jq -nc --arg n "$bucket" '{name:$n}')")"
+              assert_success "$created" "Create R2 bucket $bucket"
+              echo "Created R2 bucket: $bucket"
+              r2_list="$(api_get "/accounts/$account/r2/buckets")"
+              assert_success "$r2_list" "Refresh R2 bucket list"
+            else
+              echo "Reusing R2 bucket: $bucket"
+            fi
+          done
+
+          queue_list="$(api_get "/accounts/$account/queues")"
+          assert_success "$queue_list" "List Queues"
+          for queue in phenom-best-lms-migration-jobs-20261014 phenom-best-lms-migration-dlq-20261014; do
+            exists="$(jq -r --arg n "$queue" '[.result[]? | select((.queue_name // .name) == $n)] | length' <<<"$queue_list")"
+            if [[ "$exists" == "0" ]]; then
+              created="$(api_post "/accounts/$account/queues" "$(jq -nc --arg n "$queue" '{queue_name:$n}')")"
+              assert_success "$created" "Create Queue $queue"
+              echo "Created Queue: $queue"
+              queue_list="$(api_get "/accounts/$account/queues")"
+              assert_success "$queue_list" "Refresh Queue list"
+            else
+              echo "Reusing Queue: $queue"
+            fi
+          done
+
+          echo "D1_DATABASE_NAME=$D1_NAME" >> "$GITHUB_ENV"
+          echo "D1_DATABASE_ID=$D1_ID" >> "$GITHUB_ENV"
+
+      - name: Install Wrangler
+        working-directory: cloudflare
+        run: npm install --no-save --no-package-lock --no-audit --no-fund
+
+      - name: Apply migration control schema to isolated D1
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 execute "$D1_DATABASE_NAME" --remote --file=migrations/0001_migration_control.sql
+
+      - name: Apply 171-table application schema scaffold
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 execute "$D1_DATABASE_NAME" --remote --file=migrations/0002_application_table_catalogue.sql
+
+      - name: Apply Cloudflare authentication continuity foundation
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler d1 execute "$D1_DATABASE_NAME" --remote --file=migrations/0003_auth_continuity_foundation.sql
+
+      - name: Verify D1 table count
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler d1 execute "$D1_DATABASE_NAME" --remote --command="SELECT COUNT(*) AS table_count FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+
+      - name: Ensure a workers.dev subdomain is registered
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"
+          existing="$(curl --silent --show-error -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API")"
+          subdomain="$(jq -r '.result.subdomain // empty' <<<"$existing")"
+          if [[ -n "$subdomain" ]]; then
+            echo "Using existing workers.dev subdomain: $subdomain"
+          else
+            created="$(curl --silent --show-error -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" "$API" --data '{"subdomain":"phenombestacademy-lms"}')"
+            if [[ "$(jq -r '.success // false' <<<"$created")" != "true" ]]; then
+              echo "::error::Could not register the account workers.dev subdomain. Cloudflare response:"
+              jq '{success,errors,messages}' <<<"$created"
+              exit 1
+            fi
+            echo "Registered workers.dev subdomain: $(jq -r '.result.subdomain' <<<"$created")"
+          fi
+
+      - name: Deploy isolated migration-control Worker and verify health
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MIGRATION_ADMIN_TOKEN: ${{ secrets.MIGRATION_ADMIN_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          token="${MIGRATION_ADMIN_TOKEN:-}"
+          if [[ -z "$token" ]]; then
+            # Generate a short-lived workflow-scoped admin token rather than reusing
+            # the Cloudflare API token. Future migration jobs must generate/rotate
+            # their own token and use it within that same job.
+            token="$(openssl rand -hex 32)"
+          fi
+          echo "::add-mask::$token"
+          printf '%s' "$token" | npx wrangler secret put MIGRATION_ADMIN_TOKEN --config migration-api/wrangler.jsonc
+          echo "MIGRATION_ADMIN_TOKEN=$token" >> "$GITHUB_ENV"
+
+          set +e
+          deploy_output="$(npx wrangler deploy --config migration-api/wrangler.jsonc 2>&1)"
+          deploy_status=$?
+          set -e
+          printf '%s\n' "$deploy_output"
+          if [[ "$deploy_status" -ne 0 ]]; then
+            echo "::error::Wrangler deployment failed with exit code $deploy_status"
+            exit "$deploy_status"
+          fi
+          worker_url="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' <<<"$deploy_output" | tail -n1 || true)"
+          if [[ -n "$worker_url" ]]; then
+            health=""
+            for attempt in {1..10}; do
+              if health="$(curl --connect-timeout 5 --max-time 8 --fail --silent --show-error "$worker_url/health" 2>/dev/null)" &&
+                 [[ "$(jq -r '.ok // false' <<<"$health")" == "true" ]]; then
+                echo "Health check passed: $health"
+                break
+              fi
+              echo "Health check attempt $attempt/10 not ready; waiting 5 seconds for workers.dev TLS/routing propagation."
+              sleep 5
+            done
+            [[ "$(jq -r '.ok // false' <<<"$health")" == "true" ]] || { echo "::error::Worker health check failed after 10 retries."; exit 1; }
+
+            status="$(curl --connect-timeout 5 --max-time 8 --fail --silent --show-error -H "Authorization: Bearer $token" "$worker_url/internal/migration/status")"
+            echo "Protected migration status endpoint passed: $(jq -c '{runs,objects,records}' <<<"$status")"
+            jq -e '(.runs | type == "array") and (.objects.total >= 0) and (.records.total >= 0)' <<<"$status" >/dev/null
+          else
+            echo "::error::Wrangler did not report a workers.dev URL, so the health endpoint could not be checked automatically."
+            exit 1
+          fi

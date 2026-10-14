@@ -1,0 +1,55 @@
+name: Supabase Exit Migration Preflight
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "cloudflare/migration-api/**"
+      - "cloudflare/migrations/**"
+      - "scripts/migration/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/supabase-exit-preflight.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "cloudflare/migration-api/**"
+      - "cloudflare/migrations/**"
+      - "scripts/migration/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/supabase-exit-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install dependencies (repository currently has no npm lockfile)
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      # Repository-wide typecheck has pre-existing errors in unrelated UI modules;
+      # application build and the dedicated migration Worker typecheck remain gates.
+      - name: Type-check migration control Worker
+        run: npm run typecheck:migration-api
+
+      - name: Build application
+        run: npm run build
+
+      - name: Scan remaining Supabase dependencies
+        run: |
+          npm run audit:supabase -- --json=/tmp/supabase-audit.json
+          node -e 'const r=JSON.parse(require("fs").readFileSync("/tmp/supabase-audit.json","utf8")); console.log(JSON.stringify({filesScanned:r.filesScanned,filesWithFindings:r.filesWithFindings,totalFindings:r.totalFindings,summary:r.summary},null,2))'

@@ -11,7 +11,6 @@ jobs:
         working-directory: cloudflare
     permissions:
       contents: read
-      actions: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -40,7 +39,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy
 
-      - name: Disable bootstrap schedule after successful deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow disable deploy-phenom-lms-cloudflare.yml --repo "${{ github.repository }}"
+      - name: Deployment complete
+        run: echo "Cloudflare Worker deployment completed. Verify /health and bindings before enabling migration processing."

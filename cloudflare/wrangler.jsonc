@@ -38,7 +38,7 @@
     }
   ],
   "triggers": {
-    "crons": []
+    "crons": ["*/2 * * * *"]
   },
   "workers_dev": false
 }

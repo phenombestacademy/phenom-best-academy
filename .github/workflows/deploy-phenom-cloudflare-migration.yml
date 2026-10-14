@@ -5,7 +5,10 @@ on:
     branches:
       - main
     paths:
-      - "cloudflare/**"
+      - "cloudflare/src/**"
+      - "cloudflare/wrangler.jsonc"
+      - "cloudflare/package.json"
+      - "cloudflare/tsconfig.json"
       - ".github/workflows/deploy-phenom-cloudflare-migration.yml"
   workflow_dispatch:
 
