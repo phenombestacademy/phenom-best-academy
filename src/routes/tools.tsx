@@ -1654,7 +1654,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm font-semibold">Amount<input type="number" className="mt-1 w-full rounded-xl border border-line bg-white p-3" value={currencyAmount} onChange={(e) => setCurrencyAmount(e.target.value)} /></label>
               <SelectField label="From" value={currencyFrom} onChange={setCurrencyFrom} options={codes} labels={codes.map((code) => currencyName(code))} />
-              <SelectField label="To" value={currencyTo} onChange={setCurrencyTo} options={codes} labels={codes.map(currencyName)} />
+              <SelectField label="To" value={currencyTo} onChange={setCurrencyTo} options={codes} labels={codes.map((code) => currencyName(code))} />
             </div>
             <div className="mt-4 rounded-xl bg-paper p-4 text-2xl font-bold">{currencyLoading ? "Loading live rates…" : convertedCurrency === null ? "—" : `${convertedCurrency.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${currencyTo}`}</div>
           </div>
@@ -1763,7 +1763,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
           <div className="flex flex-wrap gap-2">
             {[
               ["ocr", "Image to Text"], ["reader", "Text & Image Reader"], ["codes", "Code Scanner / Creator"],
-            ].map(([id, label]) => <Button key={id} variant={scannerMode === id ? "default" : "outline"} onClick={() => setScannerMode(id as typeof scannerMode)}>{label}</Button>)}
+            ].map(([id, label]) => <Button key={id} variant={scannerMode === id ? "primary" : "outline"} onClick={() => setScannerMode(id as typeof scannerMode)}>{label}</Button>)}
           </div>
 
           {scannerMode === "ocr" ? (
