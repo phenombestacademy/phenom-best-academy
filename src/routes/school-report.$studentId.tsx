@@ -49,26 +49,28 @@ function SchoolReportPage() {
         if (publicationError) throw publicationError;
         if (!publication) throw new Error('No published result is available for this student in your school.');
 
-        const [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, entriesResult, attendanceResult, summariesResult, traitsResult] = await Promise.all([
+        const [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, classSubjectsResult, entriesResult, attendanceResult, summariesResult, traitsResult] = await Promise.all([
           db.from('schools').select('name,address,report_card_title,motto').eq('id', membership.school.id).maybeSingle(),
           db.from('student_school_records').select('admission_number,gender,date_of_birth,psychomotor').eq('school_id', membership.school.id).eq('student_id', studentId).maybeSingle(),
           db.from('profiles').select('full_name,first_name,middle_name,surname,gender,date_of_birth').eq('id', studentId).maybeSingle(),
           db.from('school_academic_sessions').select('name').eq('id', publication.session_id).maybeSingle(),
           db.from('school_terms').select('name').eq('session_id', publication.session_id).eq('term_no', publication.term_no).maybeSingle(),
           db.from('school_classes').select('name').eq('school_id', membership.school.id).eq('id', publication.class_id).maybeSingle(),
+          db.from('class_subjects').select('subject_id').eq('class_id', publication.class_id).eq('active', true),
           db.from('student_result_entries').select('subject_id,component_id,score,teacher_comment').eq('school_id', membership.school.id).eq('student_id', studentId).eq('session_id', publication.session_id).eq('term_no', publication.term_no).eq('class_id', publication.class_id),
           db.from('student_attendance').select('attendance_date,status').eq('school_id', membership.school.id).eq('student_id', studentId).eq('session_id', publication.session_id).eq('term_no', publication.term_no).eq('class_id', publication.class_id),
           db.from('student_term_summaries').select('performance_note,class_average,term_total,term_percentage').eq('school_id', membership.school.id).eq('student_id', studentId).eq('session_id', publication.session_id).eq('term_no', publication.term_no).eq('class_id', publication.class_id),
           db.from('student_trait_assessments').select('trait_id,score,comment').eq('school_id', membership.school.id).eq('student_id', studentId).eq('session_id', publication.session_id).eq('term_no', publication.term_no),
         ]);
 
-        for (const result of [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, entriesResult, attendanceResult, summariesResult, traitsResult]) {
+        for (const result of [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, classSubjectsResult, entriesResult, attendanceResult, summariesResult, traitsResult]) {
           if (result.error) throw result.error;
         }
         if (!recordResult.data) throw new Error('The student has no school record in this school.');
 
         const entries = (entriesResult.data || []) as ResultEntry[];
-        const subjectIds = [...new Set(entries.map(entry => entry.subject_id))];
+        const classSubjectIds = ((classSubjectsResult.data || []) as Array<{ subject_id: string }>).map(row => row.subject_id);
+        const subjectIds = [...new Set([...classSubjectIds, ...entries.map(entry => entry.subject_id)])];
         const componentIds = [...new Set(entries.map(entry => entry.component_id))];
         const traitIds = [...new Set(((traitsResult.data || []) as TraitAssessment[]).map(trait => trait.trait_id))];
 
@@ -90,8 +92,8 @@ function SchoolReportPage() {
         const subjects = (subjectResult.data || []) as ResultSubject[];
         const components = (componentResult.data || []) as ResultComponent[];
         const traitDefinitions = (traitResult.data || []) as TraitDefinition[];
-        const subjectById = new Map(subjects.map(subject => [subject.id, subject]));
-        const componentById = new Map(components.map(component => [component.id, component]));
+        const subjectById = new Map(subjects.map(subject => [subject.id, subject] as const));
+        const componentById = new Map(components.map(component => [component.id, component] as const));
         const grouped = new Map<string, { caNumerator: number; caWeight: number; examNumerator: number; examWeight: number; comments: string[] }>();
 
         for (const entry of entries) {
@@ -116,12 +118,11 @@ function SchoolReportPage() {
         }
 
         const reportSubjects = subjects
-          .filter(subject => grouped.has(subject.id))
           .sort((a, b) => a.name.localeCompare(b.name))
           .map(subject => {
-            const group = grouped.get(subject.id)!;
-            const ca = group.caWeight > 0 ? (group.caNumerator / group.caWeight) * 40 : null;
-            const exam = group.examWeight > 0 ? (group.examNumerator / group.examWeight) * 60 : null;
+            const group = grouped.get(subject.id);
+            const ca = group && group.caWeight > 0 ? (group.caNumerator / group.caWeight) * 40 : null;
+            const exam = group && group.examWeight > 0 ? (group.examNumerator / group.examWeight) * 60 : null;
             return {
               subject: subject.name,
               ca: ca === null ? null : Number(ca.toFixed(2)),
@@ -132,7 +133,7 @@ function SchoolReportPage() {
           });
 
         const traitRows = (traitsResult.data || []) as TraitAssessment[];
-        const traitsById = new Map(traitDefinitions.map(trait => [trait.id, trait]));
+        const traitsById = new Map(traitDefinitions.map(trait => [trait.id, trait] as const));
         const affectiveTraits: RatedTrait[] = [];
         const psychomotorSkills: RatedTrait[] = [];
         for (const trait of traitRows) {
