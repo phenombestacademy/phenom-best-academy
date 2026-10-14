@@ -23,6 +23,10 @@ function SchoolPerformancePage() {
   const [sessionId, setSessionId] = useState('');
   const [termNo, setTermNo] = useState<number | null>(null);
   const [data, setData] = useState<GeneralPerformanceData | null>(null);
+  const [schoolId, setSchoolId] = useState('');
+  const [gradeBands, setGradeBands] = useState<GradeBand[]>(DEFAULT_GRADE_BANDS);
+  const [savingBands, setSavingBands] = useState(false);
+  const [bandMessage, setBandMessage] = useState('');
 
   const loadFor = useCallback(async (requestedSessionId?: string, requestedTermNo?: number) => {
     setLoading(true);
@@ -38,7 +42,7 @@ function SchoolPerformancePage() {
 
       const [classResult, schoolResult, sessionsResult] = await Promise.all([
         db.from('school_classes').select('id,name').eq('school_id', membership.school.id).eq('id', classId).maybeSingle(),
-        db.from('schools').select('name').eq('id', membership.school.id).maybeSingle(),
+        db.from('schools').select('name,report_grading_bands').eq('id', membership.school.id).maybeSingle(),
         db.from('school_academic_sessions').select('id,name,active,starts_on').eq('school_id', membership.school.id).order('starts_on', { ascending: false }),
       ]);
       if (classResult.error) throw classResult.error;
@@ -64,6 +68,8 @@ function SchoolPerformancePage() {
         || [...termRows].reverse().find(row => row.results_published)
         || termRows[termRows.length - 1];
 
+      setSchoolId(membership.school.id);
+      setGradeBands(normaliseGradeBands(schoolResult.data?.report_grading_bands));
       setSessions(sessionRows);
       setTerms(termRows);
       setSessionId(selectedSession.id);
@@ -177,6 +183,26 @@ function SchoolPerformancePage() {
     }
   }, [classId]);
 
+  async function saveGradeBands() {
+    if (!schoolId) return;
+    setSavingBands(true);
+    setBandMessage('');
+    try {
+      const db = getSupabase();
+      if (!db) throw new Error('The school reporting database is not configured.');
+      const { error: saveError } = await db.rpc('school_report_update_grading_bands', {
+        p_school: schoolId,
+        p_bands: gradeBands,
+      });
+      if (saveError) throw saveError;
+      setBandMessage('Grading bands saved for this school.');
+    } catch (error) {
+      setBandMessage(error instanceof Error ? error.message : 'Could not save grading bands.');
+    } finally {
+      setSavingBands(false);
+    }
+  }
+
   useEffect(() => { void loadFor(); }, [loadFor]);
 
   return (
@@ -194,9 +220,35 @@ function SchoolPerformancePage() {
         </label>
         <button onClick={() => { void loadFor(sessionId || undefined, termNo ?? undefined); }} disabled={loading} className="rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Refresh</button>
       </div>
+      <details className="mb-5 rounded-xl border border-line bg-cream p-4">
+        <summary className="cursor-pointer font-semibold">Configure school grading bands</summary>
+        <p className="mt-2 text-sm text-muted">Ranges must cover 0–100 without overlaps or gaps. Changes affect the grades shown on official and general performance sheets for this school.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {gradeBands.map((band, index) => <div key={band.grade + index} className="rounded-lg border border-line bg-white p-3">
+            <label className="block text-xs font-semibold">Grade
+              <input value={band.grade} maxLength={8} disabled={loading || savingBands} onChange={event => setGradeBands(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, grade: event.target.value } : row))} className="mt-1 w-full rounded border p-2"/>
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <label className="block text-xs font-semibold">Minimum
+                <input type="number" min="0" max="100" step="0.01" value={band.min} disabled={loading || savingBands} onChange={event => setGradeBands(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, min: Number(event.target.value) } : row))} className="mt-1 w-full rounded border p-2"/>
+              </label>
+              <label className="block text-xs font-semibold">Maximum
+                <input type="number" min="0" max="100" step="0.01" value={band.max} disabled={loading || savingBands} onChange={event => setGradeBands(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, max: Number(event.target.value) } : row))} className="mt-1 w-full rounded border p-2"/>
+              </label>
+            </div>
+            <label className="mt-2 block text-xs font-semibold">Remark
+              <input value={band.remark} maxLength={80} disabled={loading || savingBands} onChange={event => setGradeBands(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, remark: event.target.value } : row))} className="mt-1 w-full rounded border p-2"/>
+            </label>
+          </div>)}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button onClick={() => { void saveGradeBands(); }} disabled={loading || savingBands} className="rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">{savingBands ? 'Saving…' : 'Save grading bands'}</button>
+          {bandMessage ? <p className="text-sm" role="status">{bandMessage}</p> : null}
+        </div>
+      </details>
       {loading ? <p className="rounded-xl border border-line bg-cream p-4 text-sm" role="status">{message}</p> : null}
       {!loading && !data ? <section className="rounded-xl border border-line bg-cream p-6"><h1 className="text-xl font-bold">General Performance Sheet</h1><p className="mt-3 text-sm" role="alert">{message}</p></section> : null}
-      {data ? <><p className="mb-3 text-sm text-muted" role="status">{message}</p><GeneralPerformanceSheet data={data} /></> : null}
+      {data ? <><p className="mb-3 text-sm text-muted" role="status">{message}</p><GeneralPerformanceSheet data={data} gradeBands={gradeBands} /></> : null}
     </main>
   );
 }
