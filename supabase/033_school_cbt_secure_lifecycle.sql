@@ -91,7 +91,7 @@ end $$;
 create or replace function public.school_cbt_submit_attempt(p_attempt uuid)
 returns jsonb language plpgsql security definer set search_path=public
 as $$
-declare t public.school_cbt_exam_attempts%rowtype; e public.school_cbt_exams%rowtype; q record; score numeric:=0; total numeric:=0; correct integer:=0; uid uuid:=auth.uid();
+declare t public.school_cbt_exam_attempts%rowtype; e public.school_cbt_exams%rowtype; q record; v_score numeric:=0; v_total numeric:=0; v_correct integer:=0; uid uuid:=auth.uid();
 begin
  if uid is null then raise exception 'Authentication required'; end if;
  select * into t from public.school_cbt_exam_attempts where id=p_attempt and student_id=uid for update;
@@ -99,11 +99,11 @@ begin
  if t.status<>'in_progress' then return jsonb_build_object('attempt_id',t.id,'score',t.score,'total_marks',t.total_marks,'correct_count',t.correct_count,'status',t.status); end if;
  select * into e from public.school_cbt_exams where id=t.exam_id;
  for q in select id,correct_answer,marks from public.school_cbt_exam_questions where exam_id=e.id loop
-  total:=total+coalesce(q.marks,0);
-  if t.answers->>q.id::text is not null and upper(btrim(t.answers->>q.id::text))=upper(btrim(q.correct_answer)) then score:=score+coalesce(q.marks,0); correct:=correct+1; end if;
+  v_total:=v_total+coalesce(q.marks,0);
+  if t.answers->>q.id::text is not null and upper(btrim(t.answers->>q.id::text))=upper(btrim(q.correct_answer)) then v_score:=v_score+coalesce(q.marks,0); v_correct:=v_correct+1; end if;
  end loop;
- update public.school_cbt_exam_attempts set score=score,total_marks=total,correct_count=correct,submitted_at=now(),status='submitted' where id=p_attempt;
- return jsonb_build_object('attempt_id',p_attempt,'score',score,'total_marks',total,'correct_count',correct,'status','submitted');
+ update public.school_cbt_exam_attempts set score=v_score,total_marks=v_total,correct_count=v_correct,submitted_at=now(),status='submitted' where id=p_attempt;
+ return jsonb_build_object('attempt_id',p_attempt,'score',v_score,'total_marks',v_total,'correct_count',v_correct,'status','submitted');
 end $$;
 
 create or replace function public.school_cbt_set_results_visible(p_exam uuid,p_visible boolean)
