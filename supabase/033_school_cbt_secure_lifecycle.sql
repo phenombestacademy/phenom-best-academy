@@ -27,7 +27,7 @@ begin
   raise exception 'Use the authorised CBT publish workflow to schedule an exam';
  end if;
  return new;
-end $;
+end $$;
 
 drop trigger if exists school_cbt_guard_exam_status on public.school_cbt_exams;
 create trigger school_cbt_guard_exam_status before update of status on public.school_cbt_exams
@@ -43,7 +43,7 @@ begin
   raise exception 'Questions are locked after an exam is scheduled';
  end if;
  if tg_op='DELETE' then return old; else return new; end if;
-end $;
+end $$;
 
 drop trigger if exists school_cbt_question_draft_only on public.school_cbt_exam_questions;
 create trigger school_cbt_question_draft_only before insert or update or delete on public.school_cbt_exam_questions
