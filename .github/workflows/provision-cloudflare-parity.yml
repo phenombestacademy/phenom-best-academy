@@ -144,8 +144,15 @@ jobs:
           else
             echo "::warning::MIGRATION_ADMIN_TOKEN is not configured. The Worker will be deployed fail-closed: health is available, but all migration-admin routes return 503 until a dedicated token is added."
           fi
+          set +e
           deploy_output="$(npx wrangler deploy --config migration-api/wrangler.jsonc 2>&1)"
+          deploy_status=$?
+          set -e
           printf '%s\n' "$deploy_output"
+          if [[ "$deploy_status" -ne 0 ]]; then
+            echo "::error::Wrangler deployment failed with exit code $deploy_status"
+            exit "$deploy_status"
+          fi
           worker_url="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' <<<"$deploy_output" | tail -n1 || true)"
           if [[ -n "$worker_url" ]]; then
             health="$(curl --fail --silent --show-error "$worker_url/health")"
