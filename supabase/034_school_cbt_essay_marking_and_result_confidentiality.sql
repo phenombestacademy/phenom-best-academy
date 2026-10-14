@@ -42,7 +42,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   e public.school_cbt_exams%rowtype;
   uid uuid := auth.uid();
@@ -104,7 +104,7 @@ begin
     'new_assignments', assigned, 'status', 'scheduled'
   );
 end;
-$;
+$$;
 
 create or replace function public.school_cbt_mark_essay(
   p_attempt uuid,
@@ -224,7 +224,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   t public.school_cbt_exam_attempts%rowtype;
   e public.school_cbt_exams%rowtype;
@@ -273,7 +273,7 @@ begin
   update public.school_cbt_exam_attempts set answers = p_answers where id = p_attempt;
   return jsonb_build_object('saved', true, 'deadline', deadline);
 end;
-$;
+$$;
 
 create or replace function public.school_cbt_submit_attempt(p_attempt uuid)
 returns jsonb
@@ -532,7 +532,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   uid uuid := auth.uid();
   e public.school_cbt_exams%rowtype;
@@ -566,14 +566,14 @@ begin
     'correct_count', a.correct_count, 'submitted_at', a.submitted_at
   );
 end;
-$;
+$$;
 
 create or replace function public.school_report_student_profile(p_school uuid, p_student uuid)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   uid uuid := auth.uid();
   profile_data jsonb;
@@ -601,7 +601,7 @@ begin
   if profile_data is null then raise exception 'Student profile not found'; end if;
   return profile_data;
 end;
-$;
+$$;
 
 revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
 grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
