@@ -167,6 +167,19 @@ function SchoolCbtPage() {
     setQuestions((data || []) as Question[]);
   }, [db]);
 
+
+  useEffect(() => {
+    let alive = true;
+    getMySchoolMembership().then(async value => {
+      if (!alive) return;
+      if (!value) { setError('Sign in with an authorised school account to access CBT.'); return; }
+      setContext(value);
+      try { await refresh(value.school.id); } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Could not load school CBT.'); }
+    }).catch(e => { if (alive) setError(e instanceof Error ? e.message : 'Could not load school membership.'); });
+    return () => { alive = false; };
+  }, [refresh]);
+
+  const chosen = useMemo(() => exams.find(e => e.id === selected) || null, [exams, selected]);
   const loadEssayResponses = useCallback(async () => {
     if (!db || !chosen) return;
     setBusy(true); setError('');
@@ -181,18 +194,6 @@ function SchoolCbtPage() {
     }
   }, [db, chosen]);
 
-  useEffect(() => {
-    let alive = true;
-    getMySchoolMembership().then(async value => {
-      if (!alive) return;
-      if (!value) { setError('Sign in with an authorised school account to access CBT.'); return; }
-      setContext(value);
-      try { await refresh(value.school.id); } catch (e) { if (alive) setError(e instanceof Error ? e.message : 'Could not load school CBT.'); }
-    }).catch(e => { if (alive) setError(e instanceof Error ? e.message : 'Could not load school membership.'); });
-    return () => { alive = false; };
-  }, [refresh]);
-
-  const chosen = useMemo(() => exams.find(e => e.id === selected) || null, [exams, selected]);
   useEffect(() => { if (selected) loadQuestions(selected).catch(e => setError(e instanceof Error ? e.message : 'Could not load questions.')); else setQuestions([]); }, [selected, loadQuestions]);
 
   async function createExam(event: React.FormEvent<HTMLFormElement>) {
@@ -413,6 +414,7 @@ function SchoolCbtPage() {
             </article>)}
           </section>
           <p className="mt-3 text-xs text-muted">Publishing, attempt handling, marking and result visibility are enforced by server-side RPCs. Keep this pull request in draft until staging security tests pass.</p>
+          </div>}
       </section>
     </div>
   </main>;
