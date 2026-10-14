@@ -52,7 +52,7 @@ function SchoolReportPage() {
         const [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, classSubjectsResult, entriesResult, attendanceResult, summariesResult, traitsResult] = await Promise.all([
           db.from('schools').select('name,address,report_card_title,motto').eq('id', membership.school.id).maybeSingle(),
           db.from('student_school_records').select('admission_number,gender,date_of_birth,psychomotor').eq('school_id', membership.school.id).eq('student_id', studentId).maybeSingle(),
-          db.from('profiles').select('full_name,first_name,middle_name,surname,gender,date_of_birth').eq('id', studentId).maybeSingle(),
+          db.rpc('school_report_student_profile', { p_school: membership.school.id, p_student: studentId }),
           db.from('school_academic_sessions').select('name').eq('id', publication.session_id).maybeSingle(),
           db.from('school_terms').select('name').eq('session_id', publication.session_id).eq('term_no', publication.term_no).maybeSingle(),
           db.from('school_classes').select('name').eq('school_id', membership.school.id).eq('id', publication.class_id).maybeSingle(),
