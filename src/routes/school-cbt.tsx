@@ -18,6 +18,7 @@ type Question = {
   explanation: string | null; marks: number; resource_notes: string | null;
 };
 type StudentQuestion = { id: string; position: number; question_text: string; options: Record<string, string> | null; marks: number };
+type EssayResponse = { attempt_id: string; student_id: string; question_id: string; question_text: string; answer: string | null; max_marks: number; marks_awarded: number | null; feedback: string | null; marked_by: string | null };
 const emptyQuestion = (examId: string, position: number): Question => ({
   exam_id: examId, position, question_text: '', options: { A: '', B: '', C: '', D: '' },
   correct_answer: 'A', explanation: null, marks: 1, resource_notes: null,
@@ -46,9 +47,27 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
   const [result, setResult] = useState<{score:number;total_marks:number;correct_count:number}|null>(null);
   const refresh = useCallback(async () => {
     if (!db) throw new Error('Supabase is not configured.');
-    const {data,error:e}=await db.from('school_cbt_exams').select('id,school_id,class_id,teacher_id,title,subject,topic,question_count,duration_minutes,starts_at,ends_at,one_attempt,allow_redo,results_visible_to_students,status,instructions').eq('school_id',context.school.id).in('status',['scheduled','active']).order('starts_at');
-    if(e) throw e; setExams((data||[]) as Exam[]);
-  },[db,context.school.id]);
+    const { data: auth, error: authError } = await db.auth.getUser();
+    if (authError) throw authError;
+    if (!auth.user) throw new Error('Please sign in again.');
+    const { data: assignments, error: assignmentError } = await db
+      .from('school_cbt_exam_assignments')
+      .select('exam_id')
+      .eq('school_id', context.school.id)
+      .eq('student_id', auth.user.id);
+    if (assignmentError) throw assignmentError;
+    const examIds = [...new Set((assignments || []).map(row => String(row.exam_id)))];
+    if (!examIds.length) { setExams([]); return; }
+    const { data, error: examError } = await db
+      .from('school_cbt_exams')
+      .select('id,school_id,class_id,teacher_id,title,subject,topic,question_count,duration_minutes,starts_at,ends_at,one_attempt,allow_redo,results_visible_to_students,status,instructions')
+      .eq('school_id', context.school.id)
+      .in('id', examIds)
+      .in('status', ['scheduled', 'active'])
+      .order('starts_at');
+    if (examError) throw examError;
+    setExams((data || []) as Exam[]);
+  }, [db, context.school.id]);
   useEffect(()=>{refresh().catch(e=>setError(e instanceof Error?e.message:'Could not load assigned exams.'));},[refresh]);
   useEffect(()=>{
     if(!deadline || !attemptId) return;
@@ -126,6 +145,7 @@ function SchoolCbtPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [essayResponses, setEssayResponses] = useState<EssayResponse[]>([]);
   const db = getSupabase();
 
   const refresh = useCallback(async (schoolId: string) => {
@@ -146,6 +166,20 @@ function SchoolCbtPage() {
     if (e) throw e;
     setQuestions((data || []) as Question[]);
   }, [db]);
+
+  const loadEssayResponses = useCallback(async () => {
+    if (!db || !chosen) return;
+    setBusy(true); setError('');
+    try {
+      const { data, error: e } = await db.rpc('school_cbt_list_essay_responses', { p_exam: chosen.id });
+      if (e) throw e;
+      setEssayResponses((data || []) as EssayResponse[]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load essay responses.');
+    } finally {
+      setBusy(false);
+    }
+  }, [db, chosen]);
 
   useEffect(() => {
     let alive = true;
@@ -244,7 +278,47 @@ function SchoolCbtPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'CSV import failed.'); }
   }
 
-  async function setExamStatus(status: 'draft' | 'scheduled' | 'active' | 'closed') {
+  async function saveEssayMark(response: EssayResponse) {
+    if (!db || !chosen) return;
+    if (response.marks_awarded === null || !Number.isFinite(response.marks_awarded) || response.marks_awarded < 0 || response.marks_awarded > response.max_marks) {
+      setError('Awarded marks must be between zero and the question maximum.');
+      return;
+    }
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const { error: e } = await db.rpc('school_cbt_mark_essay', {
+        p_attempt: response.attempt_id,
+        p_question: response.question_id,
+        p_marks: response.marks_awarded,
+        p_feedback: response.feedback?.trim() || null,
+      });
+      if (e) throw e;
+      await loadEssayResponses();
+      setNotice('Essay mark and feedback saved. The attempt score has been recalculated.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Essay mark could not be saved.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleResultsVisibility() {
+    if (!db || !chosen || !context) return;
+    const visible = !chosen.results_visible_to_students;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const { error: e } = await db.rpc('school_cbt_set_results_visible', { p_exam: chosen.id, p_visible: visible });
+      if (e) throw e;
+      await refresh(context.school.id);
+      setNotice(visible ? 'Results released to students.' : 'Results hidden from students.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update result visibility.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setExamStatus(status: 'draft' | 'scheduled' | 'active' | 'closed')
     if (!db || !chosen) return;
     setBusy(true); setError(''); setNotice('');
     try {
@@ -318,8 +392,27 @@ function SchoolCbtPage() {
             <button disabled={busy} onClick={()=>saveQuestion(q)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save question</button>
           </article>)}</div>
           <div className="mt-5 flex flex-wrap gap-2">{(['draft','scheduled','active','closed'] as const).map(s=><button key={s} disabled={busy} onClick={()=>setExamStatus(s)} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">{s[0].toUpperCase()+s.slice(1)}</button>)}</div>
-          <p className="mt-3 text-xs text-muted">Scheduling here sets exam metadata and status. Production release still requires the server-side start/save/submit and attempt-limit workflow; do not use this UI as a substitute for those protections.</p>
-        </div>}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button disabled={busy || chosen.status === 'draft'} onClick={toggleResultsVisibility} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">{chosen.results_visible_to_students ? 'Hide results from students' : 'Release results to students'}</button>
+            <button disabled={busy || chosen.status === 'draft'} onClick={loadEssayResponses} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Load essay responses</button>
+          </div>
+          {essayResponses.length > 0 && <section className="mt-5 space-y-4 border-t border-line pt-5">
+            <h4 className="text-lg font-semibold">Manual essay marking</h4>
+            <p className="text-sm text-muted">Mark each response within its maximum. Results cannot be released while any submitted essay remains unmarked.</p>
+            {essayResponses.map(response => <article key={response.attempt_id + ':' + response.question_id} className="rounded-xl border border-line p-4">
+              <p className="text-xs text-muted">Student ID: {response.student_id} · Attempt: {response.attempt_id.slice(0, 8)}</p>
+              <h5 className="mt-2 font-semibold">{response.question_text}</h5>
+              <p className="mt-2 whitespace-pre-wrap rounded-lg bg-cream p-3 text-sm">{response.answer?.trim() || 'No answer provided.'}</p>
+              <label className="mt-3 block text-sm font-semibold">Marks (maximum {response.max_marks})
+                <input type="number" min="0" max={response.max_marks} step="0.01" value={response.marks_awarded ?? ''} onChange={event => setEssayResponses(rows => rows.map(row => row.attempt_id === response.attempt_id && row.question_id === response.question_id ? { ...row, marks_awarded: event.target.value === '' ? null : Number(event.target.value) } : row))} className="mt-1 w-full rounded-lg border p-2"/>
+              </label>
+              <label className="mt-3 block text-sm font-semibold">Feedback
+                <textarea maxLength={4000} value={response.feedback || ''} onChange={event => setEssayResponses(rows => rows.map(row => row.attempt_id === response.attempt_id && row.question_id === response.question_id ? { ...row, feedback: event.target.value } : row))} className="mt-1 w-full rounded-lg border p-2"/>
+              </label>
+              <button disabled={busy || response.marks_awarded === null} onClick={() => saveEssayMark(response)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save mark</button>
+            </article>)}
+          </section>
+          <p className="mt-3 text-xs text-muted">Publishing, attempt handling, marking and result visibility are enforced by server-side RPCs. Keep this pull request in draft until staging security tests pass.</p>
       </section>
     </div>
   </main>;
