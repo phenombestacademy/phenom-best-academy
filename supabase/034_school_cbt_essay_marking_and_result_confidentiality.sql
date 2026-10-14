@@ -755,15 +755,15 @@ begin
 
   if exists (
     select 1
-    from jsonb_array_elements(p_bands) a
-    join jsonb_array_elements(p_bands) b on a.ordinality < b.ordinality
+    from jsonb_array_elements(p_bands) with ordinality as a(value, ordinality)
+    join jsonb_array_elements(p_bands) with ordinality as b(value, ordinality) on a.ordinality < b.ordinality
     where lower(a.value ->> 'grade') = lower(b.value ->> 'grade')
   ) then raise exception 'Grade labels must be unique'; end if;
 
   if exists (
     select 1
-    from jsonb_array_elements(p_bands) a
-    join jsonb_array_elements(p_bands) b on a.ordinality < b.ordinality
+    from jsonb_array_elements(p_bands) with ordinality as a(value, ordinality)
+    join jsonb_array_elements(p_bands) with ordinality as b(value, ordinality) on a.ordinality < b.ordinality
     where (a.value ->> 'min')::numeric <= (b.value ->> 'max')::numeric
       and (b.value ->> 'min')::numeric <= (a.value ->> 'max')::numeric
   ) then raise exception 'Grade ranges must not overlap'; end if;
