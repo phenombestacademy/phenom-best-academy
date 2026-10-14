@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { OfficialReportSheet, type OfficialReportData, type RatedTrait } from '@/components/school/OfficialReportSheet';
+import { OfficialReportSheet, DEFAULT_GRADE_BANDS, normaliseGradeBands, type GradeBand, type OfficialReportData, type RatedTrait } from '@/components/school/OfficialReportSheet';
 import { getSupabase } from '@/lib/cms';
 import { getMySchoolMembership } from '@/lib/school';
 
@@ -17,6 +17,7 @@ type TraitDefinition = { id: string; name: string; category: string };
 function SchoolReportPage() {
   const { studentId } = Route.useParams();
   const [data, setData] = useState<OfficialReportData | null>(null);
+  const [gradeBands, setGradeBands] = useState<GradeBand[]>(DEFAULT_GRADE_BANDS);
   const [performanceClassId, setPerformanceClassId] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Checking school access…');
@@ -52,7 +53,7 @@ function SchoolReportPage() {
         setPerformanceClassId(publication.class_id);
 
         const [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, classSubjectsResult, entriesResult, attendanceResult, summariesResult, traitsResult] = await Promise.all([
-          db.from('schools').select('name,address,report_card_title,motto,report_header,report_footer,teacher_signature_url,head_signature_url').eq('id', membership.school.id).maybeSingle(),
+          db.from('schools').select('name,address,report_card_title,motto,report_header,report_footer,teacher_signature_url,head_signature_url,report_grading_bands').eq('id', membership.school.id).maybeSingle(),
           db.from('student_school_records').select('admission_number,gender,date_of_birth,psychomotor').eq('school_id', membership.school.id).eq('student_id', studentId).maybeSingle(),
           db.rpc('school_report_student_profile', { p_school: membership.school.id, p_student: studentId }),
           db.from('school_academic_sessions').select('name').eq('id', publication.session_id).maybeSingle(),
@@ -158,7 +159,8 @@ function SchoolReportPage() {
         const fullName = profile?.full_name?.trim() || [profile?.first_name, profile?.middle_name, profile?.surname].filter(Boolean).join(' ').trim();
         const summaryRows = (summariesResult.data || []) as Array<{ performance_note: string | null }>;
         const headComment = [...new Set(summaryRows.map(row => row.performance_note?.trim()).filter((value): value is string => Boolean(value)))].join(' · ');
-        const school = schoolResult.data as { name?: string; address?: string | null; report_card_title?: string | null; motto?: string | null; report_header?: string | null; report_footer?: string | null; teacher_signature_url?: string | null; head_signature_url?: string | null } | null;
+        const school = schoolResult.data as { name?: string; address?: string | null; report_card_title?: string | null; motto?: string | null; report_header?: string | null; report_footer?: string | null; teacher_signature_url?: string | null; head_signature_url?: string | null; report_grading_bands?: unknown } | null;
+        setGradeBands(normaliseGradeBands(school?.report_grading_bands));
 
         const reportData: OfficialReportData = {
           schoolName: school?.name || membership.school.name,
@@ -205,7 +207,7 @@ function SchoolReportPage() {
     <main className="mx-auto max-w-5xl px-4 py-10">
       {loading ? <p className="rounded-xl border border-line bg-cream p-4 text-sm" role="status">{message}</p> : null}
       {!loading && !data ? <section className="rounded-xl border border-line bg-cream p-6"><h1 className="text-2xl font-bold">Official School Report</h1><p className="mt-3 text-sm" role="alert">{message}</p></section> : null}
-      {data ? <><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted" role="status">{message}</p>{performanceClassId ? <a href={`/school-performance/${performanceClassId}`} className="rounded-lg border border-line px-4 py-2 text-sm font-semibold">Open General Performance Sheet</a> : null}</div><OfficialReportSheet data={data} /></> : null}
+      {data ? <><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted" role="status">{message}</p>{performanceClassId ? <a href={`/school-performance/${performanceClassId}`} className="rounded-lg border border-line px-4 py-2 text-sm font-semibold">Open General Performance Sheet</a> : null}</div><OfficialReportSheet data={data} gradeBands={gradeBands} /></> : null}
     </main>
   );
 }
