@@ -19,7 +19,6 @@ as $$
 $$;
 
 -- Lifecycle guards and RPCs are installed atomically by migration 034.
-revoke all on function public.school_has_cbt_access(uuid) from public, anon;
-grant execute on function public.school_has_cbt_access(uuid) to authenticated;
+revoke all on function public.school_has_cbt_access(uuid) from public, anon, authenticated;
 
 commit;
