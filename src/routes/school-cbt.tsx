@@ -75,7 +75,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
       } catch(e) { if(live) setError(e instanceof Error?e.message:'Automatic submission failed. Please submit manually.'); }
     })();
     return ()=>{live=false;};
-  },[remaining,attemptId,result,db]);
+  },[remaining,attemptId,result,db,answers]);
   async function start(exam:Exam) {
     if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
     try {
