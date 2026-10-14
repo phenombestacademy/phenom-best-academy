@@ -46,9 +46,9 @@ function endAuthFlow(flow: 'google' | 'emailOtp') {
   if (activeAuthFlow === flow) activeAuthFlow = null;
 }
 
-export function getPendingAccountChoice() {
+export function getPendingAccountChoice(): { category: AccountCategory; role: OnboardingRole } {
   if (typeof window === 'undefined') return { category: 'individual' as AccountCategory, role: 'individual' as OnboardingRole };
-  const category = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
+  const category: AccountCategory = window.localStorage.getItem(CATEGORY_KEY) === 'school' ? 'school' : 'individual';
   const savedRole = window.localStorage.getItem(ROLE_KEY) as OnboardingRole | null;
   const validRoles: OnboardingRole[] = ['school_admin','teacher','non_teaching_staff','student','child','teenager','adult','professional','parent'];
   const role = validRoles.includes(savedRole as OnboardingRole) ? savedRole as OnboardingRole : category === 'school' ? 'school_admin' : 'individual';
