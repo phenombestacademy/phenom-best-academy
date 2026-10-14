@@ -1,0 +1,37 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  "name": "phenom-best-migration-control",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-14",
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "phenom-best-lms-migration-20261014",
+      "database_id": "4951f4e1-ad59-4a49-a420-e816d55cdf61"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "LMS_ASSETS",
+      "bucket_name": "phenom-curriculum-assets-migration-20261014"
+    },
+    {
+      "binding": "MEDIA",
+      "bucket_name": "phenom-media-migration-20261014"
+    },
+    {
+      "binding": "CURRICULUM_ASSETS",
+      "bucket_name": "phenom-curriculum-assets-migration-20261014"
+    },
+    {
+      "binding": "PROFILE_AVATARS",
+      "bucket_name": "phenom-profile-avatars-migration-20261014"
+    },
+    {
+      "binding": "SCHOOL_CBT_MEDIA",
+      "bucket_name": "phenom-school-cbt-media-migration-20261014"
+    }
+  ]
+}
