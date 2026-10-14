@@ -30,14 +30,23 @@ security definer
 set search_path = public
 as $$
 declare
-  exam_uuid uuid;
-  exam_status text;
+  old_exam_status text;
+  new_exam_status text;
 begin
-  exam_uuid := case when tg_op = 'DELETE' then old.exam_id else new.exam_id end;
-  select status into exam_status from public.school_cbt_exams where id = exam_uuid;
-  if exam_status is distinct from 'draft' then
-    raise exception 'Questions are locked after an exam is scheduled';
+  if tg_op <> 'INSERT' then
+    select status into old_exam_status from public.school_cbt_exams where id = old.exam_id;
+    if old_exam_status is distinct from 'draft' then
+      raise exception 'Questions are locked after an exam is scheduled';
+    end if;
   end if;
+
+  if tg_op <> 'DELETE' then
+    select status into new_exam_status from public.school_cbt_exams where id = new.exam_id;
+    if new_exam_status is distinct from 'draft' then
+      raise exception 'Questions are locked after an exam is scheduled';
+    end if;
+  end if;
+
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
