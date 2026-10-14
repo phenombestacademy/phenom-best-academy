@@ -2,7 +2,7 @@ name: Quality checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/school-cbt-subscription]
   push:
     branches: [main, feat/school-cbt-subscription, feat/supabase-exit]
 
