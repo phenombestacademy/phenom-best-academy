@@ -30,6 +30,69 @@ const download = (name: string, text: string, type = 'text/csv;charset=utf-8') =
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); URL.revokeObjectURL(url);
 };
 
+function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
+  const db = getSupabase();
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [selected, setSelected] = useState<Exam | null>(null);
+  const [questions, setQuestions] = useState<Array<{id:string;position:number;question_text:string;options:Record<string,string>|null;marks:number}>>([]);
+  const [answers, setAnswers] = useState<Record<string,string>>({});
+  const [attemptId, setAttemptId] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [remaining, setRemaining] = useState(0);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{score:number;total_marks:number;correct_count:number}|null>(null);
+  const refresh = useCallback(async () => {
+    if (!db) throw new Error('Supabase is not configured.');
+    const {data,error:e}=await db.from('school_cbt_exams').select('id,school_id,class_id,teacher_id,title,subject,topic,question_count,duration_minutes,starts_at,ends_at,one_attempt,allow_redo,results_visible_to_students,status,instructions').eq('school_id',context.school.id).in('status',['scheduled','active']).order('starts_at');
+    if(e) throw e; setExams((data||[]) as Exam[]);
+  },[db,context.school.id]);
+  useEffect(()=>{refresh().catch(e=>setError(e instanceof Error?e.message:'Could not load assigned exams.'));},[refresh]);
+  useEffect(()=>{
+    if(!deadline || !attemptId) return;
+    const tick=()=>setRemaining(Math.max(0,Math.floor((new Date(deadline).getTime()-Date.now())/1000)));
+    tick(); const id=window.setInterval(tick,1000); return ()=>window.clearInterval(id);
+  },[deadline,attemptId]);
+  useEffect(()=>{
+    if(!attemptId || remaining<=0 || result) return;
+    const id=window.setInterval(async()=>{
+      if(!db) return;
+      const {error:e}=await db.rpc('school_cbt_save_answers',{p_attempt:attemptId,p_answers:answers});
+      if(e) setError('Autosave failed. Keep this page open and retry saving.');
+    },15000);
+    return ()=>window.clearInterval(id);
+  },[db,attemptId,answers,remaining,result]);
+  async function start(exam:Exam) {
+    if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
+    try {
+      const {data,error:e}=await db.rpc('school_cbt_start_attempt',{p_exam:exam.id}); if(e) throw e;
+      const payload=data as {attempt_id:string;deadline:string};
+      const {data:q,error:qe}=await db.from('school_cbt_exam_questions_student').select('id,position,question_text,options,marks,image_url,media').eq('exam_id',exam.id).order('position');
+      if(qe) throw qe;
+      setSelected(exam);setQuestions((q||[]) as typeof questions);setAttemptId(payload.attempt_id);setDeadline(payload.deadline);setAnswers({});
+      setNotice('Your attempt has started. Answers are saved automatically.');
+    } catch(e){setError(e instanceof Error?e.message:'Could not start exam.');} finally{setBusy(false);}
+  }
+  async function saveNow() {
+    if(!db||!attemptId) return; const {error:e}=await db.rpc('school_cbt_save_answers',{p_attempt:attemptId,p_answers:answers}); if(e) throw e;
+  }
+  async function submit() {
+    if(!db||!attemptId) return;setBusy(true);setError('');
+    try { await saveNow(); const {data,error:e}=await db.rpc('school_cbt_submit_attempt',{p_attempt:attemptId});if(e)throw e;
+      const payload=data as {score:number;total_marks:number;correct_count:number};setResult(payload);setAttemptId('');setNotice('Your answers have been submitted successfully.');
+    } catch(e){setError(e instanceof Error?e.message:'Submission failed.');} finally{setBusy(false);}
+  }
+  const clock = `${Math.floor(remaining/3600).toString().padStart(2,'0')}:${Math.floor((remaining%3600)/60).toString().padStart(2,'0')}:${(remaining%60).toString().padStart(2,'0')}`;
+  return <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <header className="rounded-3xl bg-navy-deep p-7 text-cream"><p className="text-xs uppercase tracking-[.18em] text-gold">Phenom Best LMS · Student CBT</p><h1 className="mt-3 text-4xl font-bold">My examinations</h1><p className="mt-3 text-sm text-cream/80">{context.school.name}</p></header>
+    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{notice&&<p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-green-900">{notice}</p>}
+    {!selected && <section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Assigned exams</h2><div className="mt-4 space-y-3">{exams.map(e=><article key={e.id} className="rounded-xl border p-4"><h3 className="font-semibold">{e.title}</h3><p className="text-sm text-muted">{e.subject} · {e.duration_minutes||'—'} minutes · Opens {e.starts_at?new Date(e.starts_at).toLocaleString():'as scheduled'}</p><p className="mt-2 text-sm">{e.instructions}</p><button disabled={busy} onClick={()=>start(e)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-cream disabled:opacity-50">Start / Resume exam</button></article>)}{!exams.length&&<p>No currently scheduled examinations are available to your account.</p>}</div></section>}
+    {selected&&attemptId&&<section className="mt-6 rounded-2xl border p-5"><div className="sticky top-2 z-10 flex items-center justify-between rounded-xl bg-cream p-3"><div><h2 className="font-semibold">{selected.title}</h2><p className="text-xs text-muted">Autosaves every 15 seconds</p></div><strong aria-live="polite" className="text-xl tabular-nums">{clock}</strong></div><div className="mt-5 space-y-5">{questions.map((q,i)=><article key={q.id} className="rounded-xl border p-4"><p className="font-semibold">{i+1}. {q.question_text}</p><div className="mt-3 space-y-2">{Object.entries(q.options||{}).map(([key,value])=><label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border p-3"><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(old=>({...old,[q.id]:key}))}/><span><b>{key}.</b> {value}</span></label>)}</div></article>)}</div><button disabled={busy} onClick={()=>{if(window.confirm('Submit your answers now? You cannot edit them afterwards.'))submit();}} className="mt-6 rounded-xl bg-navy-deep px-5 py-3 font-semibold text-cream disabled:opacity-50">{busy?'Submitting…':'Submit examination'}</button></section>}
+    {result&&selected&&<section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Submission received</h2>{selected.results_visible_to_students?<p className="mt-2">Score: {result.score} / {result.total_marks} ({result.correct_count} correct answers)</p>:<p className="mt-2">Your answers have been recorded. Results will be shown when your school releases them.</p>}<button onClick={()=>{setSelected(null);setQuestions([]);setAnswers({});setResult(null);refresh().catch(()=>{});}} className="mt-4 rounded-lg border px-4 py-2">Return to exams</button></section>}
+  </main>;
+}
+
 function SchoolCbtPage() {
   const [context, setContext] = useState<SchoolContext | null>(null);
   const [classes, setClasses] = useState<Row[]>([]);
@@ -164,12 +227,24 @@ function SchoolCbtPage() {
 
   async function setExamStatus(status: 'draft' | 'scheduled' | 'active' | 'closed') {
     if (!db || !chosen) return;
-    if (status !== 'draft' && questions.length === 0) { setError('Add at least one question before scheduling or opening the exam.'); return; }
-    if (status !== 'draft' && (!chosen.starts_at || !chosen.ends_at || !chosen.duration_minutes)) { setError('Set opening time, closing time and duration before scheduling.'); return; }
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setNotice('');
     try {
-      const { error: e } = await db.from('school_cbt_exams').update({ status, question_count: questions.length, updated_at: new Date().toISOString() }).eq('id', chosen.id).eq('school_id', context!.school.id);
-      if (e) throw e; await refresh(context!.school.id); setNotice('Exam status changed to ' + status + '.');
+      if (status === 'scheduled') {
+        const { data, error: e } = await db.rpc('school_cbt_publish_exam', { p_exam: chosen.id });
+        if (e) throw e;
+        await refresh(context!.school.id);
+        setNotice(`Exam scheduled. ${Number((data as {new_assignments?:number})?.new_assignments || 0)} student assignment(s) created.`);
+      } else if (status === 'draft') {
+        if (chosen.status !== 'draft') throw new Error('A scheduled or completed exam cannot be returned to draft from this screen.');
+        setNotice('This exam is already a draft.');
+      } else if (status === 'active') {
+        throw new Error('An exam becomes available during its scheduled window. Direct client-side activation is disabled.');
+      } else {
+        const { error: e } = await db.from('school_cbt_exams').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', chosen.id).eq('school_id', context!.school.id);
+        if (e) throw e;
+        await refresh(context!.school.id);
+        setNotice('Exam closed. Existing attempts remain in the record.');
+      }
     } catch (e) { setError(e instanceof Error ? e.message : 'Status update failed.'); }
     finally { setBusy(false); }
   }
@@ -180,6 +255,8 @@ function SchoolCbtPage() {
     const rows = questions.map(q => [q.question_text, q.options?.A, q.options?.B, q.options?.C, q.options?.D, q.correct_answer, q.marks, q.explanation, q.resource_notes]);
     download('cbt-questions-' + chosen.id + '.csv', [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n'));
   }
+
+  if (context?.role === 'student') return <StudentCbtWorkspace context={context} />;
 
   return <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
     <header className="rounded-3xl bg-navy-deep p-7 text-cream sm:p-10">
