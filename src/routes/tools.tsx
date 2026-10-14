@@ -479,7 +479,7 @@ function evaluateExpression(
   source = source.replace(/\bAns\b/gi, "ANS");
   source = source.replace(/\be\^/gi, "exp(");
 
-  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+  if (!/^[0-9A-Za-z_+*/().,%-]*$/.test(source)) {
     throw new Error("Unsupported character in expression.");
   }
 
@@ -912,7 +912,7 @@ function ToolsPage() {
     });
   }
 
-  function useMemory(action: "MC" | "MR" | "M+" | "M-" | "MS") {
+  function applyMemory(action: "MC" | "MR" | "M+" | "M-" | "MS") {
     if (action === "MC") return setMemory(0);
     if (action === "MR") return setExpr((value) => `${value}${memory}`);
     if (action === "MS") {
@@ -1514,7 +1514,7 @@ ${snapshots.map((item, index) => `SNAPSHOT ${index + 1} (${item.name}):\n${item.
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => useMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
+            {["MC", "MR", "M+", "M-", "MS"].map((item) => <Button key={item} size="sm" variant="outline" onClick={() => applyMemory(item as "MC" | "MR" | "M+" | "M-" | "MS")}>{item}</Button>)}
             <Button size="sm" variant="outline" onClick={() => setExpr((value) => value.slice(0, -1))}>⌫</Button>
             <Button size="sm" variant="outline" onClick={clearCalculator}>AC</Button>
             <Button size="sm" variant="outline" onClick={() => setExpr((value) => `${value}Ans`)}>Ans</Button>
@@ -2007,13 +2007,13 @@ function SelectField({
 }
 
 function evaluateGraphExpression(expression: string, x: number) {
-  let source = expression
+  const source = expression
     .replace(/×/g, "*")
     .replace(/÷/g, "/")
     .replace(/\^/g, "**")
     .replace(/\bpi\b/gi, "PI")
     .replace(/\s+/g, "");
-  if (!/^[0-9A-Za-z_+*/().,%\-]*$/.test(source)) {
+  if (!/^[0-9A-Za-z_+*/().,%-]*$/.test(source)) {
     throw new Error("Unsupported graph character.");
   }
 

@@ -65,7 +65,9 @@ function saveCachedAiTranslations() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(AI_TRANSLATIONS_KEY, JSON.stringify(aiTranslations));
-  } catch {}
+  } catch {
+    // Storage is optional; keep translations available for this session.
+  }
 }
 
 async function loadAiTranslations(locale: SupportedLocale) {
@@ -104,7 +106,9 @@ async function loadAiTranslations(locale: SupportedLocale) {
     aiTranslations[locale] = translations;
     saveCachedAiTranslations();
     window.dispatchEvent(new CustomEvent("phenom-locale-translations-ready", { detail: locale }));
-  } catch {}
+  } catch {
+    // Translation enhancement is optional; keep the existing interface labels.
+  }
 }
 
 export function setLocale(locale: SupportedLocale) {

@@ -108,7 +108,7 @@ async function ai(env: Env, prompt: string, web = false) {
 }
 
 function extractJson(raw: string): any {
-  const cleaned = raw.replace(/^\s*\`\`\`(?:json)?\s*/i, "").replace(/\s*\`\`\`\s*$/i, "").trim();
+  const cleaned = raw.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
   const match = cleaned.match(/\{[\s\S]*\}/);
   if (!match) throw new Error("AI response did not contain JSON");
   return JSON.parse(match[0]);

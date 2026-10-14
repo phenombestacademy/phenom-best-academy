@@ -98,7 +98,7 @@ export async function sendEmailOtp(email: string) {
     if (!cleanEmail) throw new Error('Enter your email address.');
     const { data: lookup, error: lookupError } = await supabase.rpc('lookup_phenom_profile', { p_email: cleanEmail, p_user_id: null });
     if (lookupError) throw lookupError;
-    if (Boolean((lookup as { exists?: boolean } | null)?.exists)) throw new Error('You already have a Phenom account. Please sign in instead.');
+    if ((lookup as { exists?: boolean } | null)?.exists) throw new Error('You already have a Phenom account. Please sign in instead.');
     const otpRequest = supabase.auth.signInWithOtp({ email: cleanEmail, options: { shouldCreateUser: true } });
     const timeout = new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('The verification email service did not respond within 20 seconds. Please try again shortly. If this continues, the Academy email service needs attention.')), 20_000));
     const { error } = await Promise.race([otpRequest, timeout]);
