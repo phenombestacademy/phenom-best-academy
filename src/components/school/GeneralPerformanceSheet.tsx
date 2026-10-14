@@ -69,7 +69,7 @@ export function GeneralPerformanceSheet({ data, gradeBands = DEFAULT_GRADE_BANDS
               {data.subjects.map(subject => <td key={subject.id} className="border border-black px-2 py-2 text-center">{formatMark(student.scores[subject.id])}</td>)}
               <td className="border border-black px-2 py-2 text-center">{formatMark(student.total)}</td>
               <td className="border border-black px-2 py-2 text-center">{student.average === null ? '—' : formatMark(student.average) + '%'}</td>
-              <td className="border border-black px-2 py-2 text-center">{student.grade || gradeByAverage(student.average)}</td>
+              <td className="border border-black px-2 py-2 text-center">{gradeByAverage(student.average)}</td>
             </tr>)}
             {!data.students.length ? <tr><td colSpan={data.subjects.length + 6} className="border border-black px-3 py-6 text-center">No students are enrolled in this class.</td></tr> : null}
           </tbody>
