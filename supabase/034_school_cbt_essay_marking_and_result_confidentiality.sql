@@ -18,6 +18,75 @@ create table if not exists public.school_cbt_essay_marks (
 alter table public.school_cbt_essay_marks enable row level security;
 revoke all on table public.school_cbt_essay_marks from public, anon, authenticated;
 
+create or replace function public.school_cbt_publish_exam(p_exam uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  e public.school_cbt_exams%rowtype;
+  uid uuid := auth.uid();
+  qcount integer;
+  assigned integer;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  select * into e from public.school_cbt_exams where id = p_exam for update;
+  if not found then raise exception 'Exam not found'; end if;
+  if not (
+    public.is_super_admin()
+    or public.is_school_member(e.school_id, array['school_admin'])
+    or e.teacher_id = uid
+  ) then raise exception 'Not authorised'; end if;
+  if not public.school_has_cbt_access(e.school_id) and not public.is_super_admin() then
+    raise exception 'School CBT subscription is not active or does not include CBT';
+  end if;
+  if e.status not in ('draft', 'scheduled') then raise exception 'Only draft exams can be scheduled'; end if;
+  if e.starts_at is null or e.ends_at is null or e.duration_minutes is null
+     or e.duration_minutes < 1 or e.ends_at <= e.starts_at then
+    raise exception 'Set valid opening/closing times and duration';
+  end if;
+
+  select count(*) into qcount
+  from public.school_cbt_exam_questions
+  where exam_id = p_exam;
+  if qcount = 0 then raise exception 'Add at least one question first'; end if;
+
+  if exists (
+    select 1
+    from public.school_cbt_exam_questions
+    where exam_id = p_exam
+      and (
+        (options is not null and (
+          correct_answer is null
+          or btrim(correct_answer) = ''
+          or not (options ? correct_answer)
+        ))
+        or (options is not null and jsonb_typeof(options) <> 'object')
+        or (options is null and correct_answer is not null)
+      )
+  ) then
+    raise exception 'Check objective answer keys and ensure essay questions have no answer key';
+  end if;
+
+  insert into public.school_cbt_exam_assignments (exam_id, school_id, student_id, assigned_by)
+  select p_exam, e.school_id, cm.user_id, uid
+  from public.class_members cm
+  where cm.class_id = e.class_id and lower(cm.role) = 'student'
+  on conflict do nothing;
+  get diagnostics assigned = row_count;
+
+  update public.school_cbt_exams
+  set status = 'scheduled', question_count = qcount, updated_at = now()
+  where id = p_exam;
+
+  return jsonb_build_object(
+    'exam_id', p_exam, 'question_count', qcount,
+    'new_assignments', assigned, 'status', 'scheduled'
+  );
+end;
+$;
+
 create or replace function public.school_cbt_mark_essay(
   p_attempt uuid,
   p_question uuid,
