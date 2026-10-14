@@ -1,9 +1,8 @@
 -- Generated from live Supabase public-table metadata on 2026-10-14.
 -- Schema parity scaffold for 171 public tables; this is NOT a data import or production-ready schema conversion.
--- Deliberately preserves column names, basic SQLite-compatible affinities, NOT NULL markers, simple defaults, and primary keys.
--- PostgreSQL checks, unique constraints, foreign keys, indexes, generated expressions, RLS policies, functions, triggers, views,
--- extensions, auth schema dependencies, and complex defaults require separate reviewed migrations.
--- Before applying remotely, run against a local D1 database and compare every table/column and constraint against the source.
+-- Preserves names, SQLite-compatible affinities, NOT NULL markers, simple defaults, and primary keys.
+-- PostgreSQL checks, unique constraints, foreign keys, indexes, RLS, functions, triggers, views, extensions, auth dependencies,
+-- generated expressions, and complex defaults require separate reviewed migrations.
 PRAGMA foreign_keys = ON;
 
 -- Source rows at inventory time: 2; source RLS enabled: true
@@ -49,7 +48,7 @@ CREATE TABLE IF NOT EXISTS "parent_links" (
 
 -- Source rows at inventory time: 20; source RLS enabled: true
 CREATE TABLE IF NOT EXISTS "analytics_events" (
-  "id" REAL NOT NULL,
+  "id" INTEGER NOT NULL,
   "user_id" TEXT,
   "event_name" TEXT NOT NULL,
   "payload" TEXT DEFAULT '{}' NOT NULL,
@@ -177,7 +176,7 @@ CREATE TABLE IF NOT EXISTS "subscriptions" (
 
 -- Source rows at inventory time: 0; source RLS enabled: true
 CREATE TABLE IF NOT EXISTS "audit_logs" (
-  "id" REAL NOT NULL,
+  "id" INTEGER NOT NULL,
   "actor_id" TEXT,
   "action" TEXT NOT NULL,
   "target_type" TEXT,
@@ -294,7 +293,7 @@ CREATE TABLE IF NOT EXISTS "assignment_submissions" (
   "id" TEXT NOT NULL,
   "assignment_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
-  "attempt_no" REAL DEFAULT 1 NOT NULL,
+  "attempt_no" INTEGER DEFAULT 1 NOT NULL,
   "answers" TEXT DEFAULT '{}' NOT NULL,
   "score" REAL,
   "feedback" TEXT DEFAULT '{}' NOT NULL,
@@ -309,10 +308,10 @@ CREATE TABLE IF NOT EXISTS "learning_quizzes" (
   "created_by" TEXT,
   "subject" TEXT NOT NULL,
   "topic" TEXT NOT NULL,
-  "level" REAL DEFAULT 1 NOT NULL,
+  "level" INTEGER DEFAULT 1 NOT NULL,
   "language" TEXT DEFAULT 'English' NOT NULL,
-  "question_count" REAL NOT NULL,
-  "duration_minutes" REAL,
+  "question_count" INTEGER NOT NULL,
+  "duration_minutes" INTEGER,
   "generation_source" TEXT DEFAULT 'academy' NOT NULL,
   "status" TEXT DEFAULT 'ready' NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -327,7 +326,7 @@ CREATE TABLE IF NOT EXISTS "learning_quizzes" (
 CREATE TABLE IF NOT EXISTS "quiz_questions" (
   "id" TEXT NOT NULL,
   "quiz_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "question_text" TEXT NOT NULL,
   "options" TEXT,
   "image_url" TEXT,
@@ -353,10 +352,10 @@ CREATE TABLE IF NOT EXISTS "quiz_attempts" (
   "id" TEXT NOT NULL,
   "quiz_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
-  "attempt_no" REAL NOT NULL,
+  "attempt_no" INTEGER NOT NULL,
   "answers" TEXT DEFAULT '{}' NOT NULL,
   "score" REAL,
-  "correct_count" REAL,
+  "correct_count" INTEGER,
   "feedback" TEXT DEFAULT '{}' NOT NULL,
   "started_at" TEXT,
   "submitted_at" TEXT,
@@ -368,7 +367,7 @@ CREATE TABLE IF NOT EXISTS "learning_topics" (
   "id" TEXT NOT NULL,
   "subject" TEXT NOT NULL,
   "topic" TEXT NOT NULL,
-  "level" REAL,
+  "level" INTEGER,
   "language" TEXT DEFAULT 'English',
   "metadata" TEXT DEFAULT '{}' NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -431,7 +430,7 @@ CREATE TABLE IF NOT EXISTS "course_enrolments" (
 
 -- Source rows at inventory time: 1; source RLS enabled: true
 CREATE TABLE IF NOT EXISTS "site_settings" (
-  "id" REAL DEFAULT 1 NOT NULL,
+  "id" INTEGER DEFAULT 1 NOT NULL,
   "background" TEXT DEFAULT '#f4efe6' NOT NULL,
   "surface" TEXT DEFAULT '#fbf8f2' NOT NULL,
   "accent" TEXT DEFAULT '#c94b16' NOT NULL,
@@ -444,7 +443,7 @@ CREATE TABLE IF NOT EXISTS "site_settings" (
   "background_image_url" TEXT,
   "gradient_start" TEXT DEFAULT '#f4efe6' NOT NULL,
   "gradient_end" TEXT DEFAULT '#fbf8f2' NOT NULL,
-  "gradient_angle" REAL DEFAULT 135 NOT NULL,
+  "gradient_angle" INTEGER DEFAULT 135 NOT NULL,
   "pattern" TEXT DEFAULT 'none' NOT NULL,
   "font_scale" REAL DEFAULT 1 NOT NULL,
   "updated_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -513,8 +512,8 @@ CREATE TABLE IF NOT EXISTS "school_result_components" (
   "component_type" TEXT NOT NULL,
   "max_score" REAL DEFAULT 100 NOT NULL,
   "weight" REAL DEFAULT 0 NOT NULL,
-  "sequence_no" REAL DEFAULT 1 NOT NULL,
-  "term_no" REAL DEFAULT 1 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 1 NOT NULL,
+  "term_no" INTEGER DEFAULT 1 NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
@@ -536,7 +535,7 @@ CREATE TABLE IF NOT EXISTS "school_academic_sessions" (
 CREATE TABLE IF NOT EXISTS "school_terms" (
   "id" TEXT NOT NULL,
   "session_id" TEXT NOT NULL,
-  "term_no" REAL NOT NULL,
+  "term_no" INTEGER NOT NULL,
   "name" TEXT NOT NULL,
   "starts_on" TEXT,
   "ends_on" TEXT,
@@ -553,7 +552,7 @@ CREATE TABLE IF NOT EXISTS "school_subjects" (
   "name" TEXT NOT NULL,
   "code" TEXT,
   "active" INTEGER DEFAULT 1 NOT NULL,
-  "sequence_no" REAL DEFAULT 1 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 1 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -591,7 +590,7 @@ CREATE TABLE IF NOT EXISTS "student_result_entries" (
   "id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "session_id" TEXT NOT NULL,
-  "term_no" REAL NOT NULL,
+  "term_no" INTEGER NOT NULL,
   "class_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
   "subject_id" TEXT NOT NULL,
@@ -610,7 +609,7 @@ CREATE TABLE IF NOT EXISTS "student_term_summaries" (
   "id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "session_id" TEXT NOT NULL,
-  "term_no" REAL NOT NULL,
+  "term_no" INTEGER NOT NULL,
   "class_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
   "subject_id" TEXT NOT NULL,
@@ -633,7 +632,7 @@ CREATE TABLE IF NOT EXISTS "school_result_publications" (
   "id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "session_id" TEXT NOT NULL,
-  "term_no" REAL NOT NULL,
+  "term_no" INTEGER NOT NULL,
   "class_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
   "published_by" TEXT,
@@ -668,7 +667,7 @@ CREATE TABLE IF NOT EXISTS "student_attendance" (
   "recorded_by" TEXT,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "session_id" TEXT,
-  "term_no" REAL,
+  "term_no" INTEGER,
   "class_id" TEXT,
   "checkpoint" TEXT DEFAULT 'arrival',
   "recorded_at" TEXT,
@@ -730,7 +729,7 @@ CREATE TABLE IF NOT EXISTS "school_profile_fields" (
   "field_label" TEXT NOT NULL,
   "enabled" INTEGER DEFAULT 1 NOT NULL,
   "required" INTEGER DEFAULT 0 NOT NULL,
-  "sequence_no" REAL DEFAULT 1 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 1 NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -741,7 +740,7 @@ CREATE TABLE IF NOT EXISTS "school_assessment_traits" (
   "name" TEXT NOT NULL,
   "category" TEXT NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
-  "sequence_no" REAL DEFAULT 1 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 1 NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -750,8 +749,8 @@ CREATE TABLE IF NOT EXISTS "school_assessment_scales" (
   "id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "name" TEXT NOT NULL,
-  "minimum_value" REAL DEFAULT 1 NOT NULL,
-  "maximum_value" REAL DEFAULT 5 NOT NULL,
+  "minimum_value" INTEGER DEFAULT 1 NOT NULL,
+  "maximum_value" INTEGER DEFAULT 5 NOT NULL,
   "labels" TEXT DEFAULT '{}' NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -763,7 +762,7 @@ CREATE TABLE IF NOT EXISTS "student_trait_assessments" (
   "student_id" TEXT NOT NULL,
   "trait_id" TEXT NOT NULL,
   "session_id" TEXT,
-  "term_no" REAL,
+  "term_no" INTEGER,
   "score" REAL,
   "comment" TEXT,
   "assessed_by" TEXT,
@@ -924,7 +923,7 @@ CREATE TABLE IF NOT EXISTS "school_election_positions" (
   "id" TEXT NOT NULL,
   "election_id" TEXT NOT NULL,
   "title" TEXT NOT NULL,
-  "sequence_no" REAL DEFAULT 1 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 1 NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -989,7 +988,7 @@ CREATE TABLE IF NOT EXISTS "cms_content_blocks" (
   "icon_name" TEXT,
   "image_url" TEXT,
   "href" TEXT,
-  "sort_order" REAL DEFAULT 0 NOT NULL,
+  "sort_order" INTEGER DEFAULT 0 NOT NULL,
   "published" INTEGER DEFAULT 1 NOT NULL,
   "updated_by" TEXT,
   "updated_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1014,7 +1013,7 @@ CREATE TABLE IF NOT EXISTS "school_assignment_tasks" (
   "source_type" TEXT,
   "source_id" TEXT,
   "results_visible_immediately" INTEGER DEFAULT 1 NOT NULL,
-  "duration_minutes" REAL,
+  "duration_minutes" INTEGER,
   "randomise_questions" INTEGER DEFAULT 0 NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -1186,7 +1185,7 @@ CREATE TABLE IF NOT EXISTS "teacher_question_banks" (
 CREATE TABLE IF NOT EXISTS "teacher_question_items" (
   "id" TEXT NOT NULL,
   "bank_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "question_text" TEXT NOT NULL,
   "options" TEXT,
   "correct_answer" TEXT,
@@ -1205,8 +1204,8 @@ CREATE TABLE IF NOT EXISTS "school_cbt_exams" (
   "title" TEXT NOT NULL,
   "subject" TEXT NOT NULL,
   "topic" TEXT,
-  "question_count" REAL DEFAULT 10 NOT NULL,
-  "duration_minutes" REAL,
+  "question_count" INTEGER DEFAULT 10 NOT NULL,
+  "duration_minutes" INTEGER,
   "starts_at" TEXT,
   "ends_at" TEXT,
   "one_attempt" INTEGER DEFAULT 1 NOT NULL,
@@ -1224,7 +1223,7 @@ CREATE TABLE IF NOT EXISTS "school_cbt_exams" (
 CREATE TABLE IF NOT EXISTS "school_cbt_exam_questions" (
   "id" TEXT NOT NULL,
   "exam_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "question_text" TEXT NOT NULL,
   "options" TEXT,
   "correct_answer" TEXT,
@@ -1241,10 +1240,10 @@ CREATE TABLE IF NOT EXISTS "school_cbt_attempts" (
   "id" TEXT NOT NULL,
   "exam_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
-  "attempt_no" REAL NOT NULL,
+  "attempt_no" INTEGER NOT NULL,
   "answers" TEXT DEFAULT '{}' NOT NULL,
   "score" REAL,
-  "correct_count" REAL,
+  "correct_count" INTEGER,
   "feedback" TEXT DEFAULT '{}' NOT NULL,
   "started_at" TEXT,
   "submitted_at" TEXT,
@@ -1271,7 +1270,7 @@ CREATE TABLE IF NOT EXISTS "school_curricula" (
   "id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "curriculum_id" TEXT NOT NULL,
-  "priority" REAL DEFAULT 1 NOT NULL,
+  "priority" INTEGER DEFAULT 1 NOT NULL,
   "state_or_region" TEXT,
   "enabled" INTEGER DEFAULT 1 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1313,7 +1312,7 @@ CREATE TABLE IF NOT EXISTS "lms_course_sections" (
   "course_id" TEXT NOT NULL,
   "title" TEXT NOT NULL,
   "description" TEXT,
-  "position" REAL DEFAULT 1 NOT NULL,
+  "position" INTEGER DEFAULT 1 NOT NULL,
   "published" INTEGER DEFAULT 0 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "updated_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1331,8 +1330,8 @@ CREATE TABLE IF NOT EXISTS "lms_lessons" (
   "video_url" TEXT,
   "audio_url" TEXT,
   "document_url" TEXT,
-  "duration_seconds" REAL,
-  "position" REAL DEFAULT 1 NOT NULL,
+  "duration_seconds" INTEGER,
+  "position" INTEGER DEFAULT 1 NOT NULL,
   "is_preview" INTEGER DEFAULT 0 NOT NULL,
   "published" INTEGER DEFAULT 0 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1348,7 +1347,7 @@ CREATE TABLE IF NOT EXISTS "lms_lesson_resources" (
   "title" TEXT NOT NULL,
   "resource_type" TEXT DEFAULT 'link' NOT NULL,
   "url" TEXT NOT NULL,
-  "position" REAL DEFAULT 1 NOT NULL,
+  "position" INTEGER DEFAULT 1 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -1359,7 +1358,7 @@ CREATE TABLE IF NOT EXISTS "lms_lesson_progress" (
   "lesson_id" TEXT NOT NULL,
   "user_id" TEXT NOT NULL,
   "progress_percent" REAL DEFAULT 0 NOT NULL,
-  "last_position_seconds" REAL DEFAULT 0 NOT NULL,
+  "last_position_seconds" INTEGER DEFAULT 0 NOT NULL,
   "completed" INTEGER DEFAULT 0 NOT NULL,
   "first_started_at" TEXT,
   "completed_at" TEXT,
@@ -1383,7 +1382,7 @@ CREATE TABLE IF NOT EXISTS "lms_notes" (
   "lesson_id" TEXT NOT NULL,
   "user_id" TEXT NOT NULL,
   "body" TEXT NOT NULL,
-  "position_seconds" REAL,
+  "position_seconds" INTEGER,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "updated_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
@@ -1415,7 +1414,7 @@ CREATE TABLE IF NOT EXISTS "lms_learning_paths" (
 CREATE TABLE IF NOT EXISTS "lms_learning_path_courses" (
   "learning_path_id" TEXT NOT NULL,
   "course_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("learning_path_id", "course_id")
 );
@@ -1440,7 +1439,7 @@ CREATE TABLE IF NOT EXISTS "lms_course_reviews" (
   "id" TEXT NOT NULL,
   "course_id" TEXT NOT NULL,
   "user_id" TEXT NOT NULL,
-  "rating" REAL NOT NULL,
+  "rating" INTEGER NOT NULL,
   "title" TEXT,
   "body" TEXT,
   "published" INTEGER DEFAULT 1 NOT NULL,
@@ -1494,7 +1493,7 @@ CREATE TABLE IF NOT EXISTS "lms_rubric_criteria" (
   "title" TEXT NOT NULL,
   "description" TEXT,
   "max_points" REAL DEFAULT 1 NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -1545,7 +1544,7 @@ CREATE TABLE IF NOT EXISTS "lms_badges" (
   "name" TEXT NOT NULL,
   "description" TEXT,
   "icon_url" TEXT,
-  "points" REAL DEFAULT 0 NOT NULL,
+  "points" INTEGER DEFAULT 0 NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
@@ -1564,7 +1563,7 @@ CREATE TABLE IF NOT EXISTS "lms_user_badges" (
 CREATE TABLE IF NOT EXISTS "lms_points_ledger" (
   "id" TEXT NOT NULL,
   "user_id" TEXT NOT NULL,
-  "points" REAL NOT NULL,
+  "points" INTEGER NOT NULL,
   "reason" TEXT NOT NULL,
   "reference_type" TEXT,
   "reference_id" TEXT,
@@ -1630,7 +1629,7 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_levels" (
   "stage" TEXT NOT NULL,
   "level_code" TEXT NOT NULL,
   "display_name" TEXT NOT NULL,
-  "sequence_no" REAL DEFAULT 0 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 0 NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -1668,7 +1667,7 @@ CREATE TABLE IF NOT EXISTS "lms_programmes" (
   "title" TEXT NOT NULL,
   "programme_code" TEXT NOT NULL,
   "credential_level" TEXT,
-  "duration_weeks" REAL,
+  "duration_weeks" INTEGER,
   "duration_hours" REAL,
   "scheduled_hours_per_week" REAL,
   "delivery_mode" TEXT DEFAULT 'self_paced' NOT NULL,
@@ -1697,7 +1696,7 @@ CREATE TABLE IF NOT EXISTS "lms_programmes" (
 CREATE TABLE IF NOT EXISTS "lms_programme_topics" (
   "programme_id" TEXT NOT NULL,
   "topic_id" TEXT NOT NULL,
-  "sequence_no" REAL DEFAULT 0 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 0 NOT NULL,
   "required" INTEGER DEFAULT 1 NOT NULL,
   "planned_hours" REAL,
   PRIMARY KEY ("programme_id", "topic_id")
@@ -1715,8 +1714,8 @@ CREATE TABLE IF NOT EXISTS "lms_programme_resources" (
   "generation_status" TEXT DEFAULT 'planned' NOT NULL,
   "canonical_content_ref" TEXT,
   "storage_object_path" TEXT,
-  "duration_minutes" REAL,
-  "sequence_no" REAL DEFAULT 0 NOT NULL,
+  "duration_minutes" INTEGER,
+  "sequence_no" INTEGER DEFAULT 0 NOT NULL,
   "curriculum_alignment" TEXT DEFAULT '{}' NOT NULL,
   "brand_metadata" TEXT DEFAULT '{"brand": "Phenom Best Academy", "watermark": "Phenom Best Academy", "core_label": "Phenom Best Core"}' NOT NULL,
   "updated_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1727,11 +1726,11 @@ CREATE TABLE IF NOT EXISTS "lms_programme_resources" (
 CREATE TABLE IF NOT EXISTS "lms_programme_schedules" (
   "id" TEXT NOT NULL,
   "programme_id" TEXT,
-  "week_no" REAL NOT NULL,
-  "day_no" REAL,
+  "week_no" INTEGER NOT NULL,
+  "day_no" INTEGER,
   "planned_hours" REAL,
-  "planned_minutes" REAL,
-  "lesson_count" REAL DEFAULT 0 NOT NULL,
+  "planned_minutes" INTEGER,
+  "lesson_count" INTEGER DEFAULT 0 NOT NULL,
   "start_date" TEXT,
   "end_date" TEXT,
   "schedule_metadata" TEXT DEFAULT '{}' NOT NULL,
@@ -1767,7 +1766,7 @@ CREATE TABLE IF NOT EXISTS "lms_cpd_programmes" (
   "programme_code" TEXT NOT NULL,
   "level" TEXT,
   "credential_type" TEXT DEFAULT 'certificate' NOT NULL,
-  "duration_weeks" REAL,
+  "duration_weeks" INTEGER,
   "duration_hours" REAL,
   "delivery_mode" TEXT DEFAULT 'self_paced' NOT NULL,
   "status" TEXT DEFAULT 'planned' NOT NULL,
@@ -1775,7 +1774,7 @@ CREATE TABLE IF NOT EXISTS "lms_cpd_programmes" (
   "official_source" TEXT,
   "scope_note" TEXT DEFAULT '' NOT NULL,
   "metadata" TEXT DEFAULT '{}' NOT NULL,
-  "duration_months" REAL,
+  "duration_months" INTEGER,
   "credential_label" TEXT,
   "authority_policy_code" TEXT DEFAULT 'ACADEMY-DIRECT',
   "progression_model" TEXT DEFAULT 'sequential_levels',
@@ -1788,7 +1787,7 @@ CREATE TABLE IF NOT EXISTS "lms_cpd_programme_resources" (
   "programme_id" TEXT,
   "resource_type" TEXT NOT NULL,
   "title" TEXT NOT NULL,
-  "sequence_no" REAL DEFAULT 0 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 0 NOT NULL,
   "generation_status" TEXT DEFAULT 'planned' NOT NULL,
   "storage_object_path" TEXT,
   "brand_metadata" TEXT DEFAULT '{"brand": "Phenom Best Academy", "watermark": "Phenom Best Academy", "core_label": "Phenom Best Core"}' NOT NULL,
@@ -1839,12 +1838,12 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_ingestion_runs" (
   "started_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "completed_at" TEXT,
   "status" TEXT DEFAULT 'queued' NOT NULL,
-  "extracted_levels" REAL DEFAULT 0 NOT NULL,
-  "extracted_subjects" REAL DEFAULT 0 NOT NULL,
-  "extracted_topics" REAL DEFAULT 0 NOT NULL,
-  "extracted_outcomes" REAL DEFAULT 0 NOT NULL,
-  "extracted_expectations" REAL DEFAULT 0 NOT NULL,
-  "verified_topics" REAL DEFAULT 0 NOT NULL,
+  "extracted_levels" INTEGER DEFAULT 0 NOT NULL,
+  "extracted_subjects" INTEGER DEFAULT 0 NOT NULL,
+  "extracted_topics" INTEGER DEFAULT 0 NOT NULL,
+  "extracted_outcomes" INTEGER DEFAULT 0 NOT NULL,
+  "extracted_expectations" INTEGER DEFAULT 0 NOT NULL,
+  "verified_topics" INTEGER DEFAULT 0 NOT NULL,
   "warnings" TEXT DEFAULT '[]' NOT NULL,
   "metadata" TEXT DEFAULT '{}' NOT NULL,
   PRIMARY KEY ("id")
@@ -1858,7 +1857,7 @@ CREATE TABLE IF NOT EXISTS "lms_education_domains" (
   "description" TEXT DEFAULT '' NOT NULL,
   "education_stage" TEXT DEFAULT 'all' NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
-  "sequence_no" REAL DEFAULT 0 NOT NULL,
+  "sequence_no" INTEGER DEFAULT 0 NOT NULL,
   PRIMARY KEY ("id")
 );
 
@@ -1903,7 +1902,7 @@ CREATE TABLE IF NOT EXISTS "lms_programme_tracks" (
   "category_slug" TEXT NOT NULL,
   "subject_id" TEXT,
   "credential_label" TEXT NOT NULL,
-  "nominal_duration_months" REAL NOT NULL,
+  "nominal_duration_months" INTEGER NOT NULL,
   "delivery_mode" TEXT DEFAULT 'online' NOT NULL,
   "authority_policy_code" TEXT DEFAULT 'ACADEMY-DIRECT' NOT NULL,
   "status" TEXT DEFAULT 'planned' NOT NULL,
@@ -1921,10 +1920,10 @@ CREATE TABLE IF NOT EXISTS "lms_programme_tracks" (
 CREATE TABLE IF NOT EXISTS "lms_programme_levels" (
   "id" TEXT NOT NULL,
   "track_id" TEXT NOT NULL,
-  "level_no" REAL NOT NULL,
+  "level_no" INTEGER NOT NULL,
   "level_title" TEXT NOT NULL,
-  "duration_months" REAL NOT NULL,
-  "sequence_no" REAL NOT NULL,
+  "duration_months" INTEGER NOT NULL,
+  "sequence_no" INTEGER NOT NULL,
   "unlock_rule" TEXT DEFAULT 'previous_level_completed' NOT NULL,
   "status" TEXT DEFAULT 'planned' NOT NULL,
   "active" INTEGER DEFAULT 1 NOT NULL,
@@ -1973,7 +1972,7 @@ CREATE TABLE IF NOT EXISTS "lms_tertiary_programme_catalogue" (
   "authority_policy_code" TEXT DEFAULT 'ACADEMY-APPROVED' NOT NULL,
   "awarding_body_rule" TEXT DEFAULT 'external_awarding_body_required' NOT NULL,
   "practical_requirement" TEXT DEFAULT 'to_be_assessed' NOT NULL,
-  "duration_months" REAL,
+  "duration_months" INTEGER,
   "active" INTEGER DEFAULT 1 NOT NULL,
   "metadata" TEXT DEFAULT '{}' NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -2038,7 +2037,7 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_resource_packs" (
   "content" TEXT NOT NULL,
   "locale" TEXT DEFAULT 'en-NG' NOT NULL,
   "support_locale" TEXT DEFAULT 'en-NG' NOT NULL,
-  "sequence_no" REAL NOT NULL,
+  "sequence_no" INTEGER NOT NULL,
   "status" TEXT DEFAULT 'ready' NOT NULL,
   "curriculum_alignment" TEXT DEFAULT '{}' NOT NULL,
   "brand_metadata" TEXT DEFAULT '{"brand": "Phenom Best Academy", "engine": "Phenom Best Core"}' NOT NULL,
@@ -2054,7 +2053,7 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_content_jobs" (
   "topic_id" TEXT,
   "job_type" TEXT NOT NULL,
   "status" TEXT DEFAULT 'queued' NOT NULL,
-  "priority" REAL DEFAULT 50 NOT NULL,
+  "priority" INTEGER DEFAULT 50 NOT NULL,
   "requested_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "completed_at" TEXT,
   "error_message" TEXT,
@@ -2103,7 +2102,7 @@ CREATE TABLE IF NOT EXISTS "student_class_history" (
   "class_id" TEXT NOT NULL,
   "previous_class_id" TEXT,
   "session_id" TEXT,
-  "term_no" REAL,
+  "term_no" INTEGER,
   "action" TEXT NOT NULL,
   "effective_on" TEXT NOT NULL,
   "reason" TEXT,
@@ -2127,7 +2126,7 @@ CREATE TABLE IF NOT EXISTS "result_deletion_audit" (
 CREATE TABLE IF NOT EXISTS "school_assignment_items" (
   "id" TEXT NOT NULL,
   "task_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "question_text" TEXT NOT NULL,
   "options" TEXT DEFAULT '[]' NOT NULL,
   "correct_answer" TEXT NOT NULL,
@@ -2212,9 +2211,9 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_assets" (
   "storage_bucket" TEXT,
   "storage_path" TEXT,
   "mime_type" TEXT,
-  "file_size" REAL,
+  "file_size" INTEGER,
   "content_hash" TEXT,
-  "version" REAL DEFAULT 1 NOT NULL,
+  "version" INTEGER DEFAULT 1 NOT NULL,
   "visibility" TEXT DEFAULT 'restricted' NOT NULL,
   "downloadable" INTEGER DEFAULT 0 NOT NULL,
   "viewable" INTEGER DEFAULT 1 NOT NULL,
@@ -2235,10 +2234,10 @@ CREATE TABLE IF NOT EXISTS "lms_curriculum_asset_jobs" (
   "id" TEXT NOT NULL,
   "asset_id" TEXT NOT NULL,
   "trigger_type" TEXT DEFAULT 'background' NOT NULL,
-  "priority" REAL DEFAULT 50 NOT NULL,
+  "priority" INTEGER DEFAULT 50 NOT NULL,
   "status" TEXT DEFAULT 'queued' NOT NULL,
-  "attempts" REAL DEFAULT 0 NOT NULL,
-  "max_attempts" REAL DEFAULT 3 NOT NULL,
+  "attempts" INTEGER DEFAULT 0 NOT NULL,
+  "max_attempts" INTEGER DEFAULT 3 NOT NULL,
   "requested_by" TEXT,
   "requested_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "started_at" TEXT,
@@ -2429,10 +2428,10 @@ CREATE TABLE IF NOT EXISTS "school_cbt_exam_attempts" (
   "assignment_id" TEXT NOT NULL,
   "school_id" TEXT NOT NULL,
   "student_id" TEXT NOT NULL,
-  "attempt_no" REAL DEFAULT 1 NOT NULL,
+  "attempt_no" INTEGER DEFAULT 1 NOT NULL,
   "answers" TEXT DEFAULT '{}' NOT NULL,
   "score" REAL,
-  "correct_count" REAL,
+  "correct_count" INTEGER,
   "total_marks" REAL,
   "started_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   "submitted_at" TEXT,
@@ -2451,7 +2450,7 @@ CREATE TABLE IF NOT EXISTS "school_cbt_exam_media" (
   "storage_path" TEXT NOT NULL,
   "media_type" TEXT NOT NULL,
   "mime_type" TEXT,
-  "file_size" REAL,
+  "file_size" INTEGER,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
   PRIMARY KEY ("id")
 );
@@ -2472,7 +2471,7 @@ CREATE TABLE IF NOT EXISTS "school_cbt_question_resources" (
 CREATE TABLE IF NOT EXISTS "school_cbt_exam_questions_student" (
   "id" TEXT NOT NULL,
   "exam_id" TEXT NOT NULL,
-  "position" REAL NOT NULL,
+  "position" INTEGER NOT NULL,
   "question_text" TEXT NOT NULL,
   "options" TEXT,
   "image_url" TEXT,
@@ -2483,7 +2482,7 @@ CREATE TABLE IF NOT EXISTS "school_cbt_exam_questions_student" (
 
 -- Source rows at inventory time: 19; source RLS enabled: true
 CREATE TABLE IF NOT EXISTS "lms_canonical_curriculum_registry" (
-  "canonical_order" REAL NOT NULL,
+  "canonical_order" INTEGER NOT NULL,
   "curriculum_id" TEXT NOT NULL,
   "canonical_name" TEXT NOT NULL,
   "jurisdiction" TEXT NOT NULL,
@@ -2504,7 +2503,7 @@ CREATE TABLE IF NOT EXISTS "cloudflare_migration_manifest" (
   "source_id" TEXT NOT NULL,
   "r2_key" TEXT NOT NULL,
   "sha256" TEXT,
-  "bytes" REAL,
+  "bytes" INTEGER,
   "verified" INTEGER DEFAULT 0 NOT NULL,
   "source_deleted" INTEGER DEFAULT 0 NOT NULL,
   "created_at" TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
