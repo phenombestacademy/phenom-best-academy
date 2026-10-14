@@ -98,7 +98,7 @@ function SchoolPerformancePage() {
           ? db.from('school_subjects').select('id,name').eq('school_id', membership.school.id).in('id', subjectIds)
           : Promise.resolve({ data: [], error: null }),
         componentIds.length
-          ? db.from('school_result_components').select('id,name,component_type,max_score,weight,sequence_no').eq('school_id', membership.school.id).in('id', componentIds)
+          ? db.from('school_result_components').select('id,name,component_type,max_score,weight,sequence_no').eq('school_id', membership.school.id).eq('term_no', selectedTerm.term_no).eq('active', true).in('id', componentIds)
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (subjectResult.error) throw subjectResult.error;
