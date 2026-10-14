@@ -603,6 +603,55 @@ begin
 end;
 $$;
 
+create or replace function public.school_cbt_list_essay_responses(p_exam uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  e public.school_cbt_exams%rowtype;
+  uid uuid := auth.uid();
+  result jsonb;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  select * into e from public.school_cbt_exams where id = p_exam;
+  if not found then raise exception 'Exam not found'; end if;
+  if not (
+    public.is_super_admin()
+    or public.is_school_member(e.school_id, array['school_admin'])
+    or e.teacher_id = uid
+  ) then raise exception 'Not authorised'; end if;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'attempt_id', attempt.id,
+        'student_id', attempt.student_id,
+        'question_id', question.id,
+        'question_text', question.question_text,
+        'answer', attempt.answers ->> question.id::text,
+        'max_marks', question.marks,
+        'marks_awarded', mark.marks_awarded,
+        'feedback', mark.feedback,
+        'marked_by', mark.marked_by
+      ) order by attempt.started_at, question.position
+    ),
+    '[]'::jsonb
+  )
+  into result
+  from public.school_cbt_exam_attempts attempt
+  join public.school_cbt_exam_questions question
+    on question.exam_id = attempt.exam_id and question.options is null
+  left join public.school_cbt_essay_marks mark
+    on mark.attempt_id = attempt.id and mark.question_id = question.id
+  where attempt.exam_id = p_exam
+    and attempt.status in ('submitted', 'graded');
+
+  return result;
+end;
+$$;
+
 revoke all on function public.school_cbt_get_my_result(uuid) from public, anon;
 grant execute on function public.school_cbt_get_my_result(uuid) to authenticated;
 revoke all on function public.school_report_student_profile(uuid, uuid) from public, anon;
