@@ -63,10 +63,10 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
       .select('id,school_id,class_id,teacher_id,title,subject,topic,question_count,duration_minutes,starts_at,ends_at,one_attempt,allow_redo,results_visible_to_students,status,instructions')
       .eq('school_id', context.school.id)
       .in('id', examIds)
-      .in('status', ['scheduled', 'active'])
       .order('starts_at');
     if (examError) throw examError;
-    setExams((data || []) as Exam[]);
+    const assignedExams = (data || []) as Exam[];
+    setExams(assignedExams.filter(exam => ['scheduled', 'active'].includes(exam.status) || exam.results_visible_to_students));
   }, [db, context.school.id]);
   useEffect(()=>{refresh().catch(e=>setError(e instanceof Error?e.message:'Could not load assigned exams.'));},[refresh]);
   useEffect(()=>{
@@ -96,6 +96,32 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
     })();
     return ()=>{live=false;};
   },[deadline,remaining,attemptId,result,db,answers]);
+  async function openReleasedResult(exam: Exam) {
+    if (!db) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const { data, error: e } = await db.rpc('school_cbt_get_my_result', { p_exam: exam.id });
+      if (e) throw e;
+      const payload = data as { available: boolean; message?: string; score?: number; total_marks?: number; correct_count?: number };
+      if (!payload.available) {
+        setNotice(payload.message || 'No released result is available yet.');
+        return;
+      }
+      setSelected(exam);
+      setAttemptId('');
+      setResult({
+        score: Number(payload.score ?? 0),
+        total_marks: Number(payload.total_marks ?? 0),
+        correct_count: Number(payload.correct_count ?? 0),
+      });
+      setNotice('Your school has released this result.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load the released result.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function start(exam:Exam) {
     if(!db) return; setBusy(true);setError('');setNotice('');setResult(null);
     try {
@@ -121,7 +147,7 @@ function StudentCbtWorkspace({ context }: { context: SchoolContext }) {
   return <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
     <header className="rounded-3xl bg-navy-deep p-7 text-cream"><p className="text-xs uppercase tracking-[.18em] text-gold">Phenom Best LMS · Student CBT</p><h1 className="mt-3 text-4xl font-bold">My examinations</h1><p className="mt-3 text-sm text-cream/80">{context.school.name}</p></header>
     {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}{notice&&<p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-green-900">{notice}</p>}
-    {!selected && <section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Assigned exams</h2><div className="mt-4 space-y-3">{exams.map(e=><article key={e.id} className="rounded-xl border p-4"><h3 className="font-semibold">{e.title}</h3><p className="text-sm text-muted">{e.subject} · {e.duration_minutes||'—'} minutes · Opens {e.starts_at?new Date(e.starts_at).toLocaleString():'as scheduled'}</p><p className="mt-2 text-sm">{e.instructions}</p><button disabled={busy} onClick={()=>start(e)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-cream disabled:opacity-50">Start / Resume exam</button></article>)}{!exams.length&&<p>No currently scheduled examinations are available to your account.</p>}</div></section>}
+    {!selected && <section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Assigned exams</h2><div className="mt-4 space-y-3">{exams.map(e=><article key={e.id} className="rounded-xl border p-4"><h3 className="font-semibold">{e.title}</h3><p className="text-sm text-muted">{e.subject} · {e.duration_minutes||'—'} minutes · Opens {e.starts_at?new Date(e.starts_at).toLocaleString():'as scheduled'}</p><p className="mt-2 text-sm">{e.instructions}</p><button disabled={busy} onClick={()=>e.results_visible_to_students ? openReleasedResult(e) : start(e)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-cream disabled:opacity-50">{e.results_visible_to_students ? 'View released result' : 'Start / Resume exam'}</button></article>)}{!exams.length&&<p>No currently scheduled examinations are available to your account.</p>}</div></section>}
     {selected&&attemptId&&<section className="mt-6 rounded-2xl border p-5"><div className="sticky top-2 z-10 flex items-center justify-between rounded-xl bg-cream p-3"><div><h2 className="font-semibold">{selected.title}</h2><p className="text-xs text-muted">Autosaves every 15 seconds</p></div><strong aria-live="polite" className="text-xl tabular-nums">{clock}</strong></div><div className="mt-5 space-y-5">{questions.map((q,i)=><article key={q.id} className="rounded-xl border p-4"><p className="font-semibold">{i+1}. {q.question_text} <span className="ml-2 text-xs font-normal text-muted">({q.marks} marks)</span></p>{q.options && Object.keys(q.options).length > 0 ? <div className="mt-3 space-y-2">{Object.entries(q.options).map(([key,value])=><label key={key} className="flex cursor-pointer items-start gap-2 rounded-lg border p-3"><input type="radio" name={q.id} checked={answers[q.id]===key} onChange={()=>setAnswers(old=>({...old,[q.id]:key}))}/><span><b>{key}.</b> {value}</span></label>)}</div> : <textarea aria-label="Essay answer" className="mt-3 min-h-32 w-full rounded-lg border p-3" placeholder="Type your answer here…" value={answers[q.id] || ''} onChange={e=>setAnswers(old=>({...old,[q.id]:e.target.value}))}/>}</article>)}</div><button disabled={busy} onClick={()=>{if(window.confirm('Submit your answers now? You cannot edit them afterwards.'))submit();}} className="mt-6 rounded-xl bg-navy-deep px-5 py-3 font-semibold text-cream disabled:opacity-50">{busy?'Submitting…':'Submit examination'}</button></section>}
     {result&&selected&&<section className="mt-6 rounded-2xl border p-5"><h2 className="text-2xl font-semibold">Submission received</h2>{selected.results_visible_to_students?<p className="mt-2">Score: {result.score} / {result.total_marks} ({result.correct_count} correct answers)</p>:<p className="mt-2">Your answers have been recorded. Results will be shown when your school releases them.</p>}<button onClick={()=>{setSelected(null);setQuestions([]);setAnswers({});setResult(null);refresh().catch(()=>{});}} className="mt-4 rounded-lg border px-4 py-2">Return to exams</button></section>}
   </main>;
