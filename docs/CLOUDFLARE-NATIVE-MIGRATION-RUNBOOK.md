@@ -37,7 +37,7 @@ The provisioning workflow created the following isolated resources in the Cloudf
 - Workers.dev subdomain registered: `phenombestacademy-lms`
 - Migration-control Worker deployment reported by Wrangler: `https://phenom-best-migration-control.phenombestacademy-lms.workers.dev`
 
-The 171-table D1 catalogue is only a structural scaffold. It does not yet include full PostgreSQL foreign-key/unique/check constraints, indexes, views, triggers, stored functions, extensions, RLS equivalents, or authentication. No Supabase rows or Storage objects have been copied. The current deployment has no `MIGRATION_ADMIN_TOKEN` secret, so migration-admin routes fail closed (503); only the minimal health route is intended to be public. The first automated HTTPS health probe encountered a TLS handshake error after deployment; treat the endpoint health as **unverified** until the retrying workflow passes. This is a staging control plane, not the application backend and not a production cutover.
+The 171-table D1 catalogue is only a structural scaffold. It does not yet include full PostgreSQL foreign-key/unique/check constraints, indexes, views, triggers, stored functions, extensions, RLS equivalents, or authentication. No Supabase rows or Storage objects have been copied. The current deployment has no `MIGRATION_ADMIN_TOKEN` secret, so migration-admin routes fail closed (503); only the minimal health route is intended to be public. The automated HTTPS health check passed after one retry for workers.dev TLS/routing propagation: `{"ok":true,"service":"phenom-migration-control"}`. This is a staging control plane, not the application backend and not a production cutover.
 
 ## Execution phases
 
