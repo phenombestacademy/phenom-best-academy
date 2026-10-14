@@ -18,9 +18,9 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: npm run build
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm run build
         env:
           # Build must not need production secrets; use placeholders only if Vite validates these at build time.
           VITE_SUPABASE_URL: https://example.supabase.co
