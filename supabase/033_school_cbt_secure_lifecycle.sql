@@ -20,7 +20,7 @@ $$;
 
 -- Prevent direct browser writes from bypassing the server-side publish lifecycle.
 create or replace function public.school_cbt_guard_exam_status()
-returns trigger language plpgsql set search_path=public as $
+returns trigger language plpgsql set search_path=public as $$
 begin
  if new.status is distinct from old.status and new.status in ('scheduled','active')
     and current_user not in ('postgres','supabase_admin') then
@@ -34,7 +34,7 @@ create trigger school_cbt_guard_exam_status before update of status on public.sc
 for each row execute function public.school_cbt_guard_exam_status();
 
 create or replace function public.school_cbt_guard_question_changes()
-returns trigger language plpgsql security definer set search_path=public as $
+returns trigger language plpgsql security definer set search_path=public as $$
 declare exam_uuid uuid; exam_status text;
 begin
  exam_uuid:=case when tg_op='DELETE' then old.exam_id else new.exam_id end;
