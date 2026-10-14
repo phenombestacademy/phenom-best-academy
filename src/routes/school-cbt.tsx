@@ -18,7 +18,8 @@ type Question = {
   explanation: string | null; marks: number; resource_notes: string | null;
 };
 type StudentQuestion = { id: string; position: number; question_text: string; options: Record<string, string> | null; marks: number };
-type EssayResponse = { attempt_id: string; student_id: string; question_id: string; question_text: string; answer: string | null; max_marks: number; marks_awarded: number | null; feedback: string | null; marked_by: string | null };
+type EssayMarkAudit = { id: string; question_id: string; previous_marks: number | null; previous_feedback: string | null; new_marks: number; new_feedback: string | null; changed_by: string; changed_at: string };
+type EssayResponse = { attempt_id: string; student_id: string; question_id: string; question_text: string; answer: string | null; max_marks: number; marks_awarded: number | null; feedback: string | null; marked_by: string | null; history?: EssayMarkAudit[] };
 const emptyQuestion = (examId: string, position: number): Question => ({
   exam_id: examId, position, question_text: '', options: { A: '', B: '', C: '', D: '' },
   correct_answer: 'A', explanation: null, marks: 1, resource_notes: null,
@@ -219,6 +220,21 @@ function SchoolCbtPage() {
       setBusy(false);
     }
   }, [db, chosen]);
+
+  const loadEssayHistory = useCallback(async (response: EssayResponse) => {
+    if (!db) return;
+    setBusy(true); setError('');
+    try {
+      const { data, error: e } = await db.rpc('school_cbt_list_essay_mark_audit', { p_attempt: response.attempt_id });
+      if (e) throw e;
+      const history = (data || []) as EssayMarkAudit[];
+      setEssayResponses(rows => rows.map(row => row.attempt_id === response.attempt_id && row.question_id === response.question_id ? { ...row, history } : row));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load mark history.');
+    } finally {
+      setBusy(false);
+    }
+  }, [db]);
 
   useEffect(() => { if (selected) loadQuestions(selected).catch(e => setError(e instanceof Error ? e.message : 'Could not load questions.')); else setQuestions([]); }, [selected, loadQuestions]);
 
@@ -437,7 +453,11 @@ function SchoolCbtPage() {
               <label className="mt-3 block text-sm font-semibold">Feedback
                 <textarea maxLength={4000} value={response.feedback || ''} onChange={event => setEssayResponses(rows => rows.map(row => row.attempt_id === response.attempt_id && row.question_id === response.question_id ? { ...row, feedback: event.target.value } : row))} className="mt-1 w-full rounded-lg border p-2"/>
               </label>
-              <button disabled={busy || response.marks_awarded === null} onClick={() => saveEssayMark(response)} className="mt-3 rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save mark</button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button disabled={busy || response.marks_awarded === null} onClick={() => saveEssayMark(response)} className="rounded-lg bg-navy-deep px-4 py-2 text-sm font-semibold text-cream disabled:opacity-50">Save mark</button>
+                <button disabled={busy} onClick={() => loadEssayHistory(response)} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-50">View mark history</button>
+              </div>
+              {response.history ? <div className="mt-3 rounded-lg border border-line p-3 text-sm"><h6 className="font-semibold">Mark history</h6>{response.history.length ? <ul className="mt-2 space-y-2">{response.history.map(item => <li key={item.id} className="border-t border-line pt-2"><p>{item.previous_marks === null ? 'Initial mark' : `Changed from ${item.previous_marks}`} → <strong>{item.new_marks}</strong> · {new Date(item.changed_at).toLocaleString('en-GB')}</p>{item.previous_feedback ? <p>Previous feedback: {item.previous_feedback}</p> : null}{item.new_feedback ? <p>New feedback: {item.new_feedback}</p> : null}<p className="text-xs text-muted">Changed by user ID: {item.changed_by}</p></li>)}</ul> : <p className="mt-2 text-muted">No mark history is recorded.</p>}</div> : null}
             </article>)}
           </section>}
           <p className="mt-3 text-xs text-muted">Publishing, attempt handling, marking and result visibility are enforced by server-side RPCs. Keep this pull request in draft until staging security tests pass.</p>
