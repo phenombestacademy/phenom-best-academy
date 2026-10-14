@@ -703,6 +703,52 @@ begin
 end;
 $$;
 
+create or replace function public.school_cbt_list_essay_mark_audit(p_attempt uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  t public.school_cbt_exam_attempts%rowtype;
+  e public.school_cbt_exams%rowtype;
+  uid uuid := auth.uid();
+  result jsonb;
+begin
+  if uid is null then raise exception 'Authentication required'; end if;
+  select * into t from public.school_cbt_exam_attempts where id = p_attempt;
+  if not found then raise exception 'Attempt not found'; end if;
+  select * into e from public.school_cbt_exams where id = t.exam_id;
+  if not found then raise exception 'Exam not found'; end if;
+  if not (
+    public.is_super_admin()
+    or public.is_school_member(e.school_id, array['school_admin'])
+    or (e.teacher_id = uid and public.is_assigned_teacher_for_subject_name(e.class_id, e.subject))
+  ) then raise exception 'Not authorised'; end if;
+
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', audit.id,
+        'question_id', audit.question_id,
+        'previous_marks', audit.previous_marks,
+        'previous_feedback', audit.previous_feedback,
+        'new_marks', audit.new_marks,
+        'new_feedback', audit.new_feedback,
+        'changed_by', audit.changed_by,
+        'changed_at', audit.changed_at
+      ) order by audit.changed_at desc
+    ),
+    '[]'::jsonb
+  )
+  into result
+  from public.school_cbt_essay_mark_audit audit
+  where audit.attempt_id = t.id and audit.school_id = e.school_id;
+
+  return result;
+end;
+$$;
+
 create or replace function public.school_cbt_list_essay_responses(p_exam uuid)
 returns jsonb
 language plpgsql
@@ -758,6 +804,8 @@ revoke all on function public.school_report_student_profile(uuid, uuid) from pub
 grant execute on function public.school_report_student_profile(uuid, uuid) to authenticated;
 revoke all on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) from public, anon;
 grant execute on function public.school_cbt_mark_essay(uuid, uuid, numeric, text) to authenticated;
+revoke all on function public.school_cbt_list_essay_mark_audit(uuid) from public, anon;
+grant execute on function public.school_cbt_list_essay_mark_audit(uuid) to authenticated;
 revoke all on function public.school_cbt_list_essay_responses(uuid) from public, anon;
 grant execute on function public.school_cbt_list_essay_responses(uuid) to authenticated;
 revoke all on function public.school_cbt_save_answers(uuid, jsonb) from public, anon;
