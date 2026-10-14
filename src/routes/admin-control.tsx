@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { AlertTriangle, BarChart3, ClipboardList, CreditCard, ShieldCheck, Users, KeyRound } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getSupabase } from '@/lib/cms';
 import { getMyProfile, type Profile } from '@/lib/platform';
 export const Route = createFileRoute('/admin-control')({ component: AdminControlPage });
