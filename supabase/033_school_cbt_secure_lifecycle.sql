@@ -61,7 +61,10 @@ begin
   end if;
   if t.status='in_progress' then
    perform public.school_cbt_submit_attempt(t.id);
-   if e.one_attempt or not e.allow_redo then raise exception 'Your permitted attempt has expired'; end if;
+   if e.one_attempt or not e.allow_redo then
+    select * into t from public.school_cbt_exam_attempts where id=t.id;
+    return jsonb_build_object('attempt_id',t.id,'status','expired_submitted','score',t.score,'total_marks',t.total_marks,'correct_count',t.correct_count);
+   end if;
   elsif e.one_attempt or not e.allow_redo then raise exception 'Your permitted attempt has already been used'; end if;
  end if;
  select coalesce(max(attempt_no),0)+1 into n from public.school_cbt_exam_attempts where exam_id=p_exam and student_id=uid;
