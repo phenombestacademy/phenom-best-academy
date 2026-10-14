@@ -1,28 +1,47 @@
 # Cloudflare D1 migrations
 
-This directory contains the migration-control foundation for the Supabase exit.
+This directory contains the migration-control foundation and an initial application-table catalogue for the Supabase exit.
 
-## Current migration
+## Migration files
 
 - `0001_migration_control.sql` creates restartable migration-run records and record/object manifests.
+- `0002_application_table_catalogue.sql` creates basic SQLite-compatible table/column scaffolds for all 171 public Supabase tables observed on 14 October 2026.
 - The object manifest prevents a source object from being marked deleted before the destination has been verified.
 - The record manifest records source/destination identifiers and hashes so data batches can be reconciled.
 
-## Apply only after provisioning a dedicated target D1 database
+## Important limitation of 0002
 
-From this directory, after the D1 database has been created in the correct Cloudflare account and its name/ID confirmed:
+The 171-table catalogue preserves table names, column names, basic SQLite affinities, primary keys, simple defaults and NOT NULL markers. It is not a complete PostgreSQL-to-SQLite conversion. The following remain to be ported and tested: foreign keys, unique/check/exclusion constraints, indexes, views, triggers, stored functions, generated expressions, extension dependencies, sequences, grants, RLS policies, auth schema references, and complex defaults. Some data types are represented using SQLite TEXT or REAL affinity. Do not treat this as production-ready until schema parity tests pass.
+
+The row counts in SQL comments are an inventory snapshot only. No rows have been copied by these schema files.
+
+## Provision resources
+
+Review the account and existing resources first, then run `scripts/migration/provision-cloudflare-parity.sh` after authenticating with Wrangler. The script creates one D1 database, four mapped R2 buckets, one queue and one dead-letter queue. It does not transfer data and may report conflicts if resources already exist.
+
+## Apply to a dedicated target D1 database
+
+From the repository root, after confirming the Cloudflare account and target database name:
 
 ```sh
-npx wrangler d1 execute <TARGET_D1_DATABASE_NAME> --remote --file=./migrations/0001_migration_control.sql
+npx wrangler d1 execute phenom-best-lms --local --file=cloudflare/migrations/0001_migration_control.sql
+npx wrangler d1 execute phenom-best-lms --local --file=cloudflare/migrations/0002_application_table_catalogue.sql
 ```
 
-For local development, use the same command with `--local` first. Do not apply to a production database until the account, database name and environment have been checked.
+Only after local tests and schema review, and after the D1 database has been created in the correct Cloudflare account, apply remotely:
 
-The current repository does not yet contain a real D1 database ID or binding. Do not add a fabricated ID to `wrangler.jsonc`. The live migration manifest in the source Supabase project is empty; this D1 manifest is not proof of migrated data until a real migration run writes and verifies entries.
+```sh
+npx wrangler d1 execute phenom-best-lms --remote --file=cloudflare/migrations/0001_migration_control.sql
+npx wrangler d1 execute phenom-best-lms --remote --file=cloudflare/migrations/0002_application_table_catalogue.sql
+```
+
+The repository does not contain a verified D1 database ID/binding. Do not invent one or point a Worker at a production resource before confirming the target account and database.
 
 ## Verification before any source deletion
 
-1. Query the manifest and reconcile the expected record/object counts.
-2. Verify SHA-256 and byte count for every object.
-3. Verify record hashes and foreign-key relationships for each completed batch.
-4. Keep `source_deleted = 0` until a separately approved cleanup phase after cutover.
+1. Export and import data in bounded, resumable batches.
+2. Query the manifests and reconcile expected row/object counts.
+3. Verify SHA-256 and byte count for every object.
+4. Verify record hashes and foreign-key relationships for each completed batch.
+5. Test authentication, role permissions, tenant isolation and all critical LMS journeys.
+6. Keep `source_deleted = 0` until a separately approved cleanup phase after cutover.
