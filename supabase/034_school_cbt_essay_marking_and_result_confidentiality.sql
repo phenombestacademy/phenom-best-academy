@@ -18,6 +18,25 @@ create table if not exists public.school_cbt_essay_marks (
 alter table public.school_cbt_essay_marks enable row level security;
 revoke all on table public.school_cbt_essay_marks from public, anon, authenticated;
 
+-- All access to attempts must go through the validated SECURITY DEFINER lifecycle RPCs.
+-- The client must not be able to read scores early or directly alter answers/status/marks.
+revoke all on table public.school_cbt_exam_attempts from public, anon, authenticated;
+
+create table if not exists public.school_cbt_essay_mark_audit (
+  id uuid primary key default gen_random_uuid(),
+  attempt_id uuid not null references public.school_cbt_exam_attempts(id) on delete cascade,
+  question_id uuid not null references public.school_cbt_exam_questions(id) on delete cascade,
+  school_id uuid not null,
+  previous_marks numeric,
+  previous_feedback text,
+  new_marks numeric not null,
+  new_feedback text,
+  changed_by uuid not null,
+  changed_at timestamptz not null default now()
+);
+alter table public.school_cbt_essay_mark_audit enable row level security;
+revoke all on table public.school_cbt_essay_mark_audit from public, anon, authenticated;
+
 create or replace function public.school_cbt_publish_exam(p_exam uuid)
 returns jsonb
 language plpgsql
@@ -124,6 +143,7 @@ begin
     or public.is_school_member(e.school_id, array['school_admin'])
     or e.teacher_id = uid
   ) then raise exception 'Not authorised'; end if;
+  if e.results_visible_to_students then raise exception 'Hide released results before changing marks'; end if;
   if t.school_id is distinct from e.school_id then raise exception 'Attempt school does not match exam'; end if;
   if t.status not in ('submitted', 'marked') or t.submitted_at is null then
     raise exception 'Only submitted attempts can be marked';
@@ -135,6 +155,15 @@ begin
   if not found then raise exception 'Question does not belong to this attempt'; end if;
   if q.options is not null then raise exception 'Only essay questions can be manually marked'; end if;
   if p_marks > coalesce(q.marks, 0) then raise exception 'Awarded marks exceed the question maximum'; end if;
+
+  insert into public.school_cbt_essay_mark_audit
+    (attempt_id, question_id, school_id, previous_marks, previous_feedback, new_marks, new_feedback, changed_by)
+  values (
+    t.id, q.id, e.school_id,
+    (select old_mark.marks_awarded from public.school_cbt_essay_marks old_mark where old_mark.attempt_id = t.id and old_mark.question_id = q.id),
+    (select old_mark.feedback from public.school_cbt_essay_marks old_mark where old_mark.attempt_id = t.id and old_mark.question_id = q.id),
+    p_marks, nullif(btrim(p_feedback), ''), uid
+  );
 
   insert into public.school_cbt_essay_marks
     (attempt_id, question_id, school_id, marks_awarded, feedback, marked_by, updated_at)
@@ -378,6 +407,13 @@ begin
   ) then raise exception 'Not authorised'; end if;
   if p_visible and not public.school_has_cbt_access(sid) and not public.is_super_admin() then
     raise exception 'School CBT entitlement is inactive';
+  end if;
+
+  if p_visible and exists (
+    select 1 from public.school_cbt_exam_attempts attempt
+    where attempt.exam_id = p_exam and attempt.status = 'in_progress'
+  ) then
+    raise exception 'Wait until all in-progress attempts have been submitted before releasing results';
   end if;
 
   if p_visible and exists (
