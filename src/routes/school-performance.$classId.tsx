@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { GeneralPerformanceSheet, type GeneralPerformanceData, type PerformanceStudentRow } from '@/components/school/GeneralPerformanceSheet';
-import { DEFAULT_GRADE_BANDS } from '@/components/school/OfficialReportSheet';
 import { getSupabase } from '@/lib/cms';
 import { getMySchoolMembership } from '@/lib/school';
 
@@ -14,12 +13,6 @@ type TermRow = { term_no: number; name: string; results_published: boolean };
 type RosterRow = { student_id: string; admission_number: string | null; full_name: string; gender: string | null };
 type EntryRow = { student_id: string; subject_id: string; component_id: string; score: number };
 type ComponentRow = { id: string; name: string; component_type: string; max_score: number; weight: number; sequence_no: number };
-
-function gradeFor(average: number | null) {
-  if (average === null) return '';
-  const rounded = Math.round(average * 100) / 100;
-  return DEFAULT_GRADE_BANDS.find(band => rounded >= band.min && rounded <= band.max)?.grade || '';
-}
 
 function SchoolPerformancePage() {
   const { classId } = Route.useParams();
@@ -151,7 +144,6 @@ function SchoolPerformancePage() {
           scores,
           total,
           average,
-          grade: gradeFor(average),
           position: null,
         };
       });
