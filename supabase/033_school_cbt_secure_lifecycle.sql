@@ -22,41 +22,8 @@ as $$
  );
 $$;
 
--- Prevent direct browser writes from bypassing the server-side publish lifecycle.
-create or replace function public.school_cbt_guard_exam_status()
-returns trigger language plpgsql set search_path=public as $$
-begin
- if new.status is distinct from old.status and new.status in ('scheduled','active')
-    and current_user not in ('postgres','supabase_admin') then
-  raise exception 'Use the authorised CBT publish workflow to schedule an exam';
- end if;
- return new;
-end $$;
-
-drop trigger if exists school_cbt_guard_exam_status on public.school_cbt_exams;
-create trigger school_cbt_guard_exam_status before update of status on public.school_cbt_exams
-for each row execute function public.school_cbt_guard_exam_status();
-
-create or replace function public.school_cbt_guard_question_changes()
-returns trigger language plpgsql security definer set search_path=public as $$
-declare exam_uuid uuid; exam_status text;
-begin
- exam_uuid:=case when tg_op='DELETE' then old.exam_id else new.exam_id end;
- select status into exam_status from public.school_cbt_exams where id=exam_uuid;
- if exam_status is distinct from 'draft' then
-  raise exception 'Questions are locked after an exam is scheduled';
- end if;
- if tg_op='DELETE' then return old; else return new; end if;
-end $$;
-
-drop trigger if exists school_cbt_question_draft_only on public.school_cbt_exam_questions;
-create trigger school_cbt_question_draft_only before insert or update or delete on public.school_cbt_exam_questions
-for each row execute function public.school_cbt_guard_question_changes();
-
+-- Lifecycle guards and RPCs are installed atomically by migration 034.
 revoke all on function public.school_has_cbt_access(uuid) from public, anon;
 grant execute on function public.school_has_cbt_access(uuid) to authenticated;
-
--- Close direct browser access before enabling the lifecycle RPCs in migration 034.
-revoke all on table public.school_cbt_exam_attempts from public, anon, authenticated;
 
 commit;
