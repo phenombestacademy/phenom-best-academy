@@ -92,6 +92,17 @@ create table if not exists public.school_cbt_essay_mark_audit (
 alter table public.school_cbt_essay_mark_audit enable row level security;
 revoke all on table public.school_cbt_essay_mark_audit from public, anon, authenticated;
 
+create table if not exists public.school_cbt_result_visibility_audit (
+  id uuid primary key default gen_random_uuid(),
+  exam_id uuid not null references public.school_cbt_exams(id) on delete cascade,
+  school_id uuid not null,
+  results_visible boolean not null,
+  changed_by uuid not null,
+  changed_at timestamptz not null default now()
+);
+alter table public.school_cbt_result_visibility_audit enable row level security;
+revoke all on table public.school_cbt_result_visibility_audit from public, anon, authenticated;
+
 create or replace function public.school_cbt_publish_exam(p_exam uuid)
 returns jsonb
 language plpgsql
@@ -625,6 +636,9 @@ begin
       raise exception 'Mark all submitted essay responses before releasing results';
     end if;
   end if;
+
+  insert into public.school_cbt_result_visibility_audit (exam_id, school_id, results_visible, changed_by)
+  values (p_exam, e.school_id, p_visible, uid);
 
   update public.school_cbt_exams
   set results_visible_to_students = p_visible, updated_at = now()
