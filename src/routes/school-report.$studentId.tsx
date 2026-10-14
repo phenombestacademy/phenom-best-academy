@@ -17,6 +17,7 @@ type TraitDefinition = { id: string; name: string; category: string };
 function SchoolReportPage() {
   const { studentId } = Route.useParams();
   const [data, setData] = useState<OfficialReportData | null>(null);
+  const [performanceClassId, setPerformanceClassId] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('Checking school access…');
 
@@ -48,6 +49,7 @@ function SchoolReportPage() {
           .maybeSingle();
         if (publicationError) throw publicationError;
         if (!publication) throw new Error('No published result is available for this student in your school.');
+        setPerformanceClassId(publication.class_id);
 
         const [schoolResult, recordResult, profileResult, sessionResult, termResult, classResult, classSubjectsResult, entriesResult, attendanceResult, summariesResult, traitsResult] = await Promise.all([
           db.from('schools').select('name,address,report_card_title,motto').eq('id', membership.school.id).maybeSingle(),
@@ -197,7 +199,7 @@ function SchoolReportPage() {
     <main className="mx-auto max-w-5xl px-4 py-10">
       {loading ? <p className="rounded-xl border border-line bg-cream p-4 text-sm" role="status">{message}</p> : null}
       {!loading && !data ? <section className="rounded-xl border border-line bg-cream p-6"><h1 className="text-2xl font-bold">Official School Report</h1><p className="mt-3 text-sm" role="alert">{message}</p></section> : null}
-      {data ? <><p className="mb-4 text-sm text-muted" role="status">{message}</p><OfficialReportSheet data={data} /></> : null}
+      {data ? <><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted" role="status">{message}</p>{performanceClassId ? <a href={`/school-performance/${performanceClassId}`} className="rounded-lg border border-line px-4 py-2 text-sm font-semibold">Open General Performance Sheet</a> : null}</div><OfficialReportSheet data={data} /></> : null}
     </main>
   );
 }
