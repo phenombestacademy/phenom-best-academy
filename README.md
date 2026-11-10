@@ -50,7 +50,7 @@ The same standard applies to **every applicable curriculum framework** in the Ph
 - TanStack Start / TanStack Router
 - Vite
 - Tailwind CSS
-- Nitro (Vercel deployment target)
+- Cloudflare Workers (TanStack Start Cloudflare Vite plugin + Wrangler)
 
 ## Local development
 
@@ -60,6 +60,10 @@ npm run dev
 ## Production build
 
 npm run build
+
+## Cloudflare deployment
+
+The application is configured for Cloudflare Workers. Run `npm run deploy:dry-run` to validate a production bundle without publishing it, and `npm run deploy` to publish after Cloudflare authentication and production bindings/secrets have been configured. See `docs/CLOUDFLARE-WORKERS-DEPLOYMENT.md`.
 
 ## Enquiries
 
@@ -114,3 +118,8 @@ Singapore's implementation records are treated as a production baseline rather t
 The latest site includes the Admin Studio foundation at `/admin` and a public Media & Resources hub at `/media`. The platform architecture includes controlled media/resources, Google authentication through Supabase Auth, adult/teen/child account types with guardian linkage, privacy-conscious analytics, moderation hooks, organisation spaces, school multi-tenancy, CBT, result books/report cards, payment architecture and the relevant security boundaries documented in the source and Supabase migrations.
 
 Production activation continues to require Supabase Auth/RLS, Edge Function secrets, approved integrations, safeguarding workflows and professional legal/privacy/security review where applicable.
+
+
+## Supabase database security defaults
+
+The database security hardening migrations are recorded in `supabase/062_harden_future_public_default_privileges.sql` and `supabase/063_harden_future_function_execute_defaults.sql`. They apply to future objects created by `postgres`; existing grants and policies are preserved.
