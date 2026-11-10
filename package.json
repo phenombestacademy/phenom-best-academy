@@ -9,7 +9,10 @@
     "preview": "vite preview --host 127.0.0.1 --port 8081",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:dry-run": "npm run build && wrangler deploy --dry-run",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -38,12 +41,13 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "nitro": "3.0.260610-beta",
     "prettier": "^3.4.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "@cloudflare/vite-plugin": "^1.68.0",
+    "wrangler": "^4.159.0"
   },
   "overrides": {
     "@tanstack/react-start": "1.168.60"
